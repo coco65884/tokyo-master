@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { QuizScopeType } from '@/types';
-import { getOperatorLines, getWardList } from '@/utils/quizDataLoader';
+import { getOperatorLines, getWardList, getGenreList } from '@/utils/quizDataLoader';
 import { useQuizStore } from '@/stores/quizStore';
 
 type TabType = QuizScopeType | 'speedrun' | 'blankmap';
@@ -51,6 +51,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
   const [speedRunLine, setSpeedRunLine] = useState<string>('');
 
   const wardList = getWardList();
+  const genreList = getGenreList();
 
   useEffect(() => {
     getOperatorLines().then((data) => {
@@ -222,7 +223,11 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
               value={selectedTheme}
               onChange={(e) => setSelectedTheme(e.target.value)}
             >
-              <option value="rivers">河川</option>
+              {genreList.map((genre) => (
+                <option key={genre.key} value={genre.key}>
+                  {genre.icon} {genre.label} ({genre.count})
+                </option>
+              ))}
             </select>
           </div>
         )}
