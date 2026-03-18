@@ -203,6 +203,14 @@ export default function QuizSession({ config, onComplete }: Props) {
   const progress = answeredCount / questions.length;
   const stationMarkers = questions.filter((q) => q.lat && q.lng);
 
+  /** 駅番号ラベルを生成: 路線クイズはJY01形式、それ以外は1,2,3 */
+  const getLabel = (index: number): string => {
+    if (config.scopeType === 'line' && lineAbbr) {
+      return `${lineAbbr}${String(index + 1).padStart(2, '0')}`;
+    }
+    return `${index + 1}`;
+  };
+
   return (
     <div className="quiz-session">
       <div className="quiz-session__left">
@@ -224,7 +232,7 @@ export default function QuizSession({ config, onComplete }: Props) {
         <div className="quiz-session__questions">
           {questions.map((q, i) => (
             <div key={q.id} className="quiz-session__question">
-              <span className="quiz-session__question-num">{i + 1}.</span>
+              <span className="quiz-session__question-num">{getLabel(i)}</span>
               <input
                 ref={(el) => {
                   inputRefs.current[i] = el;
@@ -243,7 +251,7 @@ export default function QuizSession({ config, onComplete }: Props) {
                 value={answers[i] ?? ''}
                 onChange={(e) => handleInputChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, i)}
-                placeholder={config.showHints && q.hint ? q.hint : `${i + 1}番目`}
+                placeholder={config.showHints && q.hint ? q.hint : getLabel(i)}
                 disabled={submitted}
                 autoComplete="off"
               />
@@ -363,61 +371,44 @@ export default function QuizSession({ config, onComplete }: Props) {
             )}
 
           {/* 駅マーカー + 番号ラベル */}
-          {stationMarkers.map((q, i) => {
-            const stationLabel =
-              config.scopeType === 'line' && lineAbbr
-                ? `${lineAbbr}${String(i + 1).padStart(2, '0')}`
-                : `${i + 1}`;
-            return (
-              <CircleMarker
-                key={q.id}
-                center={[q.lat!, q.lng!]}
-                radius={5}
-                pathOptions={{
-                  color: lineColor,
-                  fillColor: '#fff',
-                  fillOpacity: 1,
-                  weight: 2,
-                }}
-              >
-                <Tooltip
-                  permanent
-                  direction="right"
-                  offset={[8, 0]}
-                  className="quiz-station-number"
-                >
-                  {submitted ? q.targetName.kanji : stationLabel}
-                </Tooltip>
-                {submitted && (
-                  <Popup>
-                    <strong>{q.targetName.kanji}</strong>
-                  </Popup>
-                )}
-              </CircleMarker>
-            );
-          })}
+          {stationMarkers.map((q, i) => (
+            <CircleMarker
+              key={q.id}
+              center={[q.lat!, q.lng!]}
+              radius={5}
+              pathOptions={{
+                color: lineColor,
+                fillColor: '#fff',
+                fillOpacity: 1,
+                weight: 2,
+              }}
+            >
+              <Tooltip permanent direction="right" offset={[8, 0]} className="quiz-station-number">
+                {submitted ? q.targetName.kanji : getLabel(i)}
+              </Tooltip>
+              {submitted && (
+                <Popup>
+                  <strong>{q.targetName.kanji}</strong>
+                </Popup>
+              )}
+            </CircleMarker>
+          ))}
 
           {/* 番号マーカー（四角ボックス） */}
           {!submitted &&
-            stationMarkers.map((q, i) => {
-              const stationLabel =
-                config.scopeType === 'line' && lineAbbr
-                  ? `${lineAbbr}${String(i + 1).padStart(2, '0')}`
-                  : `${i + 1}`;
-              return (
-                <Marker
-                  key={`num-${q.id}`}
-                  position={[q.lat!, q.lng!]}
-                  icon={L.divIcon({
-                    className: 'quiz-number-icon',
-                    html: `<span>${stationLabel}</span>`,
-                    iconSize: [22, 22],
-                    iconAnchor: [11, 28],
-                  })}
-                  interactive={false}
-                />
-              );
-            })}
+            stationMarkers.map((q, i) => (
+              <Marker
+                key={`num-${q.id}`}
+                position={[q.lat!, q.lng!]}
+                icon={L.divIcon({
+                  className: 'quiz-number-icon',
+                  html: `<span>${getLabel(i)}</span>`,
+                  iconSize: [config.scopeType === 'line' && lineAbbr ? 38 : 22, 22],
+                  iconAnchor: [config.scopeType === 'line' && lineAbbr ? 19 : 11, 28],
+                })}
+                interactive={false}
+              />
+            ))}
         </MapContainer>
       </div>
     </div>
