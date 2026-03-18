@@ -90,14 +90,13 @@ export default function LayerControl() {
   };
 
   const basicLayers: {
-    key: 'wards' | 'prefBorders' | 'rivers' | 'roads' | 'landmarks';
+    key: 'wards' | 'prefBorders' | 'rivers' | 'roads';
     label: string;
   }[] = [
     { key: 'wards', label: '区/市境界' },
     { key: 'prefBorders', label: '都道府県境界' },
     { key: 'rivers', label: '川' },
     { key: 'roads', label: '主要道路' },
-    { key: 'landmarks', label: '観光地' },
   ];
 
   return (

@@ -10,7 +10,6 @@ import {
   loadRailLines,
   loadRivers,
   loadRoads,
-  loadLandmarks,
   loadLineIndex,
   loadWardCenters,
   loadWardObjects,
@@ -23,7 +22,6 @@ interface GeoData {
   railLines: FeatureCollection | null;
   rivers: FeatureCollection | null;
   roads: FeatureCollection | null;
-  landmarks: FeatureCollection | null;
 }
 
 interface LayerFlags {
@@ -32,7 +30,6 @@ interface LayerFlags {
   railLines: Record<string, boolean>;
   rivers: boolean;
   roads: boolean;
-  landmarks: boolean;
 }
 
 function useGeoData(layers: LayerFlags, wardFocusActive: boolean): GeoData {
@@ -42,7 +39,6 @@ function useGeoData(layers: LayerFlags, wardFocusActive: boolean): GeoData {
     railLines: null,
     rivers: null,
     roads: null,
-    landmarks: null,
   });
 
   useEffect(() => {
@@ -72,11 +68,6 @@ function useGeoData(layers: LayerFlags, wardFocusActive: boolean): GeoData {
     if ((layers.roads || wardFocusActive) && !data.roads)
       loadRoads().then((d) => setData((p) => ({ ...p, roads: d })));
   }, [layers.roads, wardFocusActive, data.roads]);
-
-  useEffect(() => {
-    if (layers.landmarks && !data.landmarks)
-      loadLandmarks().then((d) => setData((p) => ({ ...p, landmarks: d })));
-  }, [layers.landmarks, data.landmarks]);
 
   return data;
 }
@@ -641,31 +632,45 @@ function RoadLayer({ data, focusArea }: { data: FeatureCollection; focusArea: Fo
   );
 }
 
-// ======= Landmarks =======
-const landmarkIcon = L.divIcon({
-  className: 'landmark-icon',
-  html: '<span style="font-size:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3))">📍</span>',
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
-});
+// ======= Genre POI Layer =======
+import genrePoisData from '@/data/genre_pois.json';
 
-function LandmarkLayer({ data }: { data: FeatureCollection }) {
+interface GenrePOI {
+  name: string;
+  lat: number;
+  lng: number;
+}
+interface GenreEntry {
+  label: string;
+  icon: string;
+  pois: GenrePOI[];
+}
+
+function GenrePOILayer({ genreKey }: { genreKey: string }) {
+  const genre = (genrePoisData as Record<string, GenreEntry>)[genreKey];
+  if (!genre) return null;
+
   return (
     <>
-      {data.features.map((feature) => {
-        const coords = (feature.geometry as GeoJSON.Point).coordinates;
-        return (
-          <Marker
-            key={feature.properties?.id}
-            position={[coords[1], coords[0]]}
-            icon={landmarkIcon}
-          >
-            <Popup>
-              <strong>{feature.properties?.name}</strong>
-            </Popup>
-          </Marker>
-        );
-      })}
+      {genre.pois.map((poi, i) => (
+        <Marker
+          key={`genre-${genreKey}-${i}`}
+          position={[poi.lat, poi.lng]}
+          icon={L.divIcon({
+            className: 'genre-poi-icon',
+            html: `<span>${genre.icon}</span>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+          })}
+        >
+          <Tooltip direction="top" offset={[0, -12]} className="genre-poi-tooltip">
+            {poi.name}
+          </Tooltip>
+          <Popup>
+            <strong>{poi.name}</strong>
+          </Popup>
+        </Marker>
+      ))}
     </>
   );
 }
@@ -726,6 +731,7 @@ export default function MapLayers() {
   const layers = useMapStore((s) => s.layers);
   const selectedWardId = useMapStore((s) => s.selectedWardId);
   const wardFocusMode = useMapStore((s) => s.wardFocusMode);
+  const selectedGenre = useMapStore((s) => s.selectedGenre);
   const { centers, objects } = useWardMeta();
   const lineIndex = useLineIndex();
 
@@ -790,7 +796,8 @@ export default function MapLayers() {
       {showRivers && geoData.rivers && <RiverLayer data={geoData.rivers} focusArea={focusArea} />}
       {showRoads && geoData.roads && <RoadLayer data={geoData.roads} focusArea={focusArea} />}
 
-      {layers.landmarks && geoData.landmarks && <LandmarkLayer data={geoData.landmarks} />}
+      {/* テーマPOI */}
+      {selectedGenre && <GenrePOILayer genreKey={selectedGenre} />}
       <DistanceOverlay />
 
       {/* 駅は最前面レイヤー */}

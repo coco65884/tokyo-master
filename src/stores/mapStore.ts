@@ -7,7 +7,6 @@ interface LayerState {
   railLines: Record<string, boolean>;
   rivers: boolean;
   roads: boolean;
-  landmarks: boolean;
 }
 
 interface MapState {
@@ -19,6 +18,8 @@ interface MapState {
   distanceMode: boolean;
   distancePoints: [number, number][];
   showHeatmap: boolean;
+  /** 選択中のテーマPOIジャンルキー（null=なし） */
+  selectedGenre: string | null;
   setCenter: (center: [number, number]) => void;
   setZoom: (zoom: number) => void;
   toggleLayer: (layer: keyof Omit<LayerState, 'railLines'>) => void;
@@ -30,6 +31,7 @@ interface MapState {
   addDistancePoint: (point: [number, number]) => void;
   clearDistancePoints: () => void;
   setShowHeatmap: (on: boolean) => void;
+  setSelectedGenre: (genre: string | null) => void;
 }
 
 const DEFAULT_TOKYO_CENTER: [number, number] = [35.6762, 139.6503];
@@ -44,13 +46,13 @@ export const useMapStore = create<MapState>((set) => ({
     railLines: {},
     rivers: false,
     roads: false,
-    landmarks: false,
   },
   selectedWardId: null,
   wardFocusMode: true,
   distanceMode: false,
   distancePoints: [],
   showHeatmap: false,
+  selectedGenre: null,
 
   setCenter: (center) => set({ center }),
   setZoom: (zoom) => set({ zoom }),
@@ -102,4 +104,6 @@ export const useMapStore = create<MapState>((set) => ({
   clearDistancePoints: () => set({ distancePoints: [] }),
 
   setShowHeatmap: (on) => set({ showHeatmap: on }),
+
+  setSelectedGenre: (genre) => set({ selectedGenre: genre }),
 }));

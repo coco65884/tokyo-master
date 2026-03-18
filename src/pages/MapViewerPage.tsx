@@ -3,6 +3,7 @@ import TokyoMap from '@/components/map/TokyoMap';
 import LayerControl from '@/components/map/LayerControl';
 import WardSelector from '@/components/map/WardSelector';
 import DistanceDisplay from '@/components/map/DistanceDisplay';
+import GenreSelector from '@/components/map/GenreSelector';
 import { useMapStore } from '@/stores/mapStore';
 import '@/styles/MapViewerPage.css';
 
@@ -67,6 +68,7 @@ export default function MapViewerPage() {
         <WardFocusToggle />
         <HeatmapToggle />
         <LayerControl />
+        <GenreSelector />
         <DistanceDisplay />
       </aside>
       <main className="map-main">
