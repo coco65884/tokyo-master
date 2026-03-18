@@ -662,8 +662,18 @@ function GenrePOILayer({ genreKey }: { genreKey: string }) {
             iconSize: [24, 24],
             iconAnchor: [12, 12],
           })}
+          eventHandlers={{
+            mouseover: (e) => {
+              const tooltip = (e.target as L.Marker).getTooltip();
+              if (tooltip) (e.target as L.Marker).closeTooltip();
+            },
+            mouseout: (e) => {
+              const tooltip = (e.target as L.Marker).getTooltip();
+              if (tooltip) (e.target as L.Marker).openTooltip();
+            },
+          }}
         >
-          <Tooltip direction="top" offset={[0, -12]} className="genre-poi-tooltip">
+          <Tooltip permanent direction="top" offset={[0, -12]} className="genre-poi-label">
             {poi.name}
           </Tooltip>
           <Popup>
