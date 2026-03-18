@@ -1,0 +1,56 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/secrets.*)",
+      "Read(**/*credentials*)",
+      "Read(**/*secret*key*)",
+      "Read(**/id_rsa)",
+      "Read(**/id_ed25519)",
+      "Read(**/*.pem)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/secrets.*)",
+      "Edit(**/*credentials*)",
+
+      "Bash(sudo:*)",
+      "Bash(su :*)",
+      "Bash(chmod 777:*)",
+      "Bash(chown:*)",
+      "Bash(passwd:*)",
+
+      "Bash(wget:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(rsync:*)",
+      "Bash(nc :*)",
+      "Bash(ncat:*)",
+      "Bash(netcat:*)",
+
+      "Bash(npm publish:*)",
+      "Bash(twine upload:*)"
+    ]
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/deny-check.py"
+          }
+        ]
+      }
+    ]
+  },
+
+  "env": {
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
+  },
+
+  "cleanupPeriodDays": 30
+}
