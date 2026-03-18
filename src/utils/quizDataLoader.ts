@@ -1,9 +1,10 @@
-import type { QuizQuestion } from '@/types';
+import type { QuizQuestion, ThemeType } from '@/types';
 import { loadLineIndex, loadWardObjects, loadWardCenters } from '@/utils/dataLoader';
 import type { WardCenter, WardObjects } from '@/utils/dataLoader';
 import type { LineIndexEntry } from '@/types';
 import wardsData from '@/data/wards.json';
 import riversData from '@/data/rivers.json';
+import genrePois from '@/data/genre_pois.json';
 
 interface WardMeta {
   id: string;
@@ -105,6 +106,73 @@ export function generateRiverQuiz(): QuizQuestion[] {
     },
     category: 'rivers' as const,
   }));
+}
+
+/** ジャンルPOIデータの型 */
+interface GenrePoi {
+  name: string;
+  lat: number;
+  lng: number;
+}
+
+interface GenreEntry {
+  label: string;
+  icon: string;
+  pois: GenrePoi[];
+}
+
+type GenrePoisData = Record<string, GenreEntry>;
+
+const typedGenrePois = genrePois as GenrePoisData;
+
+/**
+ * ジャンル一覧を取得する（河川 + genre_pois.json の全ジャンル）
+ */
+export function getGenreList(): { key: string; label: string; icon: string; count: number }[] {
+  const rivers = riversData as RiverMeta[];
+  const result: { key: string; label: string; icon: string; count: number }[] = [
+    { key: 'rivers', label: '河川', icon: '🏞️', count: rivers.length },
+  ];
+
+  for (const [key, entry] of Object.entries(typedGenrePois)) {
+    result.push({
+      key,
+      label: entry.label,
+      icon: entry.icon,
+      count: entry.pois.length,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * ジャンルPOIクイズ用の問題を生成する
+ */
+export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
+  const entry = typedGenrePois[genreKey];
+  if (!entry) return [];
+
+  return entry.pois.map((poi, idx) => ({
+    id: `genre-${genreKey}-q-${idx}`,
+    targetName: {
+      kanji: poi.name,
+      hiragana: '',
+      katakana: '',
+      romaji: '',
+    },
+    lat: poi.lat,
+    lng: poi.lng,
+    hint: `${idx + 1}番目`,
+    category: genreKey as ThemeType,
+  }));
+}
+
+/**
+ * ジャンルPOIデータを取得する（アイコン等のメタ情報付き）
+ */
+export function getGenreInfo(genreKey: string): GenreEntry | undefined {
+  return typedGenrePois[genreKey];
 }
 
 /**

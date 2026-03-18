@@ -2,6 +2,7 @@ import type { AchievementDefinition } from '@/types';
 import type { LineIndexEntry } from '@/types';
 import wardsData from '@/data/wards.json';
 import riversData from '@/data/rivers.json';
+import genrePois from '@/data/genre_pois.json';
 
 interface WardMeta {
   id: string;
@@ -13,6 +14,28 @@ interface RiverMeta {
   id: string;
   name: { kanji: string; hiragana: string; katakana: string; romaji: string };
 }
+
+/** ジャンルPOIデータの型 */
+interface GenreEntry {
+  label: string;
+  icon: string;
+  pois: { name: string; lat: number; lng: number }[];
+}
+
+type GenrePoisData = Record<string, GenreEntry>;
+
+const typedGenrePois = genrePois as GenrePoisData;
+
+/** ジャンル別テーマカラー */
+const GENRE_COLORS: Record<string, string> = {
+  universities: '#7c3aed',
+  landmarks: '#dc2626',
+  jiro: '#ea580c',
+  museums: '#0891b2',
+  parks: '#16a34a',
+  stadiums: '#ca8a04',
+  high_schools: '#2563eb',
+};
 
 /** 区のデフォルトカラー */
 const WARD_COLOR = '#6366f1';
@@ -69,6 +92,21 @@ export function generateRiverAchievement(): AchievementDefinition {
 }
 
 /**
+ * ジャンルPOIテーマアチーブメント定義を生成する（同期）
+ */
+export function generateGenreAchievements(): AchievementDefinition[] {
+  return Object.entries(typedGenrePois).map(([key, entry]) => ({
+    id: getAchievementId('theme', key),
+    title: `${entry.label}マスター`,
+    description: `${entry.label}（${entry.pois.length}問）を全て正解する`,
+    scopeType: 'theme' as const,
+    scopeId: key,
+    color: GENRE_COLORS[key] ?? '#6b7280',
+    icon: entry.icon,
+  }));
+}
+
+/**
  * 全アチーブメント定義を取得する（路線データは非同期）
  */
 export async function loadAllAchievements(
@@ -77,8 +115,9 @@ export async function loadAllAchievements(
   const lineAchievements = generateLineAchievements(lines);
   const wardAchievements = generateWardAchievements();
   const riverAchievement = generateRiverAchievement();
+  const genreAchievements = generateGenreAchievements();
 
-  return [...lineAchievements, ...wardAchievements, riverAchievement];
+  return [...lineAchievements, ...wardAchievements, riverAchievement, ...genreAchievements];
 }
 
 /**
