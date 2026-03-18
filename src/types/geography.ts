@@ -78,6 +78,7 @@ export interface LayerVisibility {
 export interface LineIndexEntry {
   key: string;
   name: string;
+  abbr: string;
   operator: string;
   color: string;
   lineIds: string[];
@@ -88,6 +89,7 @@ export interface LineIndexEntry {
 export interface OperatorLineEntry {
   key: string;
   name: string;
+  abbr: string;
   color: string;
   lineIds: string[];
   stationCount: number;

@@ -125,12 +125,20 @@
   font-size: 0.82rem;
 }
 
-.layer-control__color-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.layer-control__line-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 16px;
+  padding: 0 3px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  border: 1.5px solid;
+  border-radius: 3px;
   flex-shrink: 0;
+  line-height: 1;
+  letter-spacing: 0.02em;
 }
 
 .layer-control__line-name {
