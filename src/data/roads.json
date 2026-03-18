@@ -1,0 +1,1334 @@
+[
+  {
+    "id": "road-4854109",
+    "name": {
+      "kanji": "山手通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-5213470",
+    "name": {
+      "kanji": "環七通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-18570435",
+    "name": {
+      "kanji": "青梅街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-19020758",
+    "name": {
+      "kanji": "甲州街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-23273850",
+    "name": {
+      "kanji": "駒沢通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-23289367",
+    "name": {
+      "kanji": "環八通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-23426397",
+    "name": {
+      "kanji": "目白通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-23443733",
+    "name": {
+      "kanji": "外堀通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-23630652",
+    "name": {
+      "kanji": "新目白通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-23753878",
+    "name": {
+      "kanji": "中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-24024046",
+    "name": {
+      "kanji": "春日通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-25588102",
+    "name": {
+      "kanji": "旧甲州街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-25629170",
+    "name": {
+      "kanji": "原町田中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-25629271",
+    "name": {
+      "kanji": "鶴川団地中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-25666237",
+    "name": {
+      "kanji": "久保山中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-26271321",
+    "name": {
+      "kanji": "新青梅街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-26575906",
+    "name": {
+      "kanji": "旧青梅街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-26683559",
+    "name": {
+      "kanji": "若葉台中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-26796861",
+    "name": {
+      "kanji": "中野中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-27533328",
+    "name": {
+      "kanji": "早宮中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-27696544",
+    "name": {
+      "kanji": "商店街中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-27740277",
+    "name": {
+      "kanji": "牛込中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-28016961",
+    "name": {
+      "kanji": "鶴見東口中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-28017942",
+    "name": {
+      "kanji": "環八通り (Kampachi dori)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-28185858",
+    "name": {
+      "kanji": "市役所前中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-28212039",
+    "name": {
+      "kanji": "北野中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-30107263",
+    "name": {
+      "kanji": "南加瀬中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-30179956",
+    "name": {
+      "kanji": "汐入中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-30686274",
+    "name": {
+      "kanji": "ときわ中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-30775175",
+    "name": {
+      "kanji": "新横浜中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-31151436",
+    "name": {
+      "kanji": "番町中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-31297468",
+    "name": {
+      "kanji": "八広中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-31338915",
+    "name": {
+      "kanji": "守谷中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-31855884",
+    "name": {
+      "kanji": "渋谷中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-32122316",
+    "name": {
+      "kanji": "靖国通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-32846263",
+    "name": {
+      "kanji": "茅ヶ崎中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-33627285",
+    "name": {
+      "kanji": "中央通り;万世橋",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-37229816",
+    "name": {
+      "kanji": "中町中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-39032616",
+    "name": {
+      "kanji": "妙典中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-39169441",
+    "name": {
+      "kanji": "有楽町中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-39436597",
+    "name": {
+      "kanji": "新宿中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-39436603",
+    "name": {
+      "kanji": "MOA中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-41966750",
+    "name": {
+      "kanji": "浅草中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-41973208",
+    "name": {
+      "kanji": "日暮里中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-42294744",
+    "name": {
+      "kanji": "内神田中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-45018631",
+    "name": {
+      "kanji": "明治通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-45819210",
+    "name": {
+      "kanji": "学園中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-47469938",
+    "name": {
+      "kanji": "日吉中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-47682035",
+    "name": {
+      "kanji": "赤塚中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-48582023",
+    "name": {
+      "kanji": "ときわ台駅前中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-48999110",
+    "name": {
+      "kanji": "大和町中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-49179307",
+    "name": {
+      "kanji": "城山中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-49238730",
+    "name": {
+      "kanji": "新河岸中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-49257406",
+    "name": {
+      "kanji": "旧山手通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-49685510",
+    "name": {
+      "kanji": "山手通り (Yamate Dori)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-52242722",
+    "name": {
+      "kanji": "竹丘中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-53348161",
+    "name": {
+      "kanji": "羽衣中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-54675121",
+    "name": {
+      "kanji": "BS中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-56131670",
+    "name": {
+      "kanji": "与野中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-57898207",
+    "name": {
+      "kanji": "大宮中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-58610489",
+    "name": {
+      "kanji": "尾久橋通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-58631799",
+    "name": {
+      "kanji": "小岩中央通り五番街",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-58703642",
+    "name": {
+      "kanji": "緑中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-59266574",
+    "name": {
+      "kanji": "宿中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-60432954",
+    "name": {
+      "kanji": "中央通り商店会",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-68519573",
+    "name": {
+      "kanji": "かわじま中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-69562585",
+    "name": {
+      "kanji": "南中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-74007567",
+    "name": {
+      "kanji": "宮沢中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-84243203",
+    "name": {
+      "kanji": "錦中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-85578219",
+    "name": {
+      "kanji": "青梅街道;四面道陸橋",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-88527894",
+    "name": {
+      "kanji": "西一番街中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-89934436",
+    "name": {
+      "kanji": "柳橋中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-91727232",
+    "name": {
+      "kanji": "成瀬中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-92038890",
+    "name": {
+      "kanji": "青梅街道;天沼陸橋",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-94094852",
+    "name": {
+      "kanji": "東日本橋三丁目中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-94709669",
+    "name": {
+      "kanji": "野毛中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-98409385",
+    "name": {
+      "kanji": "多摩川住宅中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-98855709",
+    "name": {
+      "kanji": "平一中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-99196071",
+    "name": {
+      "kanji": "プラザ中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-100827981",
+    "name": {
+      "kanji": "三和中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-101187671",
+    "name": {
+      "kanji": "領家中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-102170320",
+    "name": {
+      "kanji": "谷塚中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-104519245",
+    "name": {
+      "kanji": "新百合山手中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-111492755",
+    "name": {
+      "kanji": "長峰中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-113443882",
+    "name": {
+      "kanji": "栄中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-116846622",
+    "name": {
+      "kanji": "サンシャイン中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-119053959",
+    "name": {
+      "kanji": "東所沢中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-119280922",
+    "name": {
+      "kanji": "庄和中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-134796952",
+    "name": {
+      "kanji": "亀有中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-142242142",
+    "name": {
+      "kanji": "駒沢通り 新道坂",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-144700645",
+    "name": {
+      "kanji": "宮町中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-147133277",
+    "name": {
+      "kanji": "西荻窪中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-148319969",
+    "name": {
+      "kanji": "中野島中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-148620798",
+    "name": {
+      "kanji": "桜中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-150907693",
+    "name": {
+      "kanji": "羽村駅前中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-179118565",
+    "name": {
+      "kanji": "綾瀬中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-179641020",
+    "name": {
+      "kanji": "荒川中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-179641027",
+    "name": {
+      "kanji": "荒川西中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-186761674",
+    "name": {
+      "kanji": "環七通り(新代田駅)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-187519924",
+    "name": {
+      "kanji": "蒲田東口中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-200323922",
+    "name": {
+      "kanji": "西台中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-208693600",
+    "name": {
+      "kanji": "環七通り (Kannana dori)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-229865319",
+    "name": {
+      "kanji": "小出中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-243388462",
+    "name": {
+      "kanji": "平尾中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-257662200",
+    "name": {
+      "kanji": "浮間中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-267066710",
+    "name": {
+      "kanji": "山手通り (Yamate-dori Avenue)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-267373566",
+    "name": {
+      "kanji": "青梅街道（千ヶ瀬バイパス）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-287081109",
+    "name": {
+      "kanji": "新座中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-312216838",
+    "name": {
+      "kanji": "稲荷中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-355240125",
+    "name": {
+      "kanji": "居留地中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-384643145",
+    "name": {
+      "kanji": "旧山手通り(神泉町)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-460851984",
+    "name": {
+      "kanji": "上野御徒町中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-467428218",
+    "name": {
+      "kanji": "狭山中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-497874933",
+    "name": {
+      "kanji": "甲州街道(本宿交番前)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-542310819",
+    "name": {
+      "kanji": "MOA靖国通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-546634230",
+    "name": {
+      "kanji": "旧青梅街道 (Kyu Oume kaido)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-548908713",
+    "name": {
+      "kanji": "中央通り（地下道・二輪車通行禁止）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-656403525",
+    "name": {
+      "kanji": "藤沢中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-694272691",
+    "name": {
+      "kanji": "旧甲州街道(旧甲州街道入口)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-760910050",
+    "name": {
+      "kanji": "目白通りIC（建設中）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-760920180",
+    "name": {
+      "kanji": "青梅街道IC（建設中）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-766582113",
+    "name": {
+      "kanji": "目白通りIC（仮称）入口",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-839784838",
+    "name": {
+      "kanji": "織物中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-885581559",
+    "name": {
+      "kanji": "青梅街道(新都心歩道橋下交差点)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-888903846",
+    "name": {
+      "kanji": "若葉台中央通り(若葉台一丁目)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-889218570",
+    "name": {
+      "kanji": "甲州街道(八雲台二丁目)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-889461675",
+    "name": {
+      "kanji": "甲州街道(旧甲州街道入口)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-923810996",
+    "name": {
+      "kanji": "旧甲州街道(本宿町)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-923810997",
+    "name": {
+      "kanji": "甲州街道(本宿町)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-932357982",
+    "name": {
+      "kanji": "環七通り(泉南)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-934781480",
+    "name": {
+      "kanji": "前川中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-958532389",
+    "name": {
+      "kanji": "尾久橋通り（田端新町一丁目）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-965405374",
+    "name": {
+      "kanji": "甲州街道(西新宿二丁目)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-965405377",
+    "name": {
+      "kanji": "甲州街道(西新宿)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-965406121",
+    "name": {
+      "kanji": "中央通り(転回路)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-966725857",
+    "name": {
+      "kanji": "駒沢通り(常時左折可)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1034548446",
+    "name": {
+      "kanji": "環八通り(砧二丁目)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1049998719",
+    "name": {
+      "kanji": "青梅街道駅",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1051965042",
+    "name": {
+      "kanji": "豊島中央通り商店街",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1183717594",
+    "name": {
+      "kanji": "放射第23号線（新井の頭通り）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1195176130",
+    "name": {
+      "kanji": "JR新宿駅;2階;甲州街道改札",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1216080465",
+    "name": {
+      "kanji": "明治通り（田端新町一丁目）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1217960532",
+    "name": {
+      "kanji": "尾久橋通り（停止禁止部分）",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1235799275",
+    "name": {
+      "kanji": "旧甲州街道;調布駅西",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1301084159",
+    "name": {
+      "kanji": "環七通り(進路変更禁止)",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1319222518",
+    "name": {
+      "kanji": "松が丘中央通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1382197146",
+    "name": {
+      "kanji": "環七通り;若林踏切;西太子堂5号踏切",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-1434515785",
+    "name": {
+      "kanji": "ローソン;阿佐谷青梅街道店",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  }
+]
