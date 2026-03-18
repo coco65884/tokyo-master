@@ -169,6 +169,51 @@
   background: var(--color-surface);
 }
 
+/* ===== Ward Focus Toggle ===== */
+.ward-focus-toggle {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ward-focus-toggle__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ward-focus-toggle__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.ward-focus-toggle__btn {
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.ward-focus-toggle__btn--active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.ward-focus-toggle__hint {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+  margin-top: 0.3rem;
+}
+
 /* ===== Distance Display ===== */
 .distance-display {
   margin-top: 1.5rem;
@@ -301,6 +346,25 @@
 
 .station-label::before {
   display: none;
+}
+
+/* Ward name labels */
+.ward-name-label {
+  background: none !important;
+  border: none !important;
+}
+
+.ward-name-label span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    1px 1px 0 rgba(255, 255, 255, 0.9),
+    -1px -1px 0 rgba(255, 255, 255, 0.9),
+    1px -1px 0 rgba(255, 255, 255, 0.9),
+    -1px 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .river-popup .leaflet-popup-content-wrapper,
