@@ -1,17 +1,420 @@
+/* ===== Achievement Page Layout ===== */
 .achievement-page {
   padding: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-.achievement-header h1 {
-  font-size: 1.5rem;
+.achievement-header {
   margin-bottom: 1rem;
 }
 
-.achievement-placeholder {
+.achievement-header h1 {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.achievement-summary {
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.achievement-loading {
   text-align: center;
   color: var(--color-text-secondary);
   margin-top: 4rem;
   font-size: 1.1rem;
+}
+
+.achievement-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  margin-top: 3rem;
+  font-size: 0.95rem;
+}
+
+/* ===== Filter Tabs ===== */
+.achievement-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 1.5rem;
+}
+
+.achievement-tab {
+  flex: 1;
+  padding: 0.5rem 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.achievement-tab:hover {
+  color: var(--color-text);
+}
+
+.achievement-tab--active {
+  color: var(--color-achievement);
+  border-bottom-color: var(--color-achievement);
+}
+
+/* ===== Achievement Grid ===== */
+.achievement-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+/* ===== Achievement Card ===== */
+.achievement-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 0.6rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  cursor: pointer;
+  text-align: center;
+  position: relative;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.achievement-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Badge circle */
+.achievement-card__badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+  border: 2.5px solid var(--color-border);
+  transition:
+    background 0.3s,
+    border-color 0.3s;
+}
+
+.achievement-card__icon {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+/* Locked (default) state - grayed out */
+.achievement-card:not(.achievement-card--achieved):not(.achievement-card--attempted) {
+  opacity: 0.5;
+}
+
+.achievement-card:not(.achievement-card--achieved):not(.achievement-card--attempted)
+  .achievement-card__badge {
+  filter: grayscale(1);
+}
+
+/* Attempted but not achieved */
+.achievement-card--attempted .achievement-card__badge {
+  border-color: var(--color-text-secondary);
+  background: var(--color-bg);
+}
+
+.achievement-card--attempted .achievement-card__icon {
+  color: var(--color-text);
+}
+
+/* Achieved state - colorful with shimmer */
+.achievement-card--achieved {
+  border-color: transparent;
+}
+
+.achievement-card--achieved .achievement-card__badge {
+  box-shadow:
+    0 0 0 3px rgba(139, 92, 246, 0.15),
+    0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.achievement-card--achieved .achievement-card__icon {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* Shimmer effect for achieved */
+.achievement-card--achieved .achievement-card__badge::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 70%
+  );
+  animation: badge-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes badge-shimmer {
+  0% {
+    left: -100%;
+  }
+  50%,
+  100% {
+    left: 100%;
+  }
+}
+
+/* Card info */
+.achievement-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 2.4rem;
+}
+
+.achievement-card__title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.achievement-card__accuracy {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+}
+
+/* Check mark for achieved */
+.achievement-card__check {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.85rem;
+  color: #22c55e;
+  font-weight: 700;
+}
+
+/* ===== Share Overlay ===== */
+.share-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.share-modal {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  max-width: 400px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== Capturable Share Card ===== */
+.share-card {
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
+}
+
+.share-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  color: #fff;
+}
+
+.share-card__icon {
+  font-size: 1.6rem;
+  font-weight: 800;
+  min-width: 2rem;
+  text-align: center;
+}
+
+.share-card__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.share-card__body {
+  padding: 1rem;
+}
+
+.share-card__description {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.share-card__stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.share-card__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.share-card__stat-label {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.share-card__stat-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.share-card__achieved-badge {
+  display: inline-block;
+  padding: 0.3rem 1rem;
+  background: #22c55e;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+}
+
+.share-card__footer {
+  padding: 0.5rem 1rem;
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  text-align: right;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ===== Share Modal Actions ===== */
+.share-modal__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.share-modal__btn {
+  display: block;
+  width: 100%;
+  padding: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.1s;
+}
+
+.share-modal__btn:hover {
+  transform: translateY(-1px);
+}
+
+.share-modal__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.share-modal__btn--download {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.share-modal__btn--download:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.share-modal__btn--x {
+  background: #0f1419;
+  color: #fff;
+}
+
+.share-modal__btn--x:hover {
+  background: #272c30;
+}
+
+.share-modal__btn--line {
+  background: #06c755;
+  color: #fff;
+}
+
+.share-modal__btn--line:hover {
+  background: #05a847;
+}
+
+.share-modal__btn--close {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.share-modal__btn--close:hover {
+  background: var(--color-border);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .achievement-page {
+    padding: 1rem;
+  }
+
+  .achievement-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .achievement-card {
+    padding: 0.75rem 0.4rem 0.6rem;
+  }
+
+  .achievement-card__badge {
+    width: 48px;
+    height: 48px;
+  }
+
+  .achievement-card__icon {
+    font-size: 1rem;
+  }
+
+  .share-overlay {
+    padding: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .achievement-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }

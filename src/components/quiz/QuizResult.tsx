@@ -1,4 +1,7 @@
+import { useEffect, useRef } from 'react';
 import type { QuizResult as QuizResultType } from '@/types';
+import { useAchievementStore } from '@/stores/achievementStore';
+import { getAchievementId } from '@/data/achievements';
 
 interface Props {
   result: QuizResultType;
@@ -7,13 +10,29 @@ interface Props {
 }
 
 export default function QuizResult({ result, onRetry, onBackToSelector }: Props) {
+  const updateAchievement = useAchievementStore((s) => s.updateAchievement);
+  const hasUpdatedRef = useRef(false);
+
   const accuracyPercent = Math.round(result.accuracy * 100);
+
+  // Update achievement when result is shown
+  useEffect(() => {
+    if (hasUpdatedRef.current) return;
+    hasUpdatedRef.current = true;
+
+    const achievementId = getAchievementId(result.scopeType, result.scopeId);
+    updateAchievement(achievementId, result.accuracy);
+  }, [result, updateAchievement]);
 
   const getAccuracyClass = () => {
     if (accuracyPercent >= 80) return 'quiz-result__score--great';
     if (accuracyPercent >= 50) return 'quiz-result__score--good';
     return 'quiz-result__score--needs-work';
   };
+
+  const achievementId = getAchievementId(result.scopeType, result.scopeId);
+  const userAchievement = useAchievementStore((s) => s.achievements[achievementId]);
+  const justAchieved = result.accuracy === 1 && userAchievement?.attempts === 1;
 
   return (
     <div className="quiz-result">
@@ -25,6 +44,15 @@ export default function QuizResult({ result, onRetry, onBackToSelector }: Props)
           {result.correctAnswers} / {result.totalQuestions} 正解
         </span>
       </div>
+
+      {/* Achievement notification */}
+      {result.accuracy === 1 && (
+        <div className="quiz-result__achievement-notice">
+          {justAchieved
+            ? 'アチーブメント達成！おめでとうございます！'
+            : 'アチーブメント達成済み &#10003;'}
+        </div>
+      )}
 
       {/* Answer list */}
       <div className="quiz-result__answers">
