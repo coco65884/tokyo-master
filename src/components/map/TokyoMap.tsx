@@ -58,6 +58,11 @@ export default function TokyoMap() {
       maxBounds={TOKYO_MAX_BOUNDS}
       maxBoundsViscosity={0.8}
       doubleClickZoom={false}
+      scrollWheelZoom={true}
+      wheelDebounceTime={80}
+      wheelPxPerZoomLevel={200}
+      zoomSnap={0.5}
+      zoomDelta={0.5}
       className="tokyo-map"
       style={{ width: '100%', height: '100%' }}
     >
