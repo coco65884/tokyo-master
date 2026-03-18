@@ -242,31 +242,49 @@ function RailLineWithStations({
     } as FeatureCollection;
   }, [railGeoData, activeLineIds]);
 
+  // 駅を名前+近傍で重複排除、所属路線を集約
   const activeStations = useMemo(() => {
-    const stations: {
-      id: string;
-      name: string;
-      lat: number;
-      lng: number;
-      color: string;
-      inFocus: boolean;
-    }[] = [];
-    const seen = new Set<string>();
+    const byNameGrid = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        lat: number;
+        lng: number;
+        color: string;
+        inFocus: boolean;
+        lineNames: string[];
+      }
+    >();
+
     for (const entry of lineIndex) {
       if (!activeKeys.has(entry.key)) continue;
       for (const s of entry.stations) {
-        if (seen.has(s.id) || s.name.startsWith('駅-')) continue;
-        seen.add(s.id);
-        const inFocus =
-          !focusBBox ||
-          (s.lat >= focusBBox.minLat &&
-            s.lat <= focusBBox.maxLat &&
-            s.lng >= focusBBox.minLng &&
-            s.lng <= focusBBox.maxLng);
-        stations.push({ ...s, color: entry.color, inFocus });
+        if (s.name.startsWith('駅-')) continue;
+        // 名前+グリッド(~100m)で重複判定
+        const gridKey = `${s.name}_${Math.round(s.lat * 100)}_${Math.round(s.lng * 100)}`;
+        const existing = byNameGrid.get(gridKey);
+        if (existing) {
+          if (!existing.lineNames.includes(entry.name)) {
+            existing.lineNames.push(entry.name);
+          }
+        } else {
+          const inFocus =
+            !focusBBox ||
+            (s.lat >= focusBBox.minLat &&
+              s.lat <= focusBBox.maxLat &&
+              s.lng >= focusBBox.minLng &&
+              s.lng <= focusBBox.maxLng);
+          byNameGrid.set(gridKey, {
+            ...s,
+            color: entry.color,
+            inFocus,
+            lineNames: [entry.name],
+          });
+        }
       }
     }
-    return stations;
+    return [...byNameGrid.values()];
   }, [lineIndex, activeKeys, focusBBox]);
 
   if (activeKeys.size === 0) return null;
@@ -296,9 +314,9 @@ function RailLineWithStations({
       {focusBBox &&
         activeStations
           .filter((s) => !s.inFocus)
-          .map((s) => (
+          .map((s, i) => (
             <CircleMarker
-              key={s.id}
+              key={`dim-${i}-${s.name}`}
               center={[s.lat, s.lng]}
               radius={3}
               pathOptions={{ color: '#ccc', fillColor: '#f0f0f0', fillOpacity: 0.6, weight: 1 }}
@@ -311,9 +329,9 @@ function RailLineWithStations({
       {/* フォーカス内 or 非フォーカス時の駅 */}
       {activeStations
         .filter((s) => s.inFocus)
-        .map((s) => (
+        .map((s, i) => (
           <CircleMarker
-            key={s.id}
+            key={`st-${i}-${s.name}`}
             center={[s.lat, s.lng]}
             radius={5}
             pathOptions={{ color: s.color, fillColor: '#fff', fillOpacity: 1, weight: 2 }}
@@ -321,6 +339,14 @@ function RailLineWithStations({
             <Tooltip permanent direction="top" offset={[0, -6]} className="station-label">
               {s.name}
             </Tooltip>
+            <Popup>
+              <div style={{ fontSize: '0.85rem' }}>
+                <strong>{s.name}</strong>
+                <div style={{ marginTop: 4, color: '#64748b', fontSize: '0.78rem' }}>
+                  {s.lineNames.join(' / ')}
+                </div>
+              </div>
+            </Popup>
           </CircleMarker>
         ))}
     </>

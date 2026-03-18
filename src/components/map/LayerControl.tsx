@@ -5,6 +5,7 @@ import { loadLineIndex } from '@/utils/dataLoader';
 interface LineInfo {
   key: string;
   name: string;
+  abbr: string;
   color: string;
   stationCount: number;
 }
@@ -59,6 +60,7 @@ export default function LayerControl() {
         mapped[op] = entries.map((e) => ({
           key: e.key,
           name: e.name,
+          abbr: e.abbr,
           color: e.color,
           stationCount: e.stationCount,
         }));
@@ -148,9 +150,15 @@ export default function LayerControl() {
                         onChange={() => toggleRailLine(line.key)}
                       />
                       <span
-                        className="layer-control__color-dot"
-                        style={{ backgroundColor: line.color }}
-                      />
+                        className="layer-control__line-badge"
+                        style={{
+                          borderColor: line.color,
+                          color: line.color,
+                          backgroundColor: `${line.color}15`,
+                        }}
+                      >
+                        {line.abbr}
+                      </span>
                       <span className="layer-control__line-name">{line.name}</span>
                       <span className="layer-control__station-count">{line.stationCount}駅</span>
                     </label>
