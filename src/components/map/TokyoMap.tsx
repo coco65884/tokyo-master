@@ -11,11 +11,14 @@ const TOKYO_MAX_BOUNDS: LatLngBoundsExpression = [
 ];
 
 function MapClickHandler() {
+  const distanceMode = useMapStore((s) => s.distanceMode);
   const addDistancePoint = useMapStore((s) => s.addDistancePoint);
 
   useMapEvents({
     click(e) {
-      addDistancePoint([e.latlng.lat, e.latlng.lng]);
+      if (distanceMode) {
+        addDistancePoint([e.latlng.lat, e.latlng.lng]);
+      }
     },
   });
 
