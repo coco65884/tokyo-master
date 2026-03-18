@@ -113,19 +113,40 @@ function TokyoHighlight({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Ward boundaries (no hover tooltip, dblclick focus) =======
-function WardLayer({ data }: { data: FeatureCollection }) {
+// ======= Ward boundaries =======
+function WardLayer({
+  data,
+  focusedWardId,
+}: {
+  data: FeatureCollection;
+  focusedWardId: string | null;
+}) {
   const setSelectedWard = useMapStore((s) => s.setSelectedWard);
   const map = useMap();
 
+  const defaultStyle = (feature?: Feature): L.PathOptions => {
+    const isFocused = focusedWardId && feature?.properties?.id === focusedWardId;
+    return {
+      color: isFocused ? '#4a90d9' : '#94a3b8',
+      weight: isFocused ? 2.5 : 1.2,
+      fillColor: isFocused ? '#a8d8ea' : 'transparent',
+      fillOpacity: isFocused ? 0.35 : 0,
+    };
+  };
+
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const path = layer as L.Path;
-    path.on('mouseover', () => {
-      path.setStyle({ fillColor: '#a8d8ea', fillOpacity: 0.3, weight: 2, color: '#4a90d9' });
-    });
-    path.on('mouseout', () => {
-      path.setStyle({ fillColor: 'transparent', fillOpacity: 0, weight: 1.2, color: '#94a3b8' });
-    });
+    const isFocused = focusedWardId && feature.properties?.id === focusedWardId;
+
+    if (!isFocused) {
+      path.on('mouseover', () => {
+        path.setStyle({ fillColor: '#a8d8ea', fillOpacity: 0.2, weight: 2, color: '#4a90d9' });
+      });
+      path.on('mouseout', () => {
+        path.setStyle(defaultStyle(feature));
+      });
+    }
+
     path.on('dblclick', (e) => {
       L.DomEvent.stopPropagation(e as L.LeafletEvent);
       setSelectedWard(feature.properties?.id);
@@ -135,9 +156,9 @@ function WardLayer({ data }: { data: FeatureCollection }) {
 
   return (
     <GeoJSON
-      key="wards"
+      key={`wards-${focusedWardId || 'none'}`}
       data={data}
-      style={{ color: '#94a3b8', weight: 1.2, fillColor: 'transparent', fillOpacity: 0 }}
+      style={defaultStyle}
       onEachFeature={onEachFeature}
     />
   );
@@ -175,14 +196,23 @@ function PrefBorderLayer({ data }: { data: FeatureCollection }) {
 }
 
 // ======= Rail lines + stations =======
+interface WardBBox {
+  minLat: number;
+  maxLat: number;
+  minLng: number;
+  maxLng: number;
+}
+
 function RailLineWithStations({
   railGeoData,
   lineIndex,
   visibleLines,
+  focusBBox,
 }: {
   railGeoData: FeatureCollection;
   lineIndex: LineIndexEntry[];
   visibleLines: Record<string, boolean>;
+  focusBBox: WardBBox | null;
 }) {
   const activeKeys = useMemo(
     () =>
@@ -213,18 +243,31 @@ function RailLineWithStations({
   }, [railGeoData, activeLineIds]);
 
   const activeStations = useMemo(() => {
-    const stations: { id: string; name: string; lat: number; lng: number; color: string }[] = [];
+    const stations: {
+      id: string;
+      name: string;
+      lat: number;
+      lng: number;
+      color: string;
+      inFocus: boolean;
+    }[] = [];
     const seen = new Set<string>();
     for (const entry of lineIndex) {
       if (!activeKeys.has(entry.key)) continue;
       for (const s of entry.stations) {
         if (seen.has(s.id) || s.name.startsWith('駅-')) continue;
         seen.add(s.id);
-        stations.push({ ...s, color: entry.color });
+        const inFocus =
+          !focusBBox ||
+          (s.lat >= focusBBox.minLat &&
+            s.lat <= focusBBox.maxLat &&
+            s.lng >= focusBBox.minLng &&
+            s.lng <= focusBBox.maxLng);
+        stations.push({ ...s, color: entry.color, inFocus });
       }
     }
     return stations;
-  }, [lineIndex, activeKeys]);
+  }, [lineIndex, activeKeys, focusBBox]);
 
   if (activeKeys.size === 0) return null;
 
@@ -237,7 +280,7 @@ function RailLineWithStations({
           style={(feature) => ({
             color: feature?.properties?.color || '#888',
             weight: 3.5,
-            opacity: 0.9,
+            opacity: focusBBox ? 0.35 : 0.9,
             lineCap: 'round',
             lineJoin: 'round',
           })}
@@ -249,18 +292,37 @@ function RailLineWithStations({
           }}
         />
       )}
-      {activeStations.map((s) => (
-        <CircleMarker
-          key={s.id}
-          center={[s.lat, s.lng]}
-          radius={5}
-          pathOptions={{ color: s.color, fillColor: '#fff', fillOpacity: 1, weight: 2 }}
-        >
-          <Tooltip permanent direction="top" offset={[0, -6]} className="station-label">
-            {s.name}
-          </Tooltip>
-        </CircleMarker>
-      ))}
+      {/* フォーカス外の駅（薄い） */}
+      {focusBBox &&
+        activeStations
+          .filter((s) => !s.inFocus)
+          .map((s) => (
+            <CircleMarker
+              key={s.id}
+              center={[s.lat, s.lng]}
+              radius={3}
+              pathOptions={{ color: '#ccc', fillColor: '#f0f0f0', fillOpacity: 0.6, weight: 1 }}
+            >
+              <Tooltip permanent direction="top" offset={[0, -4]} className="station-label-dim">
+                {s.name}
+              </Tooltip>
+            </CircleMarker>
+          ))}
+      {/* フォーカス内 or 非フォーカス時の駅 */}
+      {activeStations
+        .filter((s) => s.inFocus)
+        .map((s) => (
+          <CircleMarker
+            key={s.id}
+            center={[s.lat, s.lng]}
+            radius={5}
+            pathOptions={{ color: s.color, fillColor: '#fff', fillOpacity: 1, weight: 2 }}
+          >
+            <Tooltip permanent direction="top" offset={[0, -6]} className="station-label">
+              {s.name}
+            </Tooltip>
+          </CircleMarker>
+        ))}
     </>
   );
 }
@@ -389,6 +451,28 @@ function DistanceOverlay() {
   );
 }
 
+// ======= Helpers =======
+function computeWardBBox(wardsGeo: FeatureCollection, wardId: string): WardBBox | null {
+  const feat = wardsGeo.features.find((f) => f.properties?.id === wardId);
+  if (!feat) return null;
+  const coords: number[][] = [];
+  const flatten = (c: unknown): void => {
+    if (Array.isArray(c) && typeof c[0] === 'number') {
+      coords.push(c as number[]);
+    } else if (Array.isArray(c)) {
+      for (const sub of c) flatten(sub);
+    }
+  };
+  flatten((feat.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon).coordinates);
+  if (coords.length === 0) return null;
+  return {
+    minLat: Math.min(...coords.map((c) => c[1])),
+    maxLat: Math.max(...coords.map((c) => c[1])),
+    minLng: Math.min(...coords.map((c) => c[0])),
+    maxLng: Math.max(...coords.map((c) => c[0])),
+  };
+}
+
 // ======= Main =======
 export default function MapLayers() {
   const layers = useMapStore((s) => s.layers);
@@ -400,7 +484,6 @@ export default function MapLayers() {
   const wardFocusActive = wardFocusMode && !!selectedWardId;
   const geoData = useGeoData(layers, wardFocusActive);
 
-  // 区フォーカスモード: 選択中の区に関連するオブジェクトを計算
   const focusData = useMemo(() => {
     if (!wardFocusActive || !selectedWardId) return null;
     const wo = objects[selectedWardId];
@@ -412,7 +495,11 @@ export default function MapLayers() {
     };
   }, [wardFocusActive, selectedWardId, objects]);
 
-  // フォーカス時の路線visibility（手動選択をオーバーライド）
+  const focusBBox = useMemo(() => {
+    if (!wardFocusActive || !selectedWardId || !geoData.wards) return null;
+    return computeWardBBox(geoData.wards, selectedWardId);
+  }, [wardFocusActive, selectedWardId, geoData.wards]);
+
   const effectiveRailLines = useMemo(() => {
     if (focusData) {
       const merged: Record<string, boolean> = {};
@@ -424,12 +511,15 @@ export default function MapLayers() {
 
   const showRivers = focusData ? true : layers.rivers;
   const showRoads = focusData ? true : layers.roads;
+  const focusedWardId = wardFocusActive ? selectedWardId : null;
 
   return (
     <>
       {geoData.wards && <TokyoHighlight data={geoData.wards} />}
       {layers.prefBorders && geoData.prefBorders && <PrefBorderLayer data={geoData.prefBorders} />}
-      {layers.wards && geoData.wards && <WardLayer data={geoData.wards} />}
+      {layers.wards && geoData.wards && (
+        <WardLayer data={geoData.wards} focusedWardId={focusedWardId} />
+      )}
       {layers.wards && centers.length > 0 && <WardNameLabels centers={centers} />}
 
       {geoData.railLines && lineIndex.length > 0 && (
@@ -437,6 +527,7 @@ export default function MapLayers() {
           railGeoData={geoData.railLines}
           lineIndex={lineIndex}
           visibleLines={effectiveRailLines}
+          focusBBox={focusBBox}
         />
       )}
 
