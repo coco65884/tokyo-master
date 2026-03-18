@@ -33,6 +33,26 @@ function WardFocusToggle() {
   );
 }
 
+function HeatmapToggle() {
+  const showHeatmap = useMapStore((s) => s.showHeatmap);
+  const setShowHeatmap = useMapStore((s) => s.setShowHeatmap);
+
+  return (
+    <div className="heatmap-toggle">
+      <div className="heatmap-toggle__header">
+        <span className="heatmap-toggle__label">正答率ヒートマップ</span>
+        <button
+          className={`ward-focus-toggle__btn ${showHeatmap ? 'ward-focus-toggle__btn--active' : ''}`}
+          onClick={() => setShowHeatmap(!showHeatmap)}
+        >
+          {showHeatmap ? 'ON' : 'OFF'}
+        </button>
+      </div>
+      {showHeatmap && <p className="ward-focus-toggle__hint">区クイズの正答率を色で表示中</p>}
+    </div>
+  );
+}
+
 export default function MapViewerPage() {
   const setSelectedWard = useMapStore((s) => s.setSelectedWard);
 
@@ -45,6 +65,7 @@ export default function MapViewerPage() {
         <h2 className="map-sidebar__title">地理確認</h2>
         <WardSelector onSelectWard={setSelectedWard} />
         <WardFocusToggle />
+        <HeatmapToggle />
         <LayerControl />
         <DistanceDisplay />
       </aside>

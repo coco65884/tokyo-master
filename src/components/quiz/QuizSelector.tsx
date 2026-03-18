@@ -3,8 +3,12 @@ import type { QuizScopeType } from '@/types';
 import { getOperatorLines, getWardList } from '@/utils/quizDataLoader';
 import { useQuizStore } from '@/stores/quizStore';
 
+type TabType = QuizScopeType | 'speedrun' | 'blankmap';
+
 interface Props {
   onStart: () => void;
+  onStartSpeedRun?: (lineKey: string) => void;
+  onStartBlankMap?: () => void;
 }
 
 interface OperatorData {
@@ -12,17 +16,21 @@ interface OperatorData {
   byOperator: Record<string, { key: string; name: string; stationCount: number; color: string }[]>;
 }
 
-export default function QuizSelector({ onStart }: Props) {
+export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap }: Props) {
   const setConfig = useQuizStore((s) => s.setConfig);
   const getBestAccuracy = useQuizStore((s) => s.getBestAccuracy);
+  const getBestSpeedRun = useQuizStore((s) => s.getBestSpeedRun);
 
-  const [tab, setTab] = useState<QuizScopeType>('line');
+  const [tab, setTab] = useState<TabType>('line');
   const [operatorData, setOperatorData] = useState<OperatorData | null>(null);
   const [selectedOperator, setSelectedOperator] = useState<string>('');
   const [selectedLine, setSelectedLine] = useState<string>('');
   const [selectedWard, setSelectedWard] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('rivers');
   const [showHints, setShowHints] = useState<boolean>(true);
+  // Speed run state
+  const [speedRunOperator, setSpeedRunOperator] = useState<string>('');
+  const [speedRunLine, setSpeedRunLine] = useState<string>('');
 
   const wardList = getWardList();
 
@@ -31,6 +39,7 @@ export default function QuizSelector({ onStart }: Props) {
       setOperatorData(data);
       if (data.operators.length > 0) {
         setSelectedOperator(data.operators[0]);
+        setSpeedRunOperator(data.operators[0]);
       }
     });
   }, []);
@@ -38,6 +47,11 @@ export default function QuizSelector({ onStart }: Props) {
   const handleOperatorChange = useCallback((op: string) => {
     setSelectedOperator(op);
     setSelectedLine('');
+  }, []);
+
+  const handleSpeedRunOperatorChange = useCallback((op: string) => {
+    setSpeedRunOperator(op);
+    setSpeedRunLine('');
   }, []);
 
   const currentScopeId =
@@ -48,18 +62,26 @@ export default function QuizSelector({ onStart }: Props) {
     (tab === 'ward' && selectedWard !== '') ||
     (tab === 'theme' && selectedTheme !== '');
 
-  const bestAccuracy = canStart && currentScopeId ? getBestAccuracy(tab, currentScopeId) : 0;
+  const bestAccuracy =
+    canStart && currentScopeId ? getBestAccuracy(tab as QuizScopeType, currentScopeId) : 0;
 
   const handleStart = () => {
     if (!canStart) return;
     setConfig({
-      scopeType: tab,
+      scopeType: tab as QuizScopeType,
       scopeId: currentScopeId,
       answerMode: 'text',
       showHints,
     });
     onStart();
   };
+
+  const handleSpeedRunStart = () => {
+    if (!speedRunLine || !onStartSpeedRun) return;
+    onStartSpeedRun(speedRunLine);
+  };
+
+  const speedRunBest = speedRunLine ? getBestSpeedRun(speedRunLine) : null;
 
   return (
     <div className="quiz-selector">
@@ -82,6 +104,18 @@ export default function QuizSelector({ onStart }: Props) {
           onClick={() => setTab('theme')}
         >
           テーマクイズ
+        </button>
+        <button
+          className={`quiz-selector__tab ${tab === 'speedrun' ? 'quiz-selector__tab--active' : ''}`}
+          onClick={() => setTab('speedrun')}
+        >
+          スピードラン
+        </button>
+        <button
+          className={`quiz-selector__tab ${tab === 'blankmap' ? 'quiz-selector__tab--active' : ''}`}
+          onClick={() => setTab('blankmap')}
+        >
+          白地図
         </button>
       </div>
 
@@ -174,29 +208,102 @@ export default function QuizSelector({ onStart }: Props) {
             </select>
           </div>
         )}
+
+        {tab === 'speedrun' && operatorData && (
+          <div className="quiz-selector__speedrun-picker">
+            <p className="quiz-selector__mode-desc">
+              路線の全駅を始発から終点まで、できるだけ速く答えるモードです。
+            </p>
+            <label className="quiz-selector__label">事業者</label>
+            <select
+              className="quiz-selector__select"
+              value={speedRunOperator}
+              onChange={(e) => handleSpeedRunOperatorChange(e.target.value)}
+            >
+              {operatorData.operators.map((op) => (
+                <option key={op} value={op}>
+                  {op}
+                </option>
+              ))}
+            </select>
+
+            {speedRunOperator && operatorData.byOperator[speedRunOperator] && (
+              <>
+                <label className="quiz-selector__label">路線</label>
+                <select
+                  className="quiz-selector__select"
+                  value={speedRunLine}
+                  onChange={(e) => setSpeedRunLine(e.target.value)}
+                >
+                  <option value="">選択してください</option>
+                  {operatorData.byOperator[speedRunOperator].map((line) => (
+                    <option key={line.key} value={line.key}>
+                      {line.name} ({line.stationCount}駅)
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
+
+            {speedRunBest && (
+              <div className="quiz-selector__best">
+                ベストタイム（全問正解）: {Math.floor(speedRunBest.elapsedMs / 60000)}:
+                {String(Math.floor((speedRunBest.elapsedMs % 60000) / 1000)).padStart(2, '0')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'blankmap' && (
+          <div className="quiz-selector__blankmap-info">
+            <p className="quiz-selector__mode-desc">
+              東京都の白地図上で、各区/市の名前を当てるモードです。地図上の区域をクリックして名前を入力してください。
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Settings */}
-      <div className="quiz-selector__settings">
-        <label className="quiz-selector__hint-toggle">
-          <input
-            type="checkbox"
-            checked={showHints}
-            onChange={(e) => setShowHints(e.target.checked)}
-          />
-          ヒントを表示
-        </label>
-      </div>
+      {/* Settings (only for standard quiz modes) */}
+      {(tab === 'line' || tab === 'ward' || tab === 'theme') && (
+        <div className="quiz-selector__settings">
+          <label className="quiz-selector__hint-toggle">
+            <input
+              type="checkbox"
+              checked={showHints}
+              onChange={(e) => setShowHints(e.target.checked)}
+            />
+            ヒントを表示
+          </label>
+        </div>
+      )}
 
-      {/* Best score */}
-      {bestAccuracy > 0 && (
+      {/* Best score (standard modes) */}
+      {(tab === 'line' || tab === 'ward' || tab === 'theme') && bestAccuracy > 0 && (
         <div className="quiz-selector__best">ベスト: {Math.round(bestAccuracy * 100)}%</div>
       )}
 
       {/* Start button */}
-      <button className="quiz-selector__start-btn" disabled={!canStart} onClick={handleStart}>
-        クイズ開始
-      </button>
+      {(tab === 'line' || tab === 'ward' || tab === 'theme') && (
+        <button className="quiz-selector__start-btn" disabled={!canStart} onClick={handleStart}>
+          クイズ開始
+        </button>
+      )}
+
+      {tab === 'speedrun' && (
+        <button
+          className="quiz-selector__start-btn"
+          disabled={!speedRunLine}
+          onClick={handleSpeedRunStart}
+        >
+          スピードラン開始
+        </button>
+      )}
+
+      {tab === 'blankmap' && (
+        <button className="quiz-selector__start-btn" onClick={() => onStartBlankMap?.()}>
+          白地図クイズ開始
+        </button>
+      )}
     </div>
   );
 }
