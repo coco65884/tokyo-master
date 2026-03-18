@@ -292,40 +292,67 @@ function useRailData({
   return { filteredGeo, activeStations };
 }
 
-// 路線の線のみ描画（灰色+白）
+// 路線の線のみ描画（灰色+白, 2層方式）
 function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: WardBBox | null }) {
+  const clipped = useMemo(
+    () => (focusBBox ? clipGeoJSONToBBox(geo, focusBBox) : null),
+    [geo, focusBBox],
+  );
+
+  const railBase = { color: '#6b7280', lineCap: 'butt' as const, lineJoin: 'miter' as const };
+  const railDash = {
+    color: '#ffffff',
+    dashArray: '6, 6',
+    lineCap: 'butt' as const,
+    lineJoin: 'miter' as const,
+  };
+
   return (
     <>
+      {/* 背景: 全路線薄く */}
       <GeoJSON
-        key={`rail-base-${geo.features.length}`}
+        key={`rail-base-bg-${geo.features.length}`}
         data={geo}
-        style={() => ({
-          color: '#6b7280',
-          weight: 5,
-          opacity: focusBBox ? 0.15 : 0.7,
-          lineCap: 'butt',
-          lineJoin: 'miter',
-        })}
+        style={() => ({ ...railBase, weight: 5, opacity: focusBBox ? 0.1 : 0.7 })}
         interactive={false}
       />
       <GeoJSON
-        key={`rail-dash-${geo.features.length}`}
+        key={`rail-dash-bg-${geo.features.length}`}
         data={geo}
-        style={() => ({
-          color: '#ffffff',
-          weight: 3,
-          opacity: focusBBox ? 0.12 : 0.7,
-          dashArray: '6, 6',
-          lineCap: 'butt',
-          lineJoin: 'miter',
-        })}
-        onEachFeature={(feature, layer) => {
-          (layer as L.Path).bindTooltip(feature.properties?.name || '', {
-            sticky: true,
-            className: 'rail-tooltip',
-          });
-        }}
+        style={() => ({ ...railDash, weight: 3, opacity: focusBBox ? 0.08 : 0.7 })}
+        onEachFeature={
+          focusBBox
+            ? undefined
+            : (feature, layer) => {
+                (layer as L.Path).bindTooltip(feature.properties?.name || '', {
+                  sticky: true,
+                  className: 'rail-tooltip',
+                });
+              }
+        }
       />
+      {/* フォーカス層: bbox内だけ濃く */}
+      {clipped && clipped.features.length > 0 && (
+        <>
+          <GeoJSON
+            key="rail-base-focus"
+            data={clipped}
+            style={() => ({ ...railBase, weight: 5, opacity: 0.7 })}
+            interactive={false}
+          />
+          <GeoJSON
+            key="rail-dash-focus"
+            data={clipped}
+            style={() => ({ ...railDash, weight: 3, opacity: 0.7 })}
+            onEachFeature={(feature, layer) => {
+              (layer as L.Path).bindTooltip(feature.properties?.name || '', {
+                sticky: true,
+                className: 'rail-tooltip',
+              });
+            }}
+          />
+        </>
+      )}
     </>
   );
 }
@@ -414,98 +441,158 @@ function StationMarkers({
   );
 }
 
-// ======= helper: feature座標がbbox内にあるか =======
-function featureInBBox(feature: Feature, bbox: WardBBox): boolean {
-  const geom = feature.geometry;
-  let coords: number[][] = [];
-  if (geom.type === 'LineString') {
-    coords = (geom as GeoJSON.LineString).coordinates as number[][];
-  } else if (geom.type === 'MultiLineString') {
-    for (const seg of (geom as GeoJSON.MultiLineString).coordinates) {
-      coords = coords.concat(seg as number[][]);
+// ======= helper: LineStringをbboxで座標クリッピング =======
+function pointInBBox(c: number[], bbox: WardBBox): boolean {
+  return c[1] >= bbox.minLat && c[1] <= bbox.maxLat && c[0] >= bbox.minLng && c[0] <= bbox.maxLng;
+}
+
+/** LineString座標列をbbox内の連続セグメントに分割 */
+function clipLineCoords(coords: number[][], bbox: WardBBox): number[][][] {
+  const segments: number[][][] = [];
+  let current: number[][] = [];
+  for (const c of coords) {
+    if (pointInBBox(c, bbox)) {
+      current.push(c);
+    } else {
+      if (current.length >= 2) segments.push(current);
+      current = [];
     }
   }
-  // 座標の一部でもbbox内にあれば通過とみなす
-  return coords.some(
-    (c) => c[1] >= bbox.minLat && c[1] <= bbox.maxLat && c[0] >= bbox.minLng && c[0] <= bbox.maxLng,
-  );
+  if (current.length >= 2) segments.push(current);
+  return segments;
 }
 
-// ======= Rivers =======
+/** FeatureCollectionをbboxでクリッピング。bbox内の座標部分だけのMultiLineStringに変換 */
+function clipGeoJSONToBBox(data: FeatureCollection, bbox: WardBBox): FeatureCollection {
+  const clippedFeatures: Feature[] = [];
+  for (const feat of data.features) {
+    const geom = feat.geometry;
+    let allCoords: number[][][] = [];
+    if (geom.type === 'LineString') {
+      allCoords = [(geom as GeoJSON.LineString).coordinates as number[][]];
+    } else if (geom.type === 'MultiLineString') {
+      allCoords = (geom as GeoJSON.MultiLineString).coordinates as number[][][];
+    } else {
+      continue;
+    }
+
+    const clippedSegments: number[][][] = [];
+    for (const line of allCoords) {
+      clippedSegments.push(...clipLineCoords(line, bbox));
+    }
+
+    if (clippedSegments.length === 0) continue;
+
+    clippedFeatures.push({
+      ...feat,
+      geometry:
+        clippedSegments.length === 1
+          ? { type: 'LineString', coordinates: clippedSegments[0] }
+          : { type: 'MultiLineString', coordinates: clippedSegments },
+    });
+  }
+  return { type: 'FeatureCollection', features: clippedFeatures };
+}
+
+// ======= Rivers (2層: 全体薄く + bbox内を濃く) =======
 function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
+  const clipped = useMemo(
+    () => (focusBBox ? clipGeoJSONToBBox(data, focusBBox) : null),
+    [data, focusBBox],
+  );
+
+  const interactionHandler = (feature: Feature, layer: L.Layer) => {
+    const name = feature.properties?.name || '';
+    if (!name) return;
+    const path = layer as L.Path;
+    path.bindTooltip(name, { sticky: true, className: 'river-tooltip' });
+    path.bindPopup(`<strong style="color:#0ea5e9">${name}</strong>`, {
+      closeButton: false,
+      className: 'river-popup',
+    });
+    path.on('mouseover', () => {
+      path.setStyle({ weight: 5, opacity: 1 });
+      path.bringToFront();
+    });
+    path.on('mouseout', () => {
+      path.setStyle({ weight: 3, opacity: 0.8 });
+    });
+  };
+
   return (
-    <GeoJSON
-      key={`rivers-${focusBBox ? 'focus' : 'all'}`}
-      data={data}
-      style={(feature) => {
-        const inFocus = !focusBBox || (feature ? featureInBBox(feature, focusBBox) : false);
-        return {
+    <>
+      {/* 背景: 全データ薄く */}
+      <GeoJSON
+        key={`rivers-bg-${focusBBox ? 'f' : 'a'}`}
+        data={data}
+        style={{
           color: '#38bdf8',
-          weight: inFocus ? 3 : 1.5,
-          opacity: inFocus ? 0.8 : 0.12,
+          weight: focusBBox ? 1.5 : 3,
+          opacity: focusBBox ? 0.12 : 0.8,
           lineCap: 'round',
-        };
-      }}
-      onEachFeature={(feature, layer) => {
-        const name = feature.properties?.name || '';
-        if (!name) return;
-        const inFocus = !focusBBox || featureInBBox(feature, focusBBox);
-        const path = layer as L.Path;
-        path.bindTooltip(name, { sticky: true, className: 'river-tooltip' });
-        path.bindPopup(`<strong style="color:#0ea5e9">${name}</strong>`, {
-          closeButton: false,
-          className: 'river-popup',
-        });
-        if (inFocus) {
-          path.on('mouseover', () => {
-            path.setStyle({ weight: 5, opacity: 1 });
-            path.bringToFront();
-          });
-          path.on('mouseout', () => {
-            path.setStyle({ weight: 3, opacity: 0.8 });
-          });
-        }
-      }}
-    />
+        }}
+        onEachFeature={focusBBox ? undefined : interactionHandler}
+      />
+      {/* フォーカス層: bbox内だけ濃く */}
+      {clipped && clipped.features.length > 0 && (
+        <GeoJSON
+          key="rivers-focus"
+          data={clipped}
+          style={{ color: '#38bdf8', weight: 3, opacity: 0.8, lineCap: 'round' }}
+          onEachFeature={interactionHandler}
+        />
+      )}
+    </>
   );
 }
 
-// ======= Roads =======
+// ======= Roads (2層: 全体薄く + bbox内を濃く) =======
 function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
+  const clipped = useMemo(
+    () => (focusBBox ? clipGeoJSONToBBox(data, focusBBox) : null),
+    [data, focusBBox],
+  );
+
+  const interactionHandler = (feature: Feature, layer: L.Layer) => {
+    const name = feature.properties?.name || '';
+    if (!name) return;
+    const path = layer as L.Path;
+    path.bindTooltip(name, { sticky: true, className: 'road-tooltip' });
+    path.bindPopup(`<strong style="color:#ea580c">${name}</strong>`, {
+      closeButton: false,
+      className: 'road-popup',
+    });
+    path.on('mouseover', () => {
+      path.setStyle({ weight: 4, opacity: 1 });
+      path.bringToFront();
+    });
+    path.on('mouseout', () => {
+      path.setStyle({ weight: 2.5, opacity: 0.7 });
+    });
+  };
+
   return (
-    <GeoJSON
-      key={`roads-${focusBBox ? 'focus' : 'all'}`}
-      data={data}
-      style={(feature) => {
-        const inFocus = !focusBBox || (feature ? featureInBBox(feature, focusBBox) : false);
-        return {
+    <>
+      <GeoJSON
+        key={`roads-bg-${focusBBox ? 'f' : 'a'}`}
+        data={data}
+        style={{
           color: '#fb923c',
-          weight: inFocus ? 2.5 : 1.5,
-          opacity: inFocus ? 0.7 : 0.12,
+          weight: focusBBox ? 1.5 : 2.5,
+          opacity: focusBBox ? 0.12 : 0.7,
           lineCap: 'round',
-        };
-      }}
-      onEachFeature={(feature, layer) => {
-        const name = feature.properties?.name || '';
-        if (!name) return;
-        const inFocus = !focusBBox || featureInBBox(feature, focusBBox);
-        const path = layer as L.Path;
-        path.bindTooltip(name, { sticky: true, className: 'road-tooltip' });
-        path.bindPopup(`<strong style="color:#ea580c">${name}</strong>`, {
-          closeButton: false,
-          className: 'road-popup',
-        });
-        if (inFocus) {
-          path.on('mouseover', () => {
-            path.setStyle({ weight: 4, opacity: 1 });
-            path.bringToFront();
-          });
-          path.on('mouseout', () => {
-            path.setStyle({ weight: 2.5, opacity: 0.7 });
-          });
-        }
-      }}
-    />
+        }}
+        onEachFeature={focusBBox ? undefined : interactionHandler}
+      />
+      {clipped && clipped.features.length > 0 && (
+        <GeoJSON
+          key="roads-focus"
+          data={clipped}
+          style={{ color: '#fb923c', weight: 2.5, opacity: 0.7, lineCap: 'round' }}
+          onEachFeature={interactionHandler}
+        />
+      )}
+    </>
   );
 }
 
