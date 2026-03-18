@@ -218,11 +218,13 @@
 }
 
 .quiz-session__question-num {
-  font-size: 0.8rem;
-  color: var(--color-text-secondary);
-  min-width: 1.8rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  min-width: 2.8rem;
   text-align: right;
   flex-shrink: 0;
+  font-family: monospace;
 }
 
 .quiz-session__input {
@@ -1011,15 +1013,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
+  min-width: 20px;
   height: 20px;
+  padding: 0 3px;
   background: #fff;
   border: 2px solid #1a73e8;
   border-radius: 4px;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 800;
   color: #1a73e8;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
 }
 
 .quiz-station-number {
