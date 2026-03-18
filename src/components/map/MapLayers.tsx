@@ -203,7 +203,7 @@ interface WardBBox {
   maxLng: number;
 }
 
-function RailLineWithStations({
+function useRailData({
   railGeoData,
   lineIndex,
   visibleLines,
@@ -289,47 +289,67 @@ function RailLineWithStations({
 
   if (activeKeys.size === 0) return null;
 
+  return { filteredGeo, activeStations };
+}
+
+// 路線の線のみ描画（灰色+白）
+function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: WardBBox | null }) {
   return (
     <>
-      {/* 地図記号風: 下地の色付き線 */}
-      {filteredGeo && (
-        <GeoJSON
-          key={`rail-base-${[...activeKeys].sort().join(',')}`}
-          data={filteredGeo}
-          style={(feature) => ({
-            color: feature?.properties?.color || '#888',
-            weight: 5,
-            opacity: focusBBox ? 0.25 : 0.9,
-            lineCap: 'butt',
-            lineJoin: 'miter',
-          })}
-          interactive={false}
-        />
-      )}
-      {/* 地図記号風: 上の白い破線(交互ブロック) */}
-      {filteredGeo && (
-        <GeoJSON
-          key={`rail-dash-${[...activeKeys].sort().join(',')}`}
-          data={filteredGeo}
-          style={() => ({
-            color: '#ffffff',
-            weight: 3,
-            opacity: focusBBox ? 0.2 : 0.85,
-            dashArray: '6, 6',
-            lineCap: 'butt',
-            lineJoin: 'miter',
-          })}
-          onEachFeature={(feature, layer) => {
-            (layer as L.Path).bindTooltip(feature.properties?.name || '', {
-              sticky: true,
-              className: 'rail-tooltip',
-            });
-          }}
-        />
-      )}
-      {/* フォーカス外の駅（薄い） */}
+      <GeoJSON
+        key={`rail-base-${geo.features.length}`}
+        data={geo}
+        style={() => ({
+          color: '#6b7280',
+          weight: 5,
+          opacity: focusBBox ? 0.15 : 0.7,
+          lineCap: 'butt',
+          lineJoin: 'miter',
+        })}
+        interactive={false}
+      />
+      <GeoJSON
+        key={`rail-dash-${geo.features.length}`}
+        data={geo}
+        style={() => ({
+          color: '#ffffff',
+          weight: 3,
+          opacity: focusBBox ? 0.12 : 0.7,
+          dashArray: '6, 6',
+          lineCap: 'butt',
+          lineJoin: 'miter',
+        })}
+        onEachFeature={(feature, layer) => {
+          (layer as L.Path).bindTooltip(feature.properties?.name || '', {
+            sticky: true,
+            className: 'rail-tooltip',
+          });
+        }}
+      />
+    </>
+  );
+}
+
+// 駅のみ描画（最前面レイヤー用）
+function StationMarkers({
+  stations,
+  focusBBox,
+}: {
+  stations: {
+    id: string;
+    name: string;
+    lat: number;
+    lng: number;
+    color: string;
+    inFocus: boolean;
+    lines: { name: string; abbr: string; color: string }[];
+  }[];
+  focusBBox: WardBBox | null;
+}) {
+  return (
+    <>
       {focusBBox &&
-        activeStations
+        stations
           .filter((s) => !s.inFocus)
           .map((s, i) => (
             <CircleMarker
@@ -343,8 +363,7 @@ function RailLineWithStations({
               </Tooltip>
             </CircleMarker>
           ))}
-      {/* フォーカス内 or 非フォーカス時の駅 */}
-      {activeStations
+      {stations
         .filter((s) => s.inFocus)
         .map((s, i) => (
           <CircleMarker
@@ -395,28 +414,42 @@ function RailLineWithStations({
   );
 }
 
-// ======= Rivers =======
-function RiverLayer({ data, filterNames }: { data: FeatureCollection; filterNames?: Set<string> }) {
-  const isFocusMode = !!filterNames;
+// ======= helper: feature座標がbbox内にあるか =======
+function featureInBBox(feature: Feature, bbox: WardBBox): boolean {
+  const geom = feature.geometry;
+  let coords: number[][] = [];
+  if (geom.type === 'LineString') {
+    coords = (geom as GeoJSON.LineString).coordinates as number[][];
+  } else if (geom.type === 'MultiLineString') {
+    for (const seg of (geom as GeoJSON.MultiLineString).coordinates) {
+      coords = coords.concat(seg as number[][]);
+    }
+  }
+  // 座標の一部でもbbox内にあれば通過とみなす
+  return coords.some(
+    (c) => c[1] >= bbox.minLat && c[1] <= bbox.maxLat && c[0] >= bbox.minLng && c[0] <= bbox.maxLng,
+  );
+}
 
+// ======= Rivers =======
+function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
   return (
     <GeoJSON
-      key={`rivers-${filterNames ? [...filterNames].join(',') : 'all'}`}
+      key={`rivers-${focusBBox ? 'focus' : 'all'}`}
       data={data}
       style={(feature) => {
-        const name = feature?.properties?.name || '';
-        const inFocus = !isFocusMode || filterNames.has(name);
+        const inFocus = !focusBBox || (feature ? featureInBBox(feature, focusBBox) : false);
         return {
           color: '#38bdf8',
           weight: inFocus ? 3 : 1.5,
-          opacity: inFocus ? 0.8 : 0.15,
+          opacity: inFocus ? 0.8 : 0.12,
           lineCap: 'round',
         };
       }}
       onEachFeature={(feature, layer) => {
         const name = feature.properties?.name || '';
         if (!name) return;
-        const inFocus = !isFocusMode || filterNames!.has(name);
+        const inFocus = !focusBBox || featureInBBox(feature, focusBBox);
         const path = layer as L.Path;
         path.bindTooltip(name, { sticky: true, className: 'river-tooltip' });
         path.bindPopup(`<strong style="color:#0ea5e9">${name}</strong>`, {
@@ -438,27 +471,24 @@ function RiverLayer({ data, filterNames }: { data: FeatureCollection; filterName
 }
 
 // ======= Roads =======
-function RoadLayer({ data, filterNames }: { data: FeatureCollection; filterNames?: Set<string> }) {
-  const isFocusMode = !!filterNames;
-
+function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
   return (
     <GeoJSON
-      key={`roads-${filterNames ? [...filterNames].join(',') : 'all'}`}
+      key={`roads-${focusBBox ? 'focus' : 'all'}`}
       data={data}
       style={(feature) => {
-        const name = feature?.properties?.name || '';
-        const inFocus = !isFocusMode || filterNames.has(name);
+        const inFocus = !focusBBox || (feature ? featureInBBox(feature, focusBBox) : false);
         return {
           color: '#fb923c',
           weight: inFocus ? 2.5 : 1.5,
-          opacity: inFocus ? 0.7 : 0.15,
+          opacity: inFocus ? 0.7 : 0.12,
           lineCap: 'round',
         };
       }}
       onEachFeature={(feature, layer) => {
         const name = feature.properties?.name || '';
         if (!name) return;
-        const inFocus = !isFocusMode || filterNames!.has(name);
+        const inFocus = !focusBBox || featureInBBox(feature, focusBBox);
         const path = layer as L.Path;
         path.bindTooltip(name, { sticky: true, className: 'road-tooltip' });
         path.bindPopup(`<strong style="color:#ea580c">${name}</strong>`, {
@@ -589,6 +619,18 @@ export default function MapLayers() {
     return layers.railLines;
   }, [focusData, layers.railLines]);
 
+  const emptyGeo: FeatureCollection = useMemo(
+    () => ({ type: 'FeatureCollection', features: [] }),
+    [],
+  );
+  const railData = useRailData({
+    railGeoData: geoData.railLines || emptyGeo,
+    lineIndex,
+    visibleLines: effectiveRailLines,
+    focusBBox,
+  });
+  const hasRailData = geoData.railLines !== null && lineIndex.length > 0;
+
   const showRivers = focusData ? true : layers.rivers;
   const showRoads = focusData ? true : layers.roads;
   const focusedWardId = wardFocusActive ? selectedWardId : null;
@@ -602,24 +644,21 @@ export default function MapLayers() {
       )}
       {layers.wards && centers.length > 0 && <WardNameLabels centers={centers} />}
 
-      {geoData.railLines && lineIndex.length > 0 && (
-        <RailLineWithStations
-          railGeoData={geoData.railLines}
-          lineIndex={lineIndex}
-          visibleLines={effectiveRailLines}
-          focusBBox={focusBBox}
-        />
+      {/* 路線（線のみ） */}
+      {hasRailData && railData?.filteredGeo && (
+        <RailLineLayer geo={railData.filteredGeo} focusBBox={focusBBox} />
       )}
 
-      {showRivers && geoData.rivers && (
-        <RiverLayer data={geoData.rivers} filterNames={focusData?.riverNames} />
-      )}
-      {showRoads && geoData.roads && (
-        <RoadLayer data={geoData.roads} filterNames={focusData?.roadNames} />
-      )}
+      {showRivers && geoData.rivers && <RiverLayer data={geoData.rivers} focusBBox={focusBBox} />}
+      {showRoads && geoData.roads && <RoadLayer data={geoData.roads} focusBBox={focusBBox} />}
 
       {layers.landmarks && geoData.landmarks && <LandmarkLayer data={geoData.landmarks} />}
       <DistanceOverlay />
+
+      {/* 駅は最前面レイヤー */}
+      {hasRailData && (railData?.activeStations?.length ?? 0) > 0 && (
+        <StationMarkers stations={railData!.activeStations} focusBBox={focusBBox} />
+      )}
     </>
   );
 }
