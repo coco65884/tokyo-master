@@ -3,6 +3,7 @@ import HomePage from '@/pages/HomePage';
 import MapViewerPage from '@/pages/MapViewerPage';
 import QuizPage from '@/pages/QuizPage';
 import AchievementPage from '@/pages/AchievementPage';
+import SettingsPage from '@/pages/SettingsPage';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         <Route path="/map" element={<MapViewerPage />} />
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/achievement" element={<AchievementPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </BrowserRouter>
   );
