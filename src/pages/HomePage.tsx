@@ -31,6 +31,10 @@ export default function HomePage() {
           <p className="home-card__desc">達成数: {achievedCount}</p>
         </Link>
       </nav>
+
+      <Link to="/settings" className="home-settings-link">
+        設定
+      </Link>
     </div>
   );
 }
