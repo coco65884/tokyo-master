@@ -1,13 +1,13 @@
-import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import { useEffect } from 'react';
+import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { LatLngBoundsExpression } from 'leaflet';
 import { useMapStore } from '@/stores/mapStore';
 import MapLayers from './MapLayers';
 import 'leaflet/dist/leaflet.css';
 
-// 東京都を中心にしたビュー制限（少し余裕を持たせる）
 const TOKYO_MAX_BOUNDS: LatLngBoundsExpression = [
-  [35.15, 138.85], // 南西
-  [36.0, 140.05], // 北東
+  [35.15, 138.85],
+  [36.0, 140.05],
 ];
 
 function MapClickHandler() {
@@ -25,6 +25,26 @@ function MapClickHandler() {
   return null;
 }
 
+/** 距離モード中にカーソルをクロスヘアに変更 */
+function DistanceCursorManager() {
+  const distanceMode = useMapStore((s) => s.distanceMode);
+  const map = useMap();
+
+  useEffect(() => {
+    const container = map.getContainer();
+    if (distanceMode) {
+      container.classList.add('distance-mode-cursor');
+    } else {
+      container.classList.remove('distance-mode-cursor');
+    }
+    return () => {
+      container.classList.remove('distance-mode-cursor');
+    };
+  }, [distanceMode, map]);
+
+  return null;
+}
+
 export default function TokyoMap() {
   const center = useMapStore((s) => s.center);
   const zoom = useMapStore((s) => s.zoom);
@@ -37,6 +57,7 @@ export default function TokyoMap() {
       maxZoom={18}
       maxBounds={TOKYO_MAX_BOUNDS}
       maxBoundsViscosity={0.8}
+      doubleClickZoom={false}
       className="tokyo-map"
       style={{ width: '100%', height: '100%' }}
     >
@@ -46,6 +67,7 @@ export default function TokyoMap() {
       />
       <MapLayers />
       <MapClickHandler />
+      <DistanceCursorManager />
     </MapContainer>
   );
 }

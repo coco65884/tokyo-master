@@ -92,7 +92,7 @@ function TokyoHighlight({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Ward boundaries =======
+// ======= Ward boundaries (dblclick to focus) =======
 function WardLayer({ data }: { data: FeatureCollection }) {
   const setSelectedWard = useMapStore((s) => s.setSelectedWard);
   const map = useMap();
@@ -100,7 +100,9 @@ function WardLayer({ data }: { data: FeatureCollection }) {
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
     const name = feature.properties?.name || '';
     const path = layer as L.Path;
+
     path.bindTooltip(name, { sticky: true, className: 'ward-tooltip', direction: 'center' });
+
     path.on('mouseover', () => {
       path.setStyle({ fillColor: '#a8d8ea', fillOpacity: 0.4, weight: 2.5, color: '#4a90d9' });
       path.bringToFront();
@@ -108,7 +110,9 @@ function WardLayer({ data }: { data: FeatureCollection }) {
     path.on('mouseout', () => {
       path.setStyle({ fillColor: 'transparent', fillOpacity: 0, weight: 1.2, color: '#94a3b8' });
     });
-    path.on('click', () => {
+    // ダブルクリックでフォーカス
+    path.on('dblclick', (e) => {
+      L.DomEvent.stopPropagation(e as L.LeafletEvent);
       setSelectedWard(feature.properties?.id);
       map.fitBounds((layer as L.Polygon).getBounds(), { padding: [50, 50] });
     });
@@ -173,16 +177,16 @@ function RailLineWithStations({
     } as FeatureCollection;
   }, [railGeoData, activeLineIds]);
 
+  // 名前が不正な駅をフィルタ
   const activeStations = useMemo(() => {
     const stations: { id: string; name: string; lat: number; lng: number; color: string }[] = [];
     const seen = new Set<string>();
     for (const entry of lineIndex) {
       if (!activeKeys.has(entry.key)) continue;
       for (const s of entry.stations) {
-        if (!seen.has(s.id)) {
-          seen.add(s.id);
-          stations.push({ ...s, color: entry.color });
-        }
+        if (seen.has(s.id) || s.name.startsWith('駅-')) continue;
+        seen.add(s.id);
+        stations.push({ ...s, color: entry.color });
       }
     }
     return stations;
@@ -227,52 +231,39 @@ function RailLineWithStations({
   );
 }
 
-// ======= Rivers with name labels =======
+// ======= Rivers (hover/click for name, thicker line) =======
 function RiverLayer({ data }: { data: FeatureCollection }) {
-  const namePoints = useMemo(() => {
-    const byName: Record<string, { lat: number; lng: number }[]> = {};
-    for (const f of data.features) {
-      const name = f.properties?.name || '';
-      if (!name) continue;
-      const coords = (f.geometry as GeoJSON.LineString).coordinates;
-      if (coords.length > 0) {
-        const mid = coords[Math.floor(coords.length / 2)];
-        if (!byName[name]) byName[name] = [];
-        byName[name].push({ lat: mid[1], lng: mid[0] });
-      }
-    }
-    return Object.entries(byName).map(([name, pts]) => {
-      const mid = pts[Math.floor(pts.length / 2)];
-      return { name, ...mid };
-    });
-  }, [data]);
-
   return (
-    <>
-      <GeoJSON
-        key="rivers"
-        data={data}
-        style={{ color: '#38bdf8', weight: 2.5, opacity: 0.8, lineCap: 'round' }}
-        onEachFeature={(feature, layer) => {
-          (layer as L.Path).bindTooltip(feature.properties?.name || '', {
-            sticky: true,
-            className: 'river-tooltip',
-          });
-        }}
-      />
-      {namePoints.map((p) => (
-        <Marker
-          key={`river-label-${p.name}`}
-          position={[p.lat, p.lng]}
-          icon={L.divIcon({
-            className: 'river-name-label',
-            html: `<span>${p.name}</span>`,
-            iconSize: [0, 0],
-          })}
-          interactive={false}
-        />
-      ))}
-    </>
+    <GeoJSON
+      key="rivers"
+      data={data}
+      style={{
+        color: '#38bdf8',
+        weight: 3,
+        opacity: 0.8,
+        lineCap: 'round',
+      }}
+      onEachFeature={(feature, layer) => {
+        const name = feature.properties?.name || '';
+        if (!name) return;
+        const path = layer as L.Path;
+        // ホバーで名前ツールチップ
+        path.bindTooltip(name, { sticky: true, className: 'river-tooltip' });
+        // クリックでPopup
+        path.bindPopup(`<strong style="color:#0ea5e9">${name}</strong>`, {
+          closeButton: false,
+          className: 'river-popup',
+        });
+        // ホバー時に太くして目立たせる
+        path.on('mouseover', () => {
+          path.setStyle({ weight: 5, opacity: 1 });
+          path.bringToFront();
+        });
+        path.on('mouseout', () => {
+          path.setStyle({ weight: 3, opacity: 0.8 });
+        });
+      }}
+    />
   );
 }
 
@@ -282,11 +273,22 @@ function RoadLayer({ data }: { data: FeatureCollection }) {
     <GeoJSON
       key="roads"
       data={data}
-      style={{ color: '#fb923c', weight: 2, opacity: 0.7, lineCap: 'round' }}
+      style={{ color: '#fb923c', weight: 2.5, opacity: 0.7, lineCap: 'round' }}
       onEachFeature={(feature, layer) => {
-        (layer as L.Path).bindTooltip(feature.properties?.name || '', {
-          sticky: true,
-          className: 'road-tooltip',
+        const name = feature.properties?.name || '';
+        if (!name) return;
+        const path = layer as L.Path;
+        path.bindTooltip(name, { sticky: true, className: 'road-tooltip' });
+        path.bindPopup(`<strong style="color:#ea580c">${name}</strong>`, {
+          closeButton: false,
+          className: 'road-popup',
+        });
+        path.on('mouseover', () => {
+          path.setStyle({ weight: 4, opacity: 1 });
+          path.bringToFront();
+        });
+        path.on('mouseout', () => {
+          path.setStyle({ weight: 2.5, opacity: 0.7 });
         });
       }}
     />
@@ -322,15 +324,32 @@ function LandmarkLayer({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Distance line =======
-function DistancePolyline() {
+// ======= Distance line + dots =======
+function DistanceOverlay() {
   const points = useMapStore((s) => s.distancePoints);
-  if (points.length < 2) return null;
+
   return (
-    <Polyline
-      positions={points as [number, number][]}
-      pathOptions={{ color: '#e91e63', weight: 2.5, dashArray: '8, 6', opacity: 0.9 }}
-    />
+    <>
+      {points.map((p, i) => (
+        <CircleMarker
+          key={`dist-pt-${i}`}
+          center={p as [number, number]}
+          radius={6}
+          pathOptions={{
+            color: '#e91e63',
+            fillColor: i === 0 ? '#e91e63' : '#fff',
+            fillOpacity: 1,
+            weight: 2,
+          }}
+        />
+      ))}
+      {points.length === 2 && (
+        <Polyline
+          positions={points as [number, number][]}
+          pathOptions={{ color: '#e91e63', weight: 2.5, dashArray: '8, 6', opacity: 0.9 }}
+        />
+      )}
+    </>
   );
 }
 
@@ -355,7 +374,7 @@ export default function MapLayers() {
       {layers.rivers && geoData.rivers && <RiverLayer data={geoData.rivers} />}
       {layers.roads && geoData.roads && <RoadLayer data={geoData.roads} />}
       {layers.landmarks && geoData.landmarks && <LandmarkLayer data={geoData.landmarks} />}
-      <DistancePolyline />
+      <DistanceOverlay />
     </>
   );
 }

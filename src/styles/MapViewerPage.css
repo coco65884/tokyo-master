@@ -303,22 +303,25 @@
   display: none;
 }
 
-.river-name-label {
-  background: none !important;
-  border: none !important;
+.river-popup .leaflet-popup-content-wrapper,
+.road-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-.river-name-label span {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #0ea5e9;
-  text-shadow:
-    1px 1px 0 #fff,
-    -1px -1px 0 #fff,
-    1px -1px 0 #fff,
-    -1px 1px 0 #fff;
-  white-space: nowrap;
-  pointer-events: none;
+.river-popup .leaflet-popup-content,
+.road-popup .leaflet-popup-content {
+  margin: 8px 12px;
+  font-size: 0.85rem;
+}
+
+/* Distance mode cursor */
+.distance-mode-cursor {
+  cursor: crosshair !important;
+}
+
+.distance-mode-cursor * {
+  cursor: crosshair !important;
 }
 
 .landmark-icon {
