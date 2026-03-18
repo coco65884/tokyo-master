@@ -8340,158 +8340,158 @@
         {
           "id": "station-seibu-ikebukuro-0",
           "name": "池袋",
-          "lat": 35.7295,
-          "lng": 139.7109
+          "lat": 35.7280917,
+          "lng": 139.7110372
         },
         {
           "id": "station-seibu-ikebukuro-1",
           "name": "椎名町",
-          "lat": 35.7244,
-          "lng": 139.6978
+          "lat": 35.7264476,
+          "lng": 139.6948922
         },
         {
           "id": "station-seibu-ikebukuro-2",
           "name": "東長崎",
-          "lat": 35.7249,
-          "lng": 139.687
+          "lat": 35.7302608,
+          "lng": 139.6828643
         },
         {
           "id": "station-seibu-ikebukuro-3",
           "name": "江古田",
-          "lat": 35.7344,
-          "lng": 139.6735
+          "lat": 35.7375689,
+          "lng": 139.6727894
         },
         {
           "id": "station-seibu-ikebukuro-4",
           "name": "桜台",
-          "lat": 35.738,
-          "lng": 139.6617
+          "lat": 35.7387537,
+          "lng": 139.6623844
         },
         {
           "id": "station-seibu-ikebukuro-5",
           "name": "練馬",
-          "lat": 35.7374,
-          "lng": 139.6536
+          "lat": 35.737877,
+          "lng": 139.6540818
         },
         {
           "id": "station-seibu-ikebukuro-6",
           "name": "中村橋",
-          "lat": 35.738,
-          "lng": 139.6399
+          "lat": 35.7368176,
+          "lng": 139.6378105
         },
         {
           "id": "station-seibu-ikebukuro-7",
           "name": "富士見台",
-          "lat": 35.7368,
-          "lng": 139.6302
+          "lat": 35.7359523,
+          "lng": 139.6300042
         },
         {
           "id": "station-seibu-ikebukuro-8",
           "name": "練馬高野台",
-          "lat": 35.7352,
-          "lng": 139.6195
+          "lat": 35.7409213,
+          "lng": 139.6163048
         },
         {
           "id": "station-seibu-ikebukuro-9",
           "name": "石神井公園",
-          "lat": 35.7434,
-          "lng": 139.6066
+          "lat": 35.7438271,
+          "lng": 139.6061566
         },
         {
           "id": "station-seibu-ikebukuro-10",
           "name": "大泉学園",
-          "lat": 35.752,
-          "lng": 139.5876
+          "lat": 35.7495045,
+          "lng": 139.5865223
         },
         {
           "id": "station-seibu-ikebukuro-11",
           "name": "保谷",
-          "lat": 35.7581,
-          "lng": 139.57
+          "lat": 35.7483016,
+          "lng": 139.5673646
         },
         {
           "id": "station-seibu-ikebukuro-12",
           "name": "ひばりヶ丘",
-          "lat": 35.7527,
-          "lng": 139.5441
+          "lat": 35.7515231,
+          "lng": 139.5455333
         },
         {
           "id": "station-seibu-ikebukuro-13",
           "name": "東久留米",
-          "lat": 35.7557,
-          "lng": 139.5303
+          "lat": 35.7602506,
+          "lng": 139.5340853
         },
         {
           "id": "station-seibu-ikebukuro-14",
           "name": "清瀬",
-          "lat": 35.7711,
-          "lng": 139.5185
+          "lat": 35.772084,
+          "lng": 139.5198187
         },
         {
           "id": "station-seibu-ikebukuro-15",
           "name": "秋津",
-          "lat": 35.7676,
-          "lng": 139.4995
+          "lat": 35.7785324,
+          "lng": 139.496609
         },
         {
           "id": "station-seibu-ikebukuro-16",
           "name": "所沢",
-          "lat": 35.7868,
-          "lng": 139.469
+          "lat": 35.7867907,
+          "lng": 139.4733096
         },
         {
           "id": "station-seibu-ikebukuro-17",
           "name": "西所沢",
-          "lat": 35.783,
-          "lng": 139.4517
+          "lat": 35.7889568,
+          "lng": 139.4560657
         },
         {
           "id": "station-seibu-ikebukuro-18",
           "name": "小手指",
-          "lat": 35.7798,
-          "lng": 139.4332
+          "lat": 35.8006184,
+          "lng": 139.4377917
         },
         {
           "id": "station-seibu-ikebukuro-19",
           "name": "狭山ヶ丘",
-          "lat": 35.7726,
-          "lng": 139.4169
+          "lat": 35.8105229,
+          "lng": 139.4167118
         },
         {
           "id": "station-seibu-ikebukuro-20",
           "name": "武蔵藤沢",
-          "lat": 35.7763,
-          "lng": 139.4025
+          "lat": 35.821335,
+          "lng": 139.4125668
         },
         {
           "id": "station-seibu-ikebukuro-21",
           "name": "稲荷山公園",
-          "lat": 35.7795,
-          "lng": 139.3892
+          "lat": 35.8449274,
+          "lng": 139.3985589
         },
         {
           "id": "station-seibu-ikebukuro-22",
           "name": "入間市",
-          "lat": 35.778,
-          "lng": 139.3722
+          "lat": 35.8426832,
+          "lng": 139.3901317
         },
         {
           "id": "station-seibu-ikebukuro-23",
           "name": "仏子",
-          "lat": 35.7952,
-          "lng": 139.3534
+          "lat": 35.8377028,
+          "lng": 139.3599938
         },
         {
           "id": "station-seibu-ikebukuro-24",
           "name": "元加治",
-          "lat": 35.8037,
-          "lng": 139.3434
+          "lat": 35.8405537,
+          "lng": 139.345729
         },
         {
           "id": "station-seibu-ikebukuro-25",
           "name": "飯能",
-          "lat": 35.8554,
-          "lng": 139.329
+          "lat": 35.8510047,
+          "lng": 139.3190593
         }
       ]
     },
