@@ -84,6 +84,7 @@ export default function QuizPage() {
         {phase === 'result' && lastResult && (
           <QuizResult
             result={lastResult}
+            config={config}
             onRetry={handleRetry}
             onBackToSelector={handleBackToSelector}
           />

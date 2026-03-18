@@ -20,7 +20,7 @@ import {
   getLineInfo,
   getWardCenter,
 } from '@/utils/quizDataLoader';
-import { loadRailLines, loadRivers } from '@/utils/dataLoader';
+import { loadRailLines, loadRivers, loadWards } from '@/utils/dataLoader';
 import riversData from '@/data/rivers.json';
 
 interface Props {
@@ -41,6 +41,7 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [lineIds, setLineIds] = useState<string[]>([]);
   const [lineAbbr, setLineAbbr] = useState<string>('');
   const [riversGeo, setRiversGeo] = useState<FeatureCollection | null>(null);
+  const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -49,6 +50,11 @@ export default function QuizSession({ config, onComplete }: Props) {
     async function load() {
       setLoading(true);
       let qs: QuizQuestion[] = [];
+
+      // 区境界は全クイズで表示
+      loadWards().then((d) => {
+        if (!cancelled) setWardsGeo(d);
+      });
 
       if (config.scopeType === 'line') {
         qs = await generateLineQuiz(config.scopeId);
@@ -285,6 +291,21 @@ export default function QuizSession({ config, onComplete }: Props) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           />
+
+          {/* 区境界（ヒント） */}
+          {wardsGeo && (
+            <GeoJSON
+              key="quiz-wards"
+              data={wardsGeo}
+              style={{
+                color: '#94a3b8',
+                weight: 1,
+                fillColor: 'transparent',
+                fillOpacity: 0,
+              }}
+              interactive={false}
+            />
+          )}
 
           {/* 路線パス: GeoJSON（地図記号風: 灰色+白交互） */}
           {filteredLineGeo && (
