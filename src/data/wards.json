@@ -1,0 +1,622 @@
+[
+  {
+    "id": "ward-1543055",
+    "name": {
+      "kanji": "杉並区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1543056",
+    "name": {
+      "kanji": "中野区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758858",
+    "name": {
+      "kanji": "新宿区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758878",
+    "name": {
+      "kanji": "文京区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758888",
+    "name": {
+      "kanji": "台東区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758891",
+    "name": {
+      "kanji": "墨田区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758897",
+    "name": {
+      "kanji": "中央区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758936",
+    "name": {
+      "kanji": "目黒区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1758947",
+    "name": {
+      "kanji": "大田区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1759474",
+    "name": {
+      "kanji": "世田谷区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1759475",
+    "name": {
+      "kanji": "狛江市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-1759477",
+    "name": {
+      "kanji": "渋谷区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1759506",
+    "name": {
+      "kanji": "豊島区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1760038",
+    "name": {
+      "kanji": "北区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1760040",
+    "name": {
+      "kanji": "荒川区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1760078",
+    "name": {
+      "kanji": "板橋区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1760119",
+    "name": {
+      "kanji": "練馬区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1760124",
+    "name": {
+      "kanji": "足立区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1761717",
+    "name": {
+      "kanji": "港区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1761718",
+    "name": {
+      "kanji": "葛飾区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1761742",
+    "name": {
+      "kanji": "千代田区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1761743",
+    "name": {
+      "kanji": "江戸川区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-1761771",
+    "name": {
+      "kanji": "立川市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-1761804",
+    "name": {
+      "kanji": "武蔵野市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-1761820",
+    "name": {
+      "kanji": "三鷹市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-1761834",
+    "name": {
+      "kanji": "青梅市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-3554015",
+    "name": {
+      "kanji": "江東区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-3554304",
+    "name": {
+      "kanji": "品川区",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "ku"
+  },
+  {
+    "id": "ward-3605798",
+    "name": {
+      "kanji": "大島町",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "machi"
+  },
+  {
+    "id": "ward-3605809",
+    "name": {
+      "kanji": "利島村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-3605834",
+    "name": {
+      "kanji": "新島村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-3605872",
+    "name": {
+      "kanji": "神津島村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-3606125",
+    "name": {
+      "kanji": "御蔵島村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-3606126",
+    "name": {
+      "kanji": "三宅村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-3807613",
+    "name": {
+      "kanji": "稲城市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-4561990",
+    "name": {
+      "kanji": "小笠原村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-5100276",
+    "name": {
+      "kanji": "町田市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5299311",
+    "name": {
+      "kanji": "奥多摩町",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "machi"
+  },
+  {
+    "id": "ward-5301344",
+    "name": {
+      "kanji": "あきる野市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301345",
+    "name": {
+      "kanji": "日の出町",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "machi"
+  },
+  {
+    "id": "ward-5301346",
+    "name": {
+      "kanji": "檜原村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  },
+  {
+    "id": "ward-5301559",
+    "name": {
+      "kanji": "羽村市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301639",
+    "name": {
+      "kanji": "八王子市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301640",
+    "name": {
+      "kanji": "昭島市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301641",
+    "name": {
+      "kanji": "武蔵村山市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301642",
+    "name": {
+      "kanji": "瑞穂町",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "machi"
+  },
+  {
+    "id": "ward-5301643",
+    "name": {
+      "kanji": "福生市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301789",
+    "name": {
+      "kanji": "多摩市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5301790",
+    "name": {
+      "kanji": "日野市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302157",
+    "name": {
+      "kanji": "国分寺市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302158",
+    "name": {
+      "kanji": "国立市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302159",
+    "name": {
+      "kanji": "小平市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302160",
+    "name": {
+      "kanji": "東大和市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302161",
+    "name": {
+      "kanji": "東村山市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302326",
+    "name": {
+      "kanji": "小金井市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302327",
+    "name": {
+      "kanji": "府中市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302328",
+    "name": {
+      "kanji": "東久留米市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302329",
+    "name": {
+      "kanji": "清瀬市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5302330",
+    "name": {
+      "kanji": "西東京市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5303898",
+    "name": {
+      "kanji": "調布市",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "shi"
+  },
+  {
+    "id": "ward-5305020",
+    "name": {
+      "kanji": "八丈町",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "machi"
+  },
+  {
+    "id": "ward-5305021",
+    "name": {
+      "kanji": "青ヶ島村",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    },
+    "type": "mura"
+  }
+]
