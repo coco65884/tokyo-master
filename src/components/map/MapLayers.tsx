@@ -292,6 +292,12 @@ function useRailData({
   return { filteredGeo, activeStations };
 }
 
+// bbox→短い文字列キー
+function bboxKey(bbox: WardBBox | null): string {
+  if (!bbox) return 'none';
+  return `${bbox.minLat.toFixed(3)}_${bbox.maxLng.toFixed(3)}`;
+}
+
 // 路線の線のみ描画（灰色+白, 2層方式）
 function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: WardBBox | null }) {
   const clipped = useMemo(
@@ -299,6 +305,7 @@ function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: 
     [geo, focusBBox],
   );
 
+  const bk = bboxKey(focusBBox);
   const railBase = { color: '#6b7280', lineCap: 'butt' as const, lineJoin: 'miter' as const };
   const railDash = {
     color: '#ffffff',
@@ -311,13 +318,13 @@ function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: 
     <>
       {/* 背景: 全路線薄く */}
       <GeoJSON
-        key={`rail-base-bg-${geo.features.length}`}
+        key={`rail-base-bg-${bk}-${geo.features.length}`}
         data={geo}
         style={() => ({ ...railBase, weight: 5, opacity: focusBBox ? 0.1 : 0.7 })}
         interactive={false}
       />
       <GeoJSON
-        key={`rail-dash-bg-${geo.features.length}`}
+        key={`rail-dash-bg-${bk}-${geo.features.length}`}
         data={geo}
         style={() => ({ ...railDash, weight: 3, opacity: focusBBox ? 0.08 : 0.7 })}
         onEachFeature={
@@ -335,13 +342,13 @@ function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: 
       {clipped && clipped.features.length > 0 && (
         <>
           <GeoJSON
-            key="rail-base-focus"
+            key={`rail-base-focus-${bk}`}
             data={clipped}
             style={() => ({ ...railBase, weight: 5, opacity: 0.7 })}
             interactive={false}
           />
           <GeoJSON
-            key="rail-dash-focus"
+            key={`rail-dash-focus-${bk}`}
             data={clipped}
             style={() => ({ ...railDash, weight: 3, opacity: 0.7 })}
             onEachFeature={(feature, layer) => {
@@ -496,6 +503,7 @@ function clipGeoJSONToBBox(data: FeatureCollection, bbox: WardBBox): FeatureColl
 
 // ======= Rivers (2層: 全体薄く + bbox内を濃く) =======
 function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
+  const bk = bboxKey(focusBBox);
   const clipped = useMemo(
     () => (focusBBox ? clipGeoJSONToBBox(data, focusBBox) : null),
     [data, focusBBox],
@@ -523,7 +531,7 @@ function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: W
     <>
       {/* 背景: 全データ薄く */}
       <GeoJSON
-        key={`rivers-bg-${focusBBox ? 'f' : 'a'}`}
+        key={`rivers-bg-${bk}`}
         data={data}
         style={{
           color: '#38bdf8',
@@ -536,7 +544,7 @@ function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: W
       {/* フォーカス層: bbox内だけ濃く */}
       {clipped && clipped.features.length > 0 && (
         <GeoJSON
-          key="rivers-focus"
+          key={`rivers-focus-${bk}`}
           data={clipped}
           style={{ color: '#38bdf8', weight: 3, opacity: 0.8, lineCap: 'round' }}
           onEachFeature={interactionHandler}
@@ -548,6 +556,7 @@ function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: W
 
 // ======= Roads (2層: 全体薄く + bbox内を濃く) =======
 function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
+  const bk = bboxKey(focusBBox);
   const clipped = useMemo(
     () => (focusBBox ? clipGeoJSONToBBox(data, focusBBox) : null),
     [data, focusBBox],
@@ -574,7 +583,7 @@ function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: Wa
   return (
     <>
       <GeoJSON
-        key={`roads-bg-${focusBBox ? 'f' : 'a'}`}
+        key={`roads-bg-${bk}`}
         data={data}
         style={{
           color: '#fb923c',
@@ -586,7 +595,7 @@ function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: Wa
       />
       {clipped && clipped.features.length > 0 && (
         <GeoJSON
-          key="roads-focus"
+          key={`roads-focus-${bk}`}
           data={clipped}
           style={{ color: '#fb923c', weight: 2.5, opacity: 0.7, lineCap: 'round' }}
           onEachFeature={interactionHandler}
