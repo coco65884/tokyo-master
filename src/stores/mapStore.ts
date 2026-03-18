@@ -15,6 +15,7 @@ interface MapState {
   zoom: number;
   layers: LayerState;
   selectedWardId: string | null;
+  wardFocusMode: boolean;
   distanceMode: boolean;
   distancePoints: [number, number][];
   setCenter: (center: [number, number]) => void;
@@ -23,6 +24,7 @@ interface MapState {
   toggleRailLine: (lineKey: string) => void;
   toggleOperator: (operator: string, lineKeys: string[], enable: boolean) => void;
   setSelectedWard: (wardId: string | null) => void;
+  setWardFocusMode: (on: boolean) => void;
   setDistanceMode: (on: boolean) => void;
   addDistancePoint: (point: [number, number]) => void;
   clearDistancePoints: () => void;
@@ -43,6 +45,7 @@ export const useMapStore = create<MapState>((set) => ({
     landmarks: false,
   },
   selectedWardId: null,
+  wardFocusMode: false,
   distanceMode: false,
   distancePoints: [],
 
@@ -78,6 +81,8 @@ export const useMapStore = create<MapState>((set) => ({
     }),
 
   setSelectedWard: (wardId) => set({ selectedWardId: wardId }),
+
+  setWardFocusMode: (on) => set({ wardFocusMode: on }),
 
   setDistanceMode: (on) => set({ distanceMode: on, distancePoints: on ? [] : [] }),
 

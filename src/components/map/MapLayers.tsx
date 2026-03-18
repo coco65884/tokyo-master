@@ -12,7 +12,10 @@ import {
   loadRoads,
   loadLandmarks,
   loadLineIndex,
+  loadWardCenters,
+  loadWardObjects,
 } from '@/utils/dataLoader';
+import type { WardCenter, WardObjects } from '@/utils/dataLoader';
 
 interface GeoData {
   wards: FeatureCollection | null;
@@ -32,7 +35,7 @@ interface LayerFlags {
   landmarks: boolean;
 }
 
-function useGeoData(layers: LayerFlags): GeoData {
+function useGeoData(layers: LayerFlags, wardFocusActive: boolean): GeoData {
   const [data, setData] = useState<GeoData>({
     wards: null,
     prefBorders: null,
@@ -51,19 +54,24 @@ function useGeoData(layers: LayerFlags): GeoData {
       loadPrefBorders().then((d) => setData((p) => ({ ...p, prefBorders: d })));
   }, [layers.prefBorders, data.prefBorders]);
 
+  // 路線: 手動選択 or フォーカスモードで必要
   useEffect(() => {
-    if (Object.values(layers.railLines).some(Boolean) && !data.railLines)
+    const needRail = Object.values(layers.railLines).some(Boolean) || wardFocusActive;
+    if (needRail && !data.railLines)
       loadRailLines().then((d) => setData((p) => ({ ...p, railLines: d })));
-  }, [layers.railLines, data.railLines]);
+  }, [layers.railLines, wardFocusActive, data.railLines]);
 
+  // 川: 手動 or フォーカス
   useEffect(() => {
-    if (layers.rivers && !data.rivers)
+    if ((layers.rivers || wardFocusActive) && !data.rivers)
       loadRivers().then((d) => setData((p) => ({ ...p, rivers: d })));
-  }, [layers.rivers, data.rivers]);
+  }, [layers.rivers, wardFocusActive, data.rivers]);
 
+  // 道路: 手動 or フォーカス
   useEffect(() => {
-    if (layers.roads && !data.roads) loadRoads().then((d) => setData((p) => ({ ...p, roads: d })));
-  }, [layers.roads, data.roads]);
+    if ((layers.roads || wardFocusActive) && !data.roads)
+      loadRoads().then((d) => setData((p) => ({ ...p, roads: d })));
+  }, [layers.roads, wardFocusActive, data.roads]);
 
   useEffect(() => {
     if (layers.landmarks && !data.landmarks)
@@ -81,7 +89,20 @@ function useLineIndex(): LineIndexEntry[] {
   return lines;
 }
 
-// ======= Tokyo highlight (always on) =======
+function useWardMeta(): {
+  centers: WardCenter[];
+  objects: Record<string, WardObjects>;
+} {
+  const [centers, setCenters] = useState<WardCenter[]>([]);
+  const [objects, setObjects] = useState<Record<string, WardObjects>>({});
+  useEffect(() => {
+    loadWardCenters().then(setCenters);
+    loadWardObjects().then(setObjects);
+  }, []);
+  return { centers, objects };
+}
+
+// ======= Tokyo highlight =======
 function TokyoHighlight({ data }: { data: FeatureCollection }) {
   return (
     <GeoJSON
@@ -92,25 +113,19 @@ function TokyoHighlight({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Ward boundaries (dblclick to focus) =======
+// ======= Ward boundaries (no hover tooltip, dblclick focus) =======
 function WardLayer({ data }: { data: FeatureCollection }) {
   const setSelectedWard = useMapStore((s) => s.setSelectedWard);
   const map = useMap();
 
   const onEachFeature = (feature: Feature, layer: L.Layer) => {
-    const name = feature.properties?.name || '';
     const path = layer as L.Path;
-
-    path.bindTooltip(name, { sticky: true, className: 'ward-tooltip', direction: 'center' });
-
     path.on('mouseover', () => {
-      path.setStyle({ fillColor: '#a8d8ea', fillOpacity: 0.4, weight: 2.5, color: '#4a90d9' });
-      path.bringToFront();
+      path.setStyle({ fillColor: '#a8d8ea', fillOpacity: 0.3, weight: 2, color: '#4a90d9' });
     });
     path.on('mouseout', () => {
       path.setStyle({ fillColor: 'transparent', fillOpacity: 0, weight: 1.2, color: '#94a3b8' });
     });
-    // ダブルクリックでフォーカス
     path.on('dblclick', (e) => {
       L.DomEvent.stopPropagation(e as L.LeafletEvent);
       setSelectedWard(feature.properties?.id);
@@ -128,6 +143,26 @@ function WardLayer({ data }: { data: FeatureCollection }) {
   );
 }
 
+// ======= Ward name labels (center of each ward) =======
+function WardNameLabels({ centers }: { centers: WardCenter[] }) {
+  return (
+    <>
+      {centers.map((c) => (
+        <Marker
+          key={`wlabel-${c.id}`}
+          position={[c.lat, c.lng]}
+          icon={L.divIcon({
+            className: 'ward-name-label',
+            html: `<span>${c.name}</span>`,
+            iconSize: [0, 0],
+          })}
+          interactive={false}
+        />
+      ))}
+    </>
+  );
+}
+
 // ======= Prefecture borders =======
 function PrefBorderLayer({ data }: { data: FeatureCollection }) {
   return (
@@ -139,7 +174,7 @@ function PrefBorderLayer({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Rail lines + stations per line =======
+// ======= Rail lines + stations =======
 function RailLineWithStations({
   railGeoData,
   lineIndex,
@@ -177,7 +212,6 @@ function RailLineWithStations({
     } as FeatureCollection;
   }, [railGeoData, activeLineIds]);
 
-  // 名前が不正な駅をフィルタ
   const activeStations = useMemo(() => {
     const stations: { id: string; name: string; lat: number; lng: number; color: string }[] = [];
     const seen = new Set<string>();
@@ -231,30 +265,30 @@ function RailLineWithStations({
   );
 }
 
-// ======= Rivers (hover/click for name, thicker line) =======
-function RiverLayer({ data }: { data: FeatureCollection }) {
+// ======= Rivers =======
+function RiverLayer({ data, filterNames }: { data: FeatureCollection; filterNames?: Set<string> }) {
+  const filtered = useMemo(() => {
+    if (!filterNames) return data;
+    return {
+      ...data,
+      features: data.features.filter((f) => filterNames.has(f.properties?.name || '')),
+    } as FeatureCollection;
+  }, [data, filterNames]);
+
   return (
     <GeoJSON
-      key="rivers"
-      data={data}
-      style={{
-        color: '#38bdf8',
-        weight: 3,
-        opacity: 0.8,
-        lineCap: 'round',
-      }}
+      key={`rivers-${filterNames ? [...filterNames].join(',') : 'all'}`}
+      data={filtered}
+      style={{ color: '#38bdf8', weight: 3, opacity: 0.8, lineCap: 'round' }}
       onEachFeature={(feature, layer) => {
         const name = feature.properties?.name || '';
         if (!name) return;
         const path = layer as L.Path;
-        // ホバーで名前ツールチップ
         path.bindTooltip(name, { sticky: true, className: 'river-tooltip' });
-        // クリックでPopup
         path.bindPopup(`<strong style="color:#0ea5e9">${name}</strong>`, {
           closeButton: false,
           className: 'river-popup',
         });
-        // ホバー時に太くして目立たせる
         path.on('mouseover', () => {
           path.setStyle({ weight: 5, opacity: 1 });
           path.bringToFront();
@@ -268,11 +302,19 @@ function RiverLayer({ data }: { data: FeatureCollection }) {
 }
 
 // ======= Roads =======
-function RoadLayer({ data }: { data: FeatureCollection }) {
+function RoadLayer({ data, filterNames }: { data: FeatureCollection; filterNames?: Set<string> }) {
+  const filtered = useMemo(() => {
+    if (!filterNames) return data;
+    return {
+      ...data,
+      features: data.features.filter((f) => filterNames.has(f.properties?.name || '')),
+    } as FeatureCollection;
+  }, [data, filterNames]);
+
   return (
     <GeoJSON
-      key="roads"
-      data={data}
+      key={`roads-${filterNames ? [...filterNames].join(',') : 'all'}`}
+      data={filtered}
       style={{ color: '#fb923c', weight: 2.5, opacity: 0.7, lineCap: 'round' }}
       onEachFeature={(feature, layer) => {
         const name = feature.properties?.name || '';
@@ -324,10 +366,9 @@ function LandmarkLayer({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Distance line + dots =======
+// ======= Distance dots + line =======
 function DistanceOverlay() {
   const points = useMapStore((s) => s.distancePoints);
-
   return (
     <>
       {points.map((p, i) => (
@@ -335,12 +376,7 @@ function DistanceOverlay() {
           key={`dist-pt-${i}`}
           center={p as [number, number]}
           radius={6}
-          pathOptions={{
-            color: '#e91e63',
-            fillColor: i === 0 ? '#e91e63' : '#fff',
-            fillOpacity: 1,
-            weight: 2,
-          }}
+          pathOptions={{ color: '#e91e63', fillColor: '#e91e63', fillOpacity: 1, weight: 2 }}
         />
       ))}
       {points.length === 2 && (
@@ -356,23 +392,61 @@ function DistanceOverlay() {
 // ======= Main =======
 export default function MapLayers() {
   const layers = useMapStore((s) => s.layers);
-  const geoData = useGeoData(layers);
+  const selectedWardId = useMapStore((s) => s.selectedWardId);
+  const wardFocusMode = useMapStore((s) => s.wardFocusMode);
+  const { centers, objects } = useWardMeta();
   const lineIndex = useLineIndex();
+
+  const wardFocusActive = wardFocusMode && !!selectedWardId;
+  const geoData = useGeoData(layers, wardFocusActive);
+
+  // 区フォーカスモード: 選択中の区に関連するオブジェクトを計算
+  const focusData = useMemo(() => {
+    if (!wardFocusActive || !selectedWardId) return null;
+    const wo = objects[selectedWardId];
+    if (!wo) return null;
+    return {
+      lineKeys: new Set(wo.lineKeys),
+      riverNames: new Set(wo.riverNames),
+      roadNames: new Set(wo.roadNames),
+    };
+  }, [wardFocusActive, selectedWardId, objects]);
+
+  // フォーカス時の路線visibility（手動選択をオーバーライド）
+  const effectiveRailLines = useMemo(() => {
+    if (focusData) {
+      const merged: Record<string, boolean> = {};
+      for (const k of focusData.lineKeys) merged[k] = true;
+      return merged;
+    }
+    return layers.railLines;
+  }, [focusData, layers.railLines]);
+
+  const showRivers = focusData ? true : layers.rivers;
+  const showRoads = focusData ? true : layers.roads;
 
   return (
     <>
       {geoData.wards && <TokyoHighlight data={geoData.wards} />}
       {layers.prefBorders && geoData.prefBorders && <PrefBorderLayer data={geoData.prefBorders} />}
       {layers.wards && geoData.wards && <WardLayer data={geoData.wards} />}
+      {layers.wards && centers.length > 0 && <WardNameLabels centers={centers} />}
+
       {geoData.railLines && lineIndex.length > 0 && (
         <RailLineWithStations
           railGeoData={geoData.railLines}
           lineIndex={lineIndex}
-          visibleLines={layers.railLines}
+          visibleLines={effectiveRailLines}
         />
       )}
-      {layers.rivers && geoData.rivers && <RiverLayer data={geoData.rivers} />}
-      {layers.roads && geoData.roads && <RoadLayer data={geoData.roads} />}
+
+      {showRivers && geoData.rivers && (
+        <RiverLayer data={geoData.rivers} filterNames={focusData?.riverNames} />
+      )}
+      {showRoads && geoData.roads && (
+        <RoadLayer data={geoData.roads} filterNames={focusData?.roadNames} />
+      )}
+
       {layers.landmarks && geoData.landmarks && <LandmarkLayer data={geoData.landmarks} />}
       <DistanceOverlay />
     </>
