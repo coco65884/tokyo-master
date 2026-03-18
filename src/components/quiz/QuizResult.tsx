@@ -1,28 +1,87 @@
-import { useEffect, useRef } from 'react';
-import type { QuizResult as QuizResultType } from '@/types';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Tooltip, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import type { FeatureCollection } from 'geojson';
+import type { QuizResult as QuizResultType, QuizConfig } from '@/types';
 import { useAchievementStore } from '@/stores/achievementStore';
 import { getAchievementId } from '@/data/achievements';
+import { getLineInfo, getWardCenter } from '@/utils/quizDataLoader';
+import { loadRailLines, loadWards } from '@/utils/dataLoader';
+import type { LineIndexEntry } from '@/types';
+import type { WardCenter } from '@/utils/dataLoader';
 
 interface Props {
   result: QuizResultType;
+  config: QuizConfig | null;
   onRetry: () => void;
   onBackToSelector: () => void;
 }
 
-export default function QuizResult({ result, onRetry, onBackToSelector }: Props) {
+export default function QuizResult({ result, config, onRetry, onBackToSelector }: Props) {
   const updateAchievement = useAchievementStore((s) => s.updateAchievement);
   const hasUpdatedRef = useRef(false);
+  const [tab, setTab] = useState<'list' | 'map'>('list');
+  const [lineInfo, setLineInfo] = useState<LineIndexEntry | null>(null);
+  const [lineGeo, setLineGeo] = useState<FeatureCollection | null>(null);
+  const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([35.6762, 139.6503]);
+  const [mapZoom, setMapZoom] = useState(12);
 
   const accuracyPercent = Math.round(result.accuracy * 100);
 
-  // Update achievement when result is shown
   useEffect(() => {
     if (hasUpdatedRef.current) return;
     hasUpdatedRef.current = true;
-
     const achievementId = getAchievementId(result.scopeType, result.scopeId);
     updateAchievement(achievementId, result.accuracy);
   }, [result, updateAchievement]);
+
+  // 地図データ読み込み
+  useEffect(() => {
+    loadWards().then(setWardsGeo);
+
+    if (result.scopeType === 'line') {
+      getLineInfo(result.scopeId).then((info) => {
+        if (info) {
+          setLineInfo(info);
+          if (info.stations.length > 0) {
+            const mid = info.stations[Math.floor(info.stations.length / 2)];
+            setMapCenter([mid.lat, mid.lng]);
+            setMapZoom(12);
+          }
+        }
+      });
+      loadRailLines().then(setLineGeo);
+    } else if (result.scopeType === 'ward') {
+      getWardCenter(result.scopeId).then((c: WardCenter | undefined) => {
+        if (c) {
+          setMapCenter([c.lat, c.lng]);
+          setMapZoom(13);
+        }
+      });
+    }
+  }, [result]);
+
+  const filteredLineGeo = useMemo(() => {
+    if (!lineGeo || !lineInfo) return null;
+    const idSet = new Set(lineInfo.lineIds);
+    return {
+      ...lineGeo,
+      features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
+    } as FeatureCollection;
+  }, [lineGeo, lineInfo]);
+
+  // 回答を座標付きで構築
+  const stationResults = useMemo(() => {
+    if (!lineInfo) return [];
+    return result.answers.map((a, i) => ({
+      ...a,
+      lat: lineInfo.stations[i]?.lat,
+      lng: lineInfo.stations[i]?.lng,
+      label: lineInfo.abbr ? `${lineInfo.abbr}${String(i + 1).padStart(2, '0')}` : `${i + 1}`,
+    }));
+  }, [result.answers, lineInfo]);
 
   const getAccuracyClass = () => {
     if (accuracyPercent >= 80) return 'quiz-result__score--great';
@@ -36,49 +95,186 @@ export default function QuizResult({ result, onRetry, onBackToSelector }: Props)
 
   return (
     <div className="quiz-result">
-      <h2 className="quiz-result__title">結果</h2>
-
-      <div className={`quiz-result__score ${getAccuracyClass()}`}>
-        <span className="quiz-result__score-number">{accuracyPercent}%</span>
-        <span className="quiz-result__score-detail">
-          {result.correctAnswers} / {result.totalQuestions} 正解
-        </span>
+      <div className="quiz-result__header-row">
+        <h2 className="quiz-result__title">結果</h2>
+        <div className={`quiz-result__score-inline ${getAccuracyClass()}`}>
+          {accuracyPercent}% ({result.correctAnswers}/{result.totalQuestions})
+        </div>
       </div>
 
-      {/* Achievement notification */}
       {result.accuracy === 1 && (
         <div className="quiz-result__achievement-notice">
           {justAchieved
             ? 'アチーブメント達成！おめでとうございます！'
-            : 'アチーブメント達成済み &#10003;'}
+            : 'アチーブメント達成済み \u2713'}
         </div>
       )}
 
-      {/* Answer list */}
-      <div className="quiz-result__answers">
-        <h3 className="quiz-result__answers-title">回答一覧</h3>
-        <div className="quiz-result__answer-list">
-          {result.answers.map((answer, idx) => (
-            <div
-              key={answer.questionId}
-              className={`quiz-result__answer ${
-                answer.isCorrect ? 'quiz-result__answer--correct' : 'quiz-result__answer--incorrect'
-              }`}
-            >
-              <span className="quiz-result__answer-num">{idx + 1}.</span>
-              <span className="quiz-result__answer-correct">{answer.correctAnswer}</span>
-              {!answer.isCorrect && answer.userAnswer && (
-                <span className="quiz-result__answer-user">({answer.userAnswer})</span>
-              )}
-              <span className="quiz-result__answer-icon">
-                {answer.isCorrect ? '\u2713' : '\u2717'}
-              </span>
-            </div>
-          ))}
-        </div>
+      {/* タブ切り替え */}
+      <div className="quiz-result__tabs">
+        <button
+          className={`quiz-result__tab ${tab === 'list' ? 'quiz-result__tab--active' : ''}`}
+          onClick={() => setTab('list')}
+        >
+          回答一覧
+        </button>
+        <button
+          className={`quiz-result__tab ${tab === 'map' ? 'quiz-result__tab--active' : ''}`}
+          onClick={() => setTab('map')}
+        >
+          地図で確認
+        </button>
       </div>
 
-      {/* Action buttons */}
+      {/* 回答一覧タブ */}
+      {tab === 'list' && (
+        <div className="quiz-result__answers">
+          <div className="quiz-result__answer-list">
+            {result.answers.map((answer, idx) => {
+              const label =
+                config?.scopeType === 'line' && lineInfo?.abbr
+                  ? `${lineInfo.abbr}${String(idx + 1).padStart(2, '0')}`
+                  : `${idx + 1}`;
+              return (
+                <div
+                  key={answer.questionId}
+                  className={`quiz-result__answer ${
+                    answer.isCorrect
+                      ? 'quiz-result__answer--correct'
+                      : 'quiz-result__answer--incorrect'
+                  }`}
+                >
+                  <span className="quiz-result__answer-num">{label}</span>
+                  <span className="quiz-result__answer-correct">{answer.correctAnswer}</span>
+                  {!answer.isCorrect && answer.userAnswer && (
+                    <span className="quiz-result__answer-user">({answer.userAnswer})</span>
+                  )}
+                  <span className="quiz-result__answer-icon">
+                    {answer.isCorrect ? '\u2713' : '\u2717'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 地図タブ */}
+      {tab === 'map' && (
+        <div className="quiz-result__map-container">
+          <div className="quiz-result__map-legend">
+            <span className="quiz-result__legend-item quiz-result__legend--correct">● 正解</span>
+            <span className="quiz-result__legend-item quiz-result__legend--incorrect">
+              ● 不正解
+            </span>
+          </div>
+          <MapContainer
+            center={mapCenter}
+            zoom={mapZoom}
+            scrollWheelZoom={true}
+            wheelDebounceTime={80}
+            wheelPxPerZoomLevel={200}
+            zoomSnap={0.5}
+            zoomDelta={0.5}
+            className="quiz-result__map"
+            style={{ width: '100%', height: '400px' }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
+            />
+
+            {/* 区境界 */}
+            {wardsGeo && (
+              <GeoJSON
+                key="result-wards"
+                data={wardsGeo}
+                style={{
+                  color: '#94a3b8',
+                  weight: 1,
+                  fillColor: 'transparent',
+                  fillOpacity: 0,
+                }}
+              />
+            )}
+
+            {/* 路線パス */}
+            {filteredLineGeo && (
+              <>
+                <GeoJSON
+                  key="result-rail-base"
+                  data={filteredLineGeo}
+                  style={() => ({
+                    color: '#6b7280',
+                    weight: 5,
+                    opacity: 0.7,
+                    lineCap: 'butt',
+                    lineJoin: 'miter',
+                  })}
+                  interactive={false}
+                />
+                <GeoJSON
+                  key="result-rail-dash"
+                  data={filteredLineGeo}
+                  style={() => ({
+                    color: '#ffffff',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '6, 6',
+                    lineCap: 'butt',
+                    lineJoin: 'miter',
+                  })}
+                  interactive={false}
+                />
+              </>
+            )}
+
+            {/* 駅マーカー（正解=緑、不正解=赤） */}
+            {stationResults
+              .filter((s) => s.lat && s.lng)
+              .map((s) => (
+                <CircleMarker
+                  key={s.questionId}
+                  center={[s.lat!, s.lng!]}
+                  radius={6}
+                  pathOptions={{
+                    color: s.isCorrect ? '#22c55e' : '#ef4444',
+                    fillColor: s.isCorrect ? '#22c55e' : '#ef4444',
+                    fillOpacity: 0.9,
+                    weight: 2,
+                  }}
+                >
+                  <Tooltip
+                    permanent
+                    direction="top"
+                    offset={[0, -8]}
+                    className="quiz-station-number"
+                  >
+                    {s.correctAnswer}
+                  </Tooltip>
+                </CircleMarker>
+              ))}
+
+            {/* 番号マーカー */}
+            {stationResults
+              .filter((s) => s.lat && s.lng)
+              .map((s) => (
+                <Marker
+                  key={`label-${s.questionId}`}
+                  position={[s.lat!, s.lng!]}
+                  icon={L.divIcon({
+                    className: 'quiz-number-icon',
+                    html: `<span style="border-color:${s.isCorrect ? '#22c55e' : '#ef4444'};color:${s.isCorrect ? '#22c55e' : '#ef4444'}">${s.label}</span>`,
+                    iconSize: [38, 22],
+                    iconAnchor: [19, 28],
+                  })}
+                  interactive={false}
+                />
+              ))}
+          </MapContainer>
+        </div>
+      )}
+
       <div className="quiz-result__actions">
         <button className="quiz-result__retry-btn" onClick={onRetry}>
           もう一度挑戦
