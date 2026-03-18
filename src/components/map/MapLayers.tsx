@@ -253,20 +253,20 @@ function RailLineWithStations({
         lng: number;
         color: string;
         inFocus: boolean;
-        lineNames: string[];
+        lines: { name: string; abbr: string; color: string }[];
       }
     >();
 
     for (const entry of lineIndex) {
       if (!activeKeys.has(entry.key)) continue;
+      const lineInfo = { name: entry.name, abbr: entry.abbr, color: entry.color };
       for (const s of entry.stations) {
         if (s.name.startsWith('駅-')) continue;
-        // 名前+グリッド(~100m)で重複判定
         const gridKey = `${s.name}_${Math.round(s.lat * 100)}_${Math.round(s.lng * 100)}`;
         const existing = byNameGrid.get(gridKey);
         if (existing) {
-          if (!existing.lineNames.includes(entry.name)) {
-            existing.lineNames.push(entry.name);
+          if (!existing.lines.some((l) => l.name === entry.name)) {
+            existing.lines.push(lineInfo);
           }
         } else {
           const inFocus =
@@ -279,7 +279,7 @@ function RailLineWithStations({
             ...s,
             color: entry.color,
             inFocus,
-            lineNames: [entry.name],
+            lines: [lineInfo],
           });
         }
       }
@@ -291,16 +291,33 @@ function RailLineWithStations({
 
   return (
     <>
+      {/* 地図記号風: 下地の色付き線 */}
       {filteredGeo && (
         <GeoJSON
-          key={`rail-${[...activeKeys].sort().join(',')}`}
+          key={`rail-base-${[...activeKeys].sort().join(',')}`}
           data={filteredGeo}
           style={(feature) => ({
             color: feature?.properties?.color || '#888',
-            weight: 3.5,
-            opacity: focusBBox ? 0.35 : 0.9,
-            lineCap: 'round',
-            lineJoin: 'round',
+            weight: 5,
+            opacity: focusBBox ? 0.25 : 0.9,
+            lineCap: 'butt',
+            lineJoin: 'miter',
+          })}
+          interactive={false}
+        />
+      )}
+      {/* 地図記号風: 上の白い破線(交互ブロック) */}
+      {filteredGeo && (
+        <GeoJSON
+          key={`rail-dash-${[...activeKeys].sort().join(',')}`}
+          data={filteredGeo}
+          style={() => ({
+            color: '#ffffff',
+            weight: 3,
+            opacity: focusBBox ? 0.2 : 0.85,
+            dashArray: '6, 6',
+            lineCap: 'butt',
+            lineJoin: 'miter',
           })}
           onEachFeature={(feature, layer) => {
             (layer as L.Path).bindTooltip(feature.properties?.name || '', {
@@ -342,9 +359,34 @@ function RailLineWithStations({
             <Popup>
               <div style={{ fontSize: '0.85rem' }}>
                 <strong>{s.name}</strong>
-                <div style={{ marginTop: 4, color: '#64748b', fontSize: '0.78rem' }}>
-                  {s.lineNames.join(' / ')}
-                </div>
+                <ul style={{ margin: '6px 0 0', padding: 0, listStyle: 'none' }}>
+                  {s.lines.map((l) => (
+                    <li
+                      key={l.name}
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}
+                    >
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: 24,
+                          height: 16,
+                          padding: '0 3px',
+                          fontSize: '0.6rem',
+                          fontWeight: 800,
+                          border: `1.5px solid ${l.color}`,
+                          borderRadius: 3,
+                          color: l.color,
+                          backgroundColor: `${l.color}15`,
+                        }}
+                      >
+                        {l.abbr}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#334155' }}>{l.name}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </Popup>
           </CircleMarker>
@@ -355,35 +397,41 @@ function RailLineWithStations({
 
 // ======= Rivers =======
 function RiverLayer({ data, filterNames }: { data: FeatureCollection; filterNames?: Set<string> }) {
-  const filtered = useMemo(() => {
-    if (!filterNames) return data;
-    return {
-      ...data,
-      features: data.features.filter((f) => filterNames.has(f.properties?.name || '')),
-    } as FeatureCollection;
-  }, [data, filterNames]);
+  const isFocusMode = !!filterNames;
 
   return (
     <GeoJSON
       key={`rivers-${filterNames ? [...filterNames].join(',') : 'all'}`}
-      data={filtered}
-      style={{ color: '#38bdf8', weight: 3, opacity: 0.8, lineCap: 'round' }}
+      data={data}
+      style={(feature) => {
+        const name = feature?.properties?.name || '';
+        const inFocus = !isFocusMode || filterNames.has(name);
+        return {
+          color: '#38bdf8',
+          weight: inFocus ? 3 : 1.5,
+          opacity: inFocus ? 0.8 : 0.15,
+          lineCap: 'round',
+        };
+      }}
       onEachFeature={(feature, layer) => {
         const name = feature.properties?.name || '';
         if (!name) return;
+        const inFocus = !isFocusMode || filterNames!.has(name);
         const path = layer as L.Path;
         path.bindTooltip(name, { sticky: true, className: 'river-tooltip' });
         path.bindPopup(`<strong style="color:#0ea5e9">${name}</strong>`, {
           closeButton: false,
           className: 'river-popup',
         });
-        path.on('mouseover', () => {
-          path.setStyle({ weight: 5, opacity: 1 });
-          path.bringToFront();
-        });
-        path.on('mouseout', () => {
-          path.setStyle({ weight: 3, opacity: 0.8 });
-        });
+        if (inFocus) {
+          path.on('mouseover', () => {
+            path.setStyle({ weight: 5, opacity: 1 });
+            path.bringToFront();
+          });
+          path.on('mouseout', () => {
+            path.setStyle({ weight: 3, opacity: 0.8 });
+          });
+        }
       }}
     />
   );
@@ -391,35 +439,41 @@ function RiverLayer({ data, filterNames }: { data: FeatureCollection; filterName
 
 // ======= Roads =======
 function RoadLayer({ data, filterNames }: { data: FeatureCollection; filterNames?: Set<string> }) {
-  const filtered = useMemo(() => {
-    if (!filterNames) return data;
-    return {
-      ...data,
-      features: data.features.filter((f) => filterNames.has(f.properties?.name || '')),
-    } as FeatureCollection;
-  }, [data, filterNames]);
+  const isFocusMode = !!filterNames;
 
   return (
     <GeoJSON
       key={`roads-${filterNames ? [...filterNames].join(',') : 'all'}`}
-      data={filtered}
-      style={{ color: '#fb923c', weight: 2.5, opacity: 0.7, lineCap: 'round' }}
+      data={data}
+      style={(feature) => {
+        const name = feature?.properties?.name || '';
+        const inFocus = !isFocusMode || filterNames.has(name);
+        return {
+          color: '#fb923c',
+          weight: inFocus ? 2.5 : 1.5,
+          opacity: inFocus ? 0.7 : 0.15,
+          lineCap: 'round',
+        };
+      }}
       onEachFeature={(feature, layer) => {
         const name = feature.properties?.name || '';
         if (!name) return;
+        const inFocus = !isFocusMode || filterNames!.has(name);
         const path = layer as L.Path;
         path.bindTooltip(name, { sticky: true, className: 'road-tooltip' });
         path.bindPopup(`<strong style="color:#ea580c">${name}</strong>`, {
           closeButton: false,
           className: 'road-popup',
         });
-        path.on('mouseover', () => {
-          path.setStyle({ weight: 4, opacity: 1 });
-          path.bringToFront();
-        });
-        path.on('mouseout', () => {
-          path.setStyle({ weight: 2.5, opacity: 0.7 });
-        });
+        if (inFocus) {
+          path.on('mouseover', () => {
+            path.setStyle({ weight: 4, opacity: 1 });
+            path.bringToFront();
+          });
+          path.on('mouseout', () => {
+            path.setStyle({ weight: 2.5, opacity: 0.7 });
+          });
+        }
       }}
     />
   );

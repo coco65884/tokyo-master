@@ -45,7 +45,7 @@ export const useMapStore = create<MapState>((set) => ({
     landmarks: false,
   },
   selectedWardId: null,
-  wardFocusMode: false,
+  wardFocusMode: true,
   distanceMode: false,
   distancePoints: [],
 
