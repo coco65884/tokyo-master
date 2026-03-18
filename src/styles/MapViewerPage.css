@@ -222,6 +222,36 @@
   margin-top: 0.3rem;
 }
 
+/* ===== Heatmap Toggle ===== */
+.heatmap-toggle {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.heatmap-toggle__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heatmap-toggle__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Heatmap tooltip */
+.heatmap-tooltip {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #334155;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
 /* ===== Distance Display ===== */
 .distance-display {
   margin-top: 1.5rem;

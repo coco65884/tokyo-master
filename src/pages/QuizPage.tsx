@@ -3,18 +3,23 @@ import { Link } from 'react-router-dom';
 import QuizSelector from '@/components/quiz/QuizSelector';
 import QuizSession from '@/components/quiz/QuizSession';
 import QuizResult from '@/components/quiz/QuizResult';
+import SpeedRunSession from '@/components/quiz/SpeedRunSession';
+import BlankMapQuiz from '@/components/quiz/BlankMapQuiz';
 import { useQuizStore } from '@/stores/quizStore';
 import type { QuizResult as QuizResultType } from '@/types';
+import type { SpeedRunRecord } from '@/stores/quizStore';
 import '@/styles/QuizPage.css';
 
-type Phase = 'select' | 'active' | 'result';
+type Phase = 'select' | 'active' | 'result' | 'speedrun' | 'blankmap';
 
 export default function QuizPage() {
   const [phase, setPhase] = useState<Phase>('select');
   const [lastResult, setLastResult] = useState<QuizResultType | null>(null);
+  const [speedRunLineKey, setSpeedRunLineKey] = useState<string>('');
 
   const config = useQuizStore((s) => s.currentConfig);
   const addResult = useQuizStore((s) => s.addResult);
+  const addSpeedRunRecord = useQuizStore((s) => s.addSpeedRunRecord);
 
   const handleStart = useCallback(() => {
     setPhase('active');
@@ -38,6 +43,22 @@ export default function QuizPage() {
     setPhase('select');
   }, []);
 
+  const handleStartSpeedRun = useCallback((lineKey: string) => {
+    setSpeedRunLineKey(lineKey);
+    setPhase('speedrun');
+  }, []);
+
+  const handleSpeedRunComplete = useCallback(
+    (record: SpeedRunRecord) => {
+      addSpeedRunRecord(record);
+    },
+    [addSpeedRunRecord],
+  );
+
+  const handleStartBlankMap = useCallback(() => {
+    setPhase('blankmap');
+  }, []);
+
   return (
     <div className="quiz-page">
       <header className="quiz-header">
@@ -48,7 +69,13 @@ export default function QuizPage() {
       </header>
 
       <div className="quiz-content">
-        {phase === 'select' && <QuizSelector onStart={handleStart} />}
+        {phase === 'select' && (
+          <QuizSelector
+            onStart={handleStart}
+            onStartSpeedRun={handleStartSpeedRun}
+            onStartBlankMap={handleStartBlankMap}
+          />
+        )}
 
         {phase === 'active' && config && (
           <QuizSession config={config} onComplete={handleComplete} />
@@ -61,6 +88,16 @@ export default function QuizPage() {
             onBackToSelector={handleBackToSelector}
           />
         )}
+
+        {phase === 'speedrun' && speedRunLineKey && (
+          <SpeedRunSession
+            lineKey={speedRunLineKey}
+            onComplete={handleSpeedRunComplete}
+            onBack={handleBackToSelector}
+          />
+        )}
+
+        {phase === 'blankmap' && <BlankMapQuiz onBack={handleBackToSelector} />}
       </div>
     </div>
   );
