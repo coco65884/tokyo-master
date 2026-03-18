@@ -229,19 +229,35 @@ def main() -> None:
         })
         print("西武池袋線を追加")
 
-    # byOperator を再構築
-    from collections import defaultdict
-    by_operator: dict[str, list[dict]] = defaultdict(list)
+    # byOperator に追加分のみ挿入（既存を上書きしない）
+    def upsert_by_operator(line_data: dict) -> None:
+        op = line_data["operator"]
+        entry = {
+            "key": line_data["key"],
+            "name": line_data["name"],
+            "abbr": line_data.get("abbr", ""),
+            "color": line_data["color"],
+            "lineIds": line_data["lineIds"],
+            "stationCount": len(line_data["stations"]),
+        }
+        if op not in idx["byOperator"]:
+            idx["byOperator"][op] = []
+        existing_keys = {e["key"] for e in idx["byOperator"][op]}
+        if entry["key"] not in existing_keys:
+            idx["byOperator"][op].append(entry)
+        else:
+            # 既存エントリを更新
+            for i, e in enumerate(idx["byOperator"][op]):
+                if e["key"] == entry["key"]:
+                    idx["byOperator"][op][i] = entry
+                    break
+
+    upsert_by_operator(tojo_entry)
+    # 西武池袋線のbyOperatorも更新
     for line in idx["lines"]:
-        by_operator[line["operator"]].append({
-            "key": line["key"],
-            "name": line["name"],
-            "abbr": line.get("abbr", ""),
-            "color": line["color"],
-            "lineIds": line["lineIds"],
-            "stationCount": len(line["stations"]),
-        })
-    idx["byOperator"] = dict(by_operator)
+        if line["name"] == "西武池袋線":
+            upsert_by_operator(line)
+            break
 
     with open(path, "w", encoding="utf-8") as f:
         json.dump(idx, f, ensure_ascii=False, indent=2)
