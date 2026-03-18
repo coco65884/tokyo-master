@@ -20,7 +20,8 @@ import {
   getLineInfo,
   getWardCenter,
 } from '@/utils/quizDataLoader';
-import { loadRailLines } from '@/utils/dataLoader';
+import { loadRailLines, loadRivers } from '@/utils/dataLoader';
+import riversData from '@/data/rivers.json';
 
 interface Props {
   config: QuizConfig;
@@ -38,6 +39,8 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [lineName, setLineName] = useState<string>('');
   const [lineGeo, setLineGeo] = useState<FeatureCollection | null>(null);
   const [lineIds, setLineIds] = useState<string[]>([]);
+  const [lineAbbr, setLineAbbr] = useState<string>('');
+  const [riversGeo, setRiversGeo] = useState<FeatureCollection | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -54,6 +57,7 @@ export default function QuizSession({ config, onComplete }: Props) {
           setLineColor(info.color);
           setLineName(info.name);
           setLineIds(info.lineIds);
+          setLineAbbr(info.abbr);
           if (info.stations.length > 0) {
             const midIdx = Math.floor(info.stations.length / 2);
             const mid = info.stations[midIdx];
@@ -75,6 +79,8 @@ export default function QuizSession({ config, onComplete }: Props) {
         qs = generateRiverQuiz();
         setMapCenter([35.6762, 139.6503]);
         setMapZoom(11);
+        const riverGeoData = await loadRivers();
+        if (!cancelled) setRiversGeo(riverGeoData);
       }
 
       if (!cancelled) {
@@ -149,6 +155,33 @@ export default function QuizSession({ config, onComplete }: Props) {
       features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
     } as FeatureCollection;
   }, [lineGeo, lineIds]);
+
+  // 河川GeoJSONの中心座標を計算（テーマクイズ用）
+  const riverCenters = useMemo(() => {
+    if (!riversGeo || config.scopeType !== 'theme') return [];
+    const rivers = riversData as { id: string; name: { kanji: string } }[];
+    return rivers.map((river) => {
+      // GeoJSONから該当河川のfeatureを検索
+      const features = riversGeo.features.filter((f) => f.properties?.name === river.name.kanji);
+      if (features.length === 0) return null;
+      // 全座標を集めて中間点を算出
+      const allCoords: number[][] = [];
+      for (const feat of features) {
+        const geom = feat.geometry;
+        if (geom.type === 'LineString') {
+          allCoords.push(...(geom as GeoJSON.LineString).coordinates);
+        } else if (geom.type === 'MultiLineString') {
+          for (const line of (geom as GeoJSON.MultiLineString).coordinates) {
+            allCoords.push(...line);
+          }
+        }
+      }
+      if (allCoords.length === 0) return null;
+      const midIdx = Math.floor(allCoords.length / 2);
+      const midCoord = allCoords[midIdx];
+      return { name: river.name.kanji, lat: midCoord[1], lng: midCoord[0] };
+    });
+  }, [riversGeo, config.scopeType]);
 
   if (loading) {
     return (
@@ -276,45 +309,115 @@ export default function QuizSession({ config, onComplete }: Props) {
             </>
           )}
 
+          {/* 河川GeoJSON（テーマクイズ用） */}
+          {riversGeo && config.scopeType === 'theme' && (
+            <GeoJSON
+              key={`quiz-rivers-${config.scopeId}`}
+              data={riversGeo}
+              style={() => ({
+                color: '#38bdf8',
+                weight: 3,
+                opacity: 0.8,
+                lineCap: 'round',
+              })}
+              interactive={false}
+            />
+          )}
+
+          {/* 河川番号マーカー（テーマクイズ用） */}
+          {config.scopeType === 'theme' &&
+            !submitted &&
+            riverCenters.map((rc, i) =>
+              rc ? (
+                <Marker
+                  key={`river-num-${i}`}
+                  position={[rc.lat, rc.lng]}
+                  icon={L.divIcon({
+                    className: 'quiz-number-icon',
+                    html: `<span>${i + 1}</span>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 11],
+                  })}
+                  interactive={false}
+                />
+              ) : null,
+            )}
+
+          {/* 河川番号マーカー（提出後は名前表示） */}
+          {config.scopeType === 'theme' &&
+            submitted &&
+            riverCenters.map((rc, i) =>
+              rc ? (
+                <Marker
+                  key={`river-name-${i}`}
+                  position={[rc.lat, rc.lng]}
+                  icon={L.divIcon({
+                    className: 'quiz-number-icon',
+                    html: `<span>${rc.name}</span>`,
+                    iconSize: [60, 22],
+                    iconAnchor: [30, 11],
+                  })}
+                  interactive={false}
+                />
+              ) : null,
+            )}
+
           {/* 駅マーカー + 番号ラベル */}
-          {stationMarkers.map((q, i) => (
-            <CircleMarker
-              key={q.id}
-              center={[q.lat!, q.lng!]}
-              radius={5}
-              pathOptions={{
-                color: lineColor,
-                fillColor: '#fff',
-                fillOpacity: 1,
-                weight: 2,
-              }}
-            >
-              <Tooltip permanent direction="right" offset={[8, 0]} className="quiz-station-number">
-                {submitted ? q.targetName.kanji : `${i + 1}`}
-              </Tooltip>
-              {submitted && (
-                <Popup>
-                  <strong>{q.targetName.kanji}</strong>
-                </Popup>
-              )}
-            </CircleMarker>
-          ))}
+          {stationMarkers.map((q, i) => {
+            const stationLabel =
+              config.scopeType === 'line' && lineAbbr
+                ? `${lineAbbr}${String(i + 1).padStart(2, '0')}`
+                : `${i + 1}`;
+            return (
+              <CircleMarker
+                key={q.id}
+                center={[q.lat!, q.lng!]}
+                radius={5}
+                pathOptions={{
+                  color: lineColor,
+                  fillColor: '#fff',
+                  fillOpacity: 1,
+                  weight: 2,
+                }}
+              >
+                <Tooltip
+                  permanent
+                  direction="right"
+                  offset={[8, 0]}
+                  className="quiz-station-number"
+                >
+                  {submitted ? q.targetName.kanji : stationLabel}
+                </Tooltip>
+                {submitted && (
+                  <Popup>
+                    <strong>{q.targetName.kanji}</strong>
+                  </Popup>
+                )}
+              </CircleMarker>
+            );
+          })}
 
           {/* 番号マーカー（四角ボックス） */}
           {!submitted &&
-            stationMarkers.map((q, i) => (
-              <Marker
-                key={`num-${q.id}`}
-                position={[q.lat!, q.lng!]}
-                icon={L.divIcon({
-                  className: 'quiz-number-icon',
-                  html: `<span>${i + 1}</span>`,
-                  iconSize: [22, 22],
-                  iconAnchor: [11, 28],
-                })}
-                interactive={false}
-              />
-            ))}
+            stationMarkers.map((q, i) => {
+              const stationLabel =
+                config.scopeType === 'line' && lineAbbr
+                  ? `${lineAbbr}${String(i + 1).padStart(2, '0')}`
+                  : `${i + 1}`;
+              return (
+                <Marker
+                  key={`num-${q.id}`}
+                  position={[q.lat!, q.lng!]}
+                  icon={L.divIcon({
+                    className: 'quiz-number-icon',
+                    html: `<span>${stationLabel}</span>`,
+                    iconSize: [22, 22],
+                    iconAnchor: [11, 28],
+                  })}
+                  interactive={false}
+                />
+              );
+            })}
         </MapContainer>
       </div>
     </div>
