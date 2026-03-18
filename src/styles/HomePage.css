@@ -84,3 +84,27 @@
   color: var(--color-text-secondary);
   text-align: center;
 }
+
+.home-settings-link {
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.home-settings-link:hover {
+  color: var(--color-primary);
+}
+
+@media (max-width: 600px) {
+  .home-title {
+    font-size: 2rem;
+  }
+
+  .home-nav {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .home-card {
+    padding: 1.5rem 1rem;
+  }
+}
