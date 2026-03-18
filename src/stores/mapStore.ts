@@ -18,6 +18,7 @@ interface MapState {
   wardFocusMode: boolean;
   distanceMode: boolean;
   distancePoints: [number, number][];
+  showHeatmap: boolean;
   setCenter: (center: [number, number]) => void;
   setZoom: (zoom: number) => void;
   toggleLayer: (layer: keyof Omit<LayerState, 'railLines'>) => void;
@@ -28,6 +29,7 @@ interface MapState {
   setDistanceMode: (on: boolean) => void;
   addDistancePoint: (point: [number, number]) => void;
   clearDistancePoints: () => void;
+  setShowHeatmap: (on: boolean) => void;
 }
 
 const DEFAULT_TOKYO_CENTER: [number, number] = [35.6762, 139.6503];
@@ -48,6 +50,7 @@ export const useMapStore = create<MapState>((set) => ({
   wardFocusMode: true,
   distanceMode: false,
   distancePoints: [],
+  showHeatmap: false,
 
   setCenter: (center) => set({ center }),
   setZoom: (zoom) => set({ zoom }),
@@ -97,4 +100,6 @@ export const useMapStore = create<MapState>((set) => ({
     }),
 
   clearDistancePoints: () => set({ distancePoints: [] }),
+
+  setShowHeatmap: (on) => set({ showHeatmap: on }),
 }));

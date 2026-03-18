@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { LatLngBoundsExpression } from 'leaflet';
 import { useMapStore } from '@/stores/mapStore';
 import MapLayers from './MapLayers';
+import HeatmapOverlay from './HeatmapOverlay';
 import 'leaflet/dist/leaflet.css';
 
 const TOKYO_MAX_BOUNDS: LatLngBoundsExpression = [
@@ -71,6 +72,7 @@ export default function TokyoMap() {
         url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
       />
       <MapLayers />
+      <HeatmapOverlay />
       <MapClickHandler />
       <DistanceCursorManager />
     </MapContainer>
