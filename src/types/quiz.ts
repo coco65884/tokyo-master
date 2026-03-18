@@ -6,8 +6,17 @@ export type AnswerMode = 'text' | 'drag-and-drop';
 /** クイズの出題範囲タイプ */
 export type QuizScopeType = 'ward' | 'line' | 'theme';
 
-/** テーマタイプ */
-export type ThemeType = 'rivers' | 'landmarks' | 'stations';
+/** テーマタイプ（組み込みテーマ + ジャンルPOIキー） */
+export type ThemeType =
+  | 'rivers'
+  | 'landmarks'
+  | 'stations'
+  | 'universities'
+  | 'jiro'
+  | 'museums'
+  | 'parks'
+  | 'stadiums'
+  | 'high_schools';
 
 /** クイズの設定 */
 export interface QuizConfig {
