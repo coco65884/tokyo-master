@@ -71,7 +71,6 @@ export interface LayerVisibility {
   railLines: Record<string, boolean>;
   rivers: boolean;
   roads: boolean;
-  landmarks: boolean;
 }
 
 /** 路線インデックスの1エントリ（全駅データ込み） */
