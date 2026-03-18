@@ -227,8 +227,12 @@ def main() -> None:
                 used_old_keys.add(old_line["key"])
                 merged_line_ids.extend(old_line["lineIds"])
                 for s in old_line["stations"]:
-                    if s["id"] not in merged_stations and not s["name"].startswith("駅-"):
-                        merged_stations[s["id"]] = s
+                    if s["name"].startswith("駅-"):
+                        continue
+                    # 名前+近傍グリッド(~100m)で重複排除
+                    dedup_key = f"{s['name']}_{round(s['lat'] * 100)}_{round(s['lng'] * 100)}"
+                    if dedup_key not in merged_stations:
+                        merged_stations[dedup_key] = s
 
         key = f"{master['operator']}::{master['name']}"
         new_lines.append({
