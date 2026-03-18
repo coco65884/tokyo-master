@@ -5,6 +5,24 @@ import { useQuizStore } from '@/stores/quizStore';
 
 type TabType = QuizScopeType | 'speedrun' | 'blankmap';
 
+/** 事業者キー → 日本語表示名 */
+const OPERATOR_LABELS: Record<string, string> = {
+  JR: 'JR東日本',
+  Metro: '東京メトロ',
+  Toei: '都営',
+  Keio: '京王電鉄',
+  Odakyu: '小田急電鉄',
+  Tokyu: '東急電鉄',
+  Seibu: '西武鉄道',
+  Keikyu: '京浜急行',
+  Tobu: '東武鉄道',
+  TX: 'つくばエクスプレス',
+  Keisei: '京成電鉄',
+  Yurikamome: 'ゆりかもめ',
+  TWR: 'りんかい線',
+  TamaMonorail: '多摩モノレール',
+};
+
 interface Props {
   onStart: () => void;
   onStartSpeedRun?: (lineKey: string) => void;
@@ -131,7 +149,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
             >
               {operatorData.operators.map((op) => (
                 <option key={op} value={op}>
-                  {op}
+                  {OPERATOR_LABELS[op] ?? op}
                 </option>
               ))}
             </select>
@@ -222,7 +240,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
             >
               {operatorData.operators.map((op) => (
                 <option key={op} value={op}>
-                  {op}
+                  {OPERATOR_LABELS[op] ?? op}
                 </option>
               ))}
             </select>
