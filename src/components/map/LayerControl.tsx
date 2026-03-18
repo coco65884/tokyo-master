@@ -1,36 +1,98 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMapStore } from '@/stores/mapStore';
+import { loadLineIndex } from '@/utils/dataLoader';
 
-const RAIL_OPERATORS = [
-  { key: 'JR', label: 'JR東日本', color: '#008000' },
-  { key: 'Metro', label: '東京メトロ', color: '#009bbf' },
-  { key: 'Toei', label: '都営地下鉄', color: '#e85298' },
-  { key: 'Keio', label: '京王電鉄', color: '#dd0077' },
-  { key: 'Odakyu', label: '小田急電鉄', color: '#1e90ff' },
-  { key: 'Tokyu', label: '東急電鉄', color: '#da0442' },
-  { key: 'Seibu', label: '西武鉄道', color: '#00498b' },
-  { key: 'Keikyu', label: '京浜急行', color: '#e8334a' },
-  { key: 'Tobu', label: '東武鉄道', color: '#0f378e' },
-  { key: 'TX', label: 'つくばEX', color: '#2e3192' },
-  { key: 'Keisei', label: '京成電鉄', color: '#003399' },
-  { key: 'Yurikamome', label: 'ゆりかもめ', color: '#009fa1' },
-  { key: 'TWR', label: 'りんかい線', color: '#00b5ad' },
-  { key: 'TamaMonorail', label: '多摩モノレール', color: '#ff7f00' },
+interface LineInfo {
+  key: string;
+  name: string;
+  color: string;
+  stationCount: number;
+}
+
+const OPERATOR_LABELS: Record<string, string> = {
+  JR: 'JR東日本',
+  Metro: '東京メトロ',
+  Toei: '都営',
+  Keio: '京王電鉄',
+  Odakyu: '小田急電鉄',
+  Tokyu: '東急電鉄',
+  Seibu: '西武鉄道',
+  Keikyu: '京浜急行',
+  Tobu: '東武鉄道',
+  TX: 'つくばEX',
+  Keisei: '京成電鉄',
+  Yurikamome: 'ゆりかもめ',
+  TWR: 'りんかい線',
+  TamaMonorail: '多摩モノレール',
+};
+
+const OPERATOR_ORDER = [
+  'JR',
+  'Metro',
+  'Toei',
+  'Keio',
+  'Odakyu',
+  'Tokyu',
+  'Seibu',
+  'Keikyu',
+  'Tobu',
+  'TX',
+  'Keisei',
+  'Yurikamome',
+  'TWR',
+  'TamaMonorail',
 ];
 
 export default function LayerControl() {
   const layers = useMapStore((s) => s.layers);
   const toggleLayer = useMapStore((s) => s.toggleLayer);
   const toggleRailLine = useMapStore((s) => s.toggleRailLine);
-  const [railExpanded, setRailExpanded] = useState(false);
+  const toggleOperator = useMapStore((s) => s.toggleOperator);
+
+  const [linesByOp, setLinesByOp] = useState<Record<string, LineInfo[]>>({});
+  const [expandedOps, setExpandedOps] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    loadLineIndex().then((data) => {
+      const mapped: Record<string, LineInfo[]> = {};
+      for (const [op, entries] of Object.entries(data.byOperator)) {
+        mapped[op] = entries.map((e) => ({
+          key: e.key,
+          name: e.name,
+          color: e.color,
+          stationCount: e.stationCount,
+        }));
+      }
+      setLinesByOp(mapped);
+    });
+  }, []);
+
+  const toggleOpExpand = (op: string) => {
+    setExpandedOps((prev) => ({ ...prev, [op]: !prev[op] }));
+  };
+
+  const isOperatorAllOn = (op: string): boolean => {
+    const opLines = linesByOp[op] || [];
+    return opLines.length > 0 && opLines.every((l) => !!layers.railLines[l.key]);
+  };
+
+  const isOperatorSomeOn = (op: string): boolean => {
+    const opLines = linesByOp[op] || [];
+    return opLines.some((l) => !!layers.railLines[l.key]);
+  };
+
+  const handleOperatorToggle = (op: string) => {
+    const opLines = linesByOp[op] || [];
+    const keys = opLines.map((l) => l.key);
+    toggleOperator(op, keys, !isOperatorAllOn(op));
+  };
 
   const basicLayers: {
-    key: 'wards' | 'prefBorders' | 'rivers' | 'roads' | 'landmarks' | 'stations';
+    key: 'wards' | 'prefBorders' | 'rivers' | 'roads' | 'landmarks';
     label: string;
   }[] = [
     { key: 'wards', label: '区/市境界' },
     { key: 'prefBorders', label: '都道府県境界' },
-    { key: 'stations', label: '駅' },
     { key: 'rivers', label: '川' },
     { key: 'roads', label: '主要道路' },
     { key: 'landmarks', label: '観光地' },
@@ -50,28 +112,54 @@ export default function LayerControl() {
       ))}
 
       <div className="layer-control__section">
-        <button
-          className="layer-control__expand-btn"
-          onClick={() => setRailExpanded(!railExpanded)}
-        >
-          {railExpanded ? '▼' : '▶'} 路線
-        </button>
+        <div className="layer-control__section-title">路線</div>
+        {OPERATOR_ORDER.filter((op) => linesByOp[op]?.length).map((op) => {
+          const opLines = linesByOp[op] || [];
+          const expanded = !!expandedOps[op];
+          const allOn = isOperatorAllOn(op);
+          const someOn = isOperatorSomeOn(op);
 
-        {railExpanded && (
-          <div className="layer-control__rail-list">
-            {RAIL_OPERATORS.map(({ key, label, color }) => (
-              <label key={key} className="layer-control__item layer-control__item--rail">
-                <input
-                  type="checkbox"
-                  checked={!!layers.railLines[key]}
-                  onChange={() => toggleRailLine(key)}
-                />
-                <span className="layer-control__color-dot" style={{ backgroundColor: color }} />
-                <span>{label}</span>
-              </label>
-            ))}
-          </div>
-        )}
+          return (
+            <div key={op} className="layer-control__operator">
+              <div className="layer-control__operator-header">
+                <button className="layer-control__expand-btn" onClick={() => toggleOpExpand(op)}>
+                  {expanded ? '▼' : '▶'}
+                </button>
+                <label className="layer-control__operator-label">
+                  <input
+                    type="checkbox"
+                    checked={allOn}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someOn && !allOn;
+                    }}
+                    onChange={() => handleOperatorToggle(op)}
+                  />
+                  <span>{OPERATOR_LABELS[op] || op}</span>
+                </label>
+              </div>
+
+              {expanded && (
+                <div className="layer-control__line-list">
+                  {opLines.map((line) => (
+                    <label key={line.key} className="layer-control__item layer-control__item--line">
+                      <input
+                        type="checkbox"
+                        checked={!!layers.railLines[line.key]}
+                        onChange={() => toggleRailLine(line.key)}
+                      />
+                      <span
+                        className="layer-control__color-dot"
+                        style={{ backgroundColor: line.color }}
+                      />
+                      <span className="layer-control__line-name">{line.name}</span>
+                      <span className="layer-control__station-count">{line.stationCount}駅</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

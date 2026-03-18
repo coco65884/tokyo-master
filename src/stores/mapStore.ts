@@ -1,17 +1,29 @@
 import { create } from 'zustand';
-import type { LayerVisibility } from '@/types';
+
+interface LayerState {
+  wards: boolean;
+  prefBorders: boolean;
+  /** 個別路線のON/OFF (key = "operator::lineName") */
+  railLines: Record<string, boolean>;
+  rivers: boolean;
+  roads: boolean;
+  landmarks: boolean;
+}
 
 interface MapState {
   center: [number, number];
   zoom: number;
-  layers: LayerVisibility;
+  layers: LayerState;
   selectedWardId: string | null;
+  distanceMode: boolean;
   distancePoints: [number, number][];
   setCenter: (center: [number, number]) => void;
   setZoom: (zoom: number) => void;
-  toggleLayer: (layer: keyof LayerVisibility) => void;
-  toggleRailLine: (lineId: string) => void;
+  toggleLayer: (layer: keyof Omit<LayerState, 'railLines'>) => void;
+  toggleRailLine: (lineKey: string) => void;
+  toggleOperator: (operator: string, lineKeys: string[], enable: boolean) => void;
   setSelectedWard: (wardId: string | null) => void;
+  setDistanceMode: (on: boolean) => void;
   addDistancePoint: (point: [number, number]) => void;
   clearDistancePoints: () => void;
 }
@@ -29,9 +41,9 @@ export const useMapStore = create<MapState>((set) => ({
     rivers: false,
     roads: false,
     landmarks: false,
-    stations: true,
   },
   selectedWardId: null,
+  distanceMode: false,
   distancePoints: [],
 
   setCenter: (center) => set({ center }),
@@ -45,21 +57,33 @@ export const useMapStore = create<MapState>((set) => ({
       },
     })),
 
-  toggleRailLine: (lineId) =>
+  toggleRailLine: (lineKey) =>
     set((state) => ({
       layers: {
         ...state.layers,
         railLines: {
           ...state.layers.railLines,
-          [lineId]: !state.layers.railLines[lineId],
+          [lineKey]: !state.layers.railLines[lineKey],
         },
       },
     })),
 
+  toggleOperator: (_, lineKeys, enable) =>
+    set((state) => {
+      const updated = { ...state.layers.railLines };
+      for (const key of lineKeys) {
+        updated[key] = enable;
+      }
+      return { layers: { ...state.layers, railLines: updated } };
+    }),
+
   setSelectedWard: (wardId) => set({ selectedWardId: wardId }),
+
+  setDistanceMode: (on) => set({ distanceMode: on, distancePoints: on ? [] : [] }),
 
   addDistancePoint: (point) =>
     set((state) => {
+      if (!state.distanceMode) return {};
       const points = [...state.distancePoints, point];
       if (points.length > 2) {
         return { distancePoints: [point] };
