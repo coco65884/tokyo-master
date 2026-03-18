@@ -1,5 +1,6 @@
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
 import { useMapStore } from '@/stores/mapStore';
+import MapLayers from './MapLayers';
 import 'leaflet/dist/leaflet.css';
 
 function MapClickHandler() {
@@ -29,6 +30,7 @@ export default function TokyoMap() {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <MapLayers />
       <MapClickHandler />
     </MapContainer>
   );
