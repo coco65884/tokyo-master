@@ -2,6 +2,8 @@ import { useMapStore } from '@/stores/mapStore';
 import { haversineDistance, formatDistance } from '@/utils/distance';
 
 export default function DistanceDisplay() {
+  const distanceMode = useMapStore((s) => s.distanceMode);
+  const setDistanceMode = useMapStore((s) => s.setDistanceMode);
   const points = useMapStore((s) => s.distancePoints);
   const clearPoints = useMapStore((s) => s.clearDistancePoints);
 
@@ -12,28 +14,41 @@ export default function DistanceDisplay() {
 
   return (
     <div className="distance-display">
-      <h3 className="distance-display__title">距離計測</h3>
-      <p className="distance-display__hint">地図上の2点をクリックしてください</p>
+      <div className="distance-display__header">
+        <h3 className="distance-display__title">距離計測</h3>
+        <button
+          className={`distance-display__toggle ${distanceMode ? 'distance-display__toggle--active' : ''}`}
+          onClick={() => setDistanceMode(!distanceMode)}
+        >
+          {distanceMode ? 'ON' : 'OFF'}
+        </button>
+      </div>
 
-      {points.length > 0 && (
-        <div className="distance-display__info">
-          <p>
-            地点1: {points[0][0].toFixed(4)}, {points[0][1].toFixed(4)}
-          </p>
-          {points.length === 2 && (
-            <>
+      {distanceMode && (
+        <>
+          <p className="distance-display__hint">地図上の2点をクリックしてください</p>
+
+          {points.length > 0 && (
+            <div className="distance-display__info">
               <p>
-                地点2: {points[1][0].toFixed(4)}, {points[1][1].toFixed(4)}
+                地点1: {points[0][0].toFixed(4)}, {points[0][1].toFixed(4)}
               </p>
-              <p className="distance-display__result">
-                直線距離: <strong>{formatDistance(distance!)}</strong>
-              </p>
-            </>
+              {points.length === 2 && (
+                <>
+                  <p>
+                    地点2: {points[1][0].toFixed(4)}, {points[1][1].toFixed(4)}
+                  </p>
+                  <p className="distance-display__result">
+                    直線距離: <strong>{formatDistance(distance!)}</strong>
+                  </p>
+                </>
+              )}
+              <button className="distance-display__clear" onClick={clearPoints}>
+                クリア
+              </button>
+            </div>
           )}
-          <button className="distance-display__clear" onClick={clearPoints}>
-            クリア
-          </button>
-        </div>
+        </>
       )}
     </div>
   );

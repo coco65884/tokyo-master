@@ -14,6 +14,8 @@ export type {
   RoadGeoJSON,
   StationGeoJSON,
   LandmarkGeoJSON,
+  LineIndexEntry,
+  OperatorLineEntry,
 } from './geography';
 
 export type {

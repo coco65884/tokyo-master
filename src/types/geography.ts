@@ -72,7 +72,25 @@ export interface LayerVisibility {
   rivers: boolean;
   roads: boolean;
   landmarks: boolean;
-  stations: boolean;
+}
+
+/** 路線インデックスの1エントリ（全駅データ込み） */
+export interface LineIndexEntry {
+  key: string;
+  name: string;
+  operator: string;
+  color: string;
+  lineIds: string[];
+  stations: { id: string; name: string; lat: number; lng: number }[];
+}
+
+/** byOperator用の軽量エントリ（駅数のみ） */
+export interface OperatorLineEntry {
+  key: string;
+  name: string;
+  color: string;
+  lineIds: string[];
+  stationCount: number;
 }
 
 /** GeoJSONデータ型 */
