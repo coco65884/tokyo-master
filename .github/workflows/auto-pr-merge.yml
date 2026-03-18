@@ -1,0 +1,57 @@
+name: Auto PR & Merge
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract issue number from branch name
+        id: issue
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          # Extract task ID like SETUP-1, DATA-2, etc.
+          TASK_ID=$(echo "$BRANCH" | sed -E 's|feature/([A-Z]+-[0-9]+)-.*|\1|')
+          echo "task_id=$TASK_ID" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR if not exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list --head "${{ steps.issue.outputs.branch }}" --json number --jq '.[0].number // empty')
+          if [ -z "$EXISTING" ]; then
+            gh pr create \
+              --title "feat: ${{ steps.issue.outputs.task_id }} $(echo '${{ steps.issue.outputs.branch }}' | sed 's|feature/[A-Z]*-[0-9]*-||; s|-| |g')" \
+              --body "Auto-generated PR for branch \`${{ steps.issue.outputs.branch }}\`" \
+              --base main
+          fi
+
+  auto-merge:
+    needs: create-pr
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for CI and merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          PR_NUM=$(gh pr list --head "$BRANCH" --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUM" ]; then
+            gh pr merge "$PR_NUM" --squash --auto
+          fi
