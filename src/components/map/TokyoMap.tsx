@@ -1,7 +1,14 @@
 import { MapContainer, TileLayer, useMapEvents } from 'react-leaflet';
+import type { LatLngBoundsExpression } from 'leaflet';
 import { useMapStore } from '@/stores/mapStore';
 import MapLayers from './MapLayers';
 import 'leaflet/dist/leaflet.css';
+
+// 東京都を中心にしたビュー制限（少し余裕を持たせる）
+const TOKYO_MAX_BOUNDS: LatLngBoundsExpression = [
+  [35.15, 138.85], // 南西
+  [36.0, 140.05], // 北東
+];
 
 function MapClickHandler() {
   const addDistancePoint = useMapStore((s) => s.addDistancePoint);
@@ -23,12 +30,16 @@ export default function TokyoMap() {
     <MapContainer
       center={center}
       zoom={zoom}
+      minZoom={9}
+      maxZoom={18}
+      maxBounds={TOKYO_MAX_BOUNDS}
+      maxBoundsViscosity={0.8}
       className="tokyo-map"
       style={{ width: '100%', height: '100%' }}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+        url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
       />
       <MapLayers />
       <MapClickHandler />
