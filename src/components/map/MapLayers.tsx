@@ -195,24 +195,29 @@ function PrefBorderLayer({ data }: { data: FeatureCollection }) {
   );
 }
 
-// ======= Rail lines + stations =======
-interface WardBBox {
+// ======= Focus area: polygon + bbox for fast rejection =======
+interface FocusArea {
+  /** 粗フィルタ用のbbox */
   minLat: number;
   maxLat: number;
   minLng: number;
   maxLng: number;
+  /** ポリゴンリング（外周+穴）の座標列 [lng, lat][] */
+  rings: number[][][];
 }
+
+// ======= Rail lines + stations =======
 
 function useRailData({
   railGeoData,
   lineIndex,
   visibleLines,
-  focusBBox,
+  focusArea,
 }: {
   railGeoData: FeatureCollection;
   lineIndex: LineIndexEntry[];
   visibleLines: Record<string, boolean>;
-  focusBBox: WardBBox | null;
+  focusArea: FocusArea | null;
 }) {
   const activeKeys = useMemo(
     () =>
@@ -269,12 +274,7 @@ function useRailData({
             existing.lines.push(lineInfo);
           }
         } else {
-          const inFocus =
-            !focusBBox ||
-            (s.lat >= focusBBox.minLat &&
-              s.lat <= focusBBox.maxLat &&
-              s.lng >= focusBBox.minLng &&
-              s.lng <= focusBBox.maxLng);
+          const inFocus = !focusArea || pointInFocusArea([s.lng, s.lat], focusArea);
           byNameGrid.set(gridKey, {
             ...s,
             color: entry.color,
@@ -285,7 +285,7 @@ function useRailData({
       }
     }
     return [...byNameGrid.values()];
-  }, [lineIndex, activeKeys, focusBBox]);
+  }, [lineIndex, activeKeys, focusArea]);
 
   if (activeKeys.size === 0) return null;
 
@@ -293,19 +293,25 @@ function useRailData({
 }
 
 // bbox→短い文字列キー
-function bboxKey(bbox: WardBBox | null): string {
-  if (!bbox) return 'none';
-  return `${bbox.minLat.toFixed(3)}_${bbox.maxLng.toFixed(3)}`;
+function focusKey(area: FocusArea | null): string {
+  if (!area) return 'none';
+  return `${area.minLat.toFixed(3)}_${area.maxLng.toFixed(3)}`;
 }
 
 // 路線の線のみ描画（灰色+白, 2層方式）
-function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: WardBBox | null }) {
+function RailLineLayer({
+  geo,
+  focusArea,
+}: {
+  geo: FeatureCollection;
+  focusArea: FocusArea | null;
+}) {
   const clipped = useMemo(
-    () => (focusBBox ? clipGeoJSONToBBox(geo, focusBBox) : null),
-    [geo, focusBBox],
+    () => (focusArea ? clipGeoJSONToFocusArea(geo, focusArea) : null),
+    [geo, focusArea],
   );
 
-  const bk = bboxKey(focusBBox);
+  const bk = focusKey(focusArea);
   const railBase = { color: '#6b7280', lineCap: 'butt' as const, lineJoin: 'miter' as const };
   const railDash = {
     color: '#ffffff',
@@ -320,15 +326,15 @@ function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: 
       <GeoJSON
         key={`rail-base-bg-${bk}-${geo.features.length}`}
         data={geo}
-        style={() => ({ ...railBase, weight: 5, opacity: focusBBox ? 0.1 : 0.7 })}
+        style={() => ({ ...railBase, weight: 5, opacity: focusArea ? 0.1 : 0.7 })}
         interactive={false}
       />
       <GeoJSON
         key={`rail-dash-bg-${bk}-${geo.features.length}`}
         data={geo}
-        style={() => ({ ...railDash, weight: 3, opacity: focusBBox ? 0.08 : 0.7 })}
+        style={() => ({ ...railDash, weight: 3, opacity: focusArea ? 0.08 : 0.7 })}
         onEachFeature={
-          focusBBox
+          focusArea
             ? undefined
             : (feature, layer) => {
                 (layer as L.Path).bindTooltip(feature.properties?.name || '', {
@@ -367,7 +373,7 @@ function RailLineLayer({ geo, focusBBox }: { geo: FeatureCollection; focusBBox: 
 // 駅のみ描画（最前面レイヤー用）
 function StationMarkers({
   stations,
-  focusBBox,
+  focusArea,
 }: {
   stations: {
     id: string;
@@ -378,11 +384,11 @@ function StationMarkers({
     inFocus: boolean;
     lines: { name: string; abbr: string; color: string }[];
   }[];
-  focusBBox: WardBBox | null;
+  focusArea: FocusArea | null;
 }) {
   return (
     <>
-      {focusBBox &&
+      {focusArea &&
         stations
           .filter((s) => !s.inFocus)
           .map((s, i) => (
@@ -448,17 +454,47 @@ function StationMarkers({
   );
 }
 
-// ======= helper: LineStringをbboxで座標クリッピング =======
-function pointInBBox(c: number[], bbox: WardBBox): boolean {
-  return c[1] >= bbox.minLat && c[1] <= bbox.maxLat && c[0] >= bbox.minLng && c[0] <= bbox.maxLng;
+// ======= Ray Casting point-in-polygon =======
+
+/** Ray Casting: 点 [lng, lat] がポリゴンリング内にあるか判定 */
+function pointInRing(lng: number, lat: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0],
+      yi = ring[i][1];
+    const xj = ring[j][0],
+      yj = ring[j][1];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
 }
 
-/** LineString座標列をbbox内の連続セグメントに分割 */
-function clipLineCoords(coords: number[][], bbox: WardBBox): number[][][] {
+/** 座標 [lng, lat] がFocusArea（区ポリゴン）内にあるか判定 */
+function pointInFocusArea(c: number[], area: FocusArea): boolean {
+  const lng = c[0],
+    lat = c[1];
+  // 1. bbox粗フィルタ（99%の点はここで除外）
+  if (lat < area.minLat || lat > area.maxLat || lng < area.minLng || lng > area.maxLng) {
+    return false;
+  }
+  // 2. Ray Casting精密判定
+  // 最初のリングが外周、残りが穴
+  if (!pointInRing(lng, lat, area.rings[0])) return false;
+  // 穴の中にいたらfalse
+  for (let i = 1; i < area.rings.length; i++) {
+    if (pointInRing(lng, lat, area.rings[i])) return false;
+  }
+  return true;
+}
+
+/** LineString座標列をポリゴン内の連続セグメントに分割 */
+function clipLineToFocusArea(coords: number[][], area: FocusArea): number[][][] {
   const segments: number[][][] = [];
   let current: number[][] = [];
   for (const c of coords) {
-    if (pointInBBox(c, bbox)) {
+    if (pointInFocusArea(c, area)) {
       current.push(c);
     } else {
       if (current.length >= 2) segments.push(current);
@@ -469,8 +505,8 @@ function clipLineCoords(coords: number[][], bbox: WardBBox): number[][][] {
   return segments;
 }
 
-/** FeatureCollectionをbboxでクリッピング。bbox内の座標部分だけのMultiLineStringに変換 */
-function clipGeoJSONToBBox(data: FeatureCollection, bbox: WardBBox): FeatureCollection {
+/** FeatureCollectionをポリゴンでクリッピング */
+function clipGeoJSONToFocusArea(data: FeatureCollection, area: FocusArea): FeatureCollection {
   const clippedFeatures: Feature[] = [];
   for (const feat of data.features) {
     const geom = feat.geometry;
@@ -485,7 +521,7 @@ function clipGeoJSONToBBox(data: FeatureCollection, bbox: WardBBox): FeatureColl
 
     const clippedSegments: number[][][] = [];
     for (const line of allCoords) {
-      clippedSegments.push(...clipLineCoords(line, bbox));
+      clippedSegments.push(...clipLineToFocusArea(line, area));
     }
 
     if (clippedSegments.length === 0) continue;
@@ -502,11 +538,11 @@ function clipGeoJSONToBBox(data: FeatureCollection, bbox: WardBBox): FeatureColl
 }
 
 // ======= Rivers (2層: 全体薄く + bbox内を濃く) =======
-function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
-  const bk = bboxKey(focusBBox);
+function RiverLayer({ data, focusArea }: { data: FeatureCollection; focusArea: FocusArea | null }) {
+  const bk = focusKey(focusArea);
   const clipped = useMemo(
-    () => (focusBBox ? clipGeoJSONToBBox(data, focusBBox) : null),
-    [data, focusBBox],
+    () => (focusArea ? clipGeoJSONToFocusArea(data, focusArea) : null),
+    [data, focusArea],
   );
 
   const interactionHandler = (feature: Feature, layer: L.Layer) => {
@@ -535,11 +571,11 @@ function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: W
         data={data}
         style={{
           color: '#38bdf8',
-          weight: focusBBox ? 1.5 : 3,
-          opacity: focusBBox ? 0.12 : 0.8,
+          weight: focusArea ? 1.5 : 3,
+          opacity: focusArea ? 0.12 : 0.8,
           lineCap: 'round',
         }}
-        onEachFeature={focusBBox ? undefined : interactionHandler}
+        onEachFeature={focusArea ? undefined : interactionHandler}
       />
       {/* フォーカス層: bbox内だけ濃く */}
       {clipped && clipped.features.length > 0 && (
@@ -555,11 +591,11 @@ function RiverLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: W
 }
 
 // ======= Roads (2層: 全体薄く + bbox内を濃く) =======
-function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: WardBBox | null }) {
-  const bk = bboxKey(focusBBox);
+function RoadLayer({ data, focusArea }: { data: FeatureCollection; focusArea: FocusArea | null }) {
+  const bk = focusKey(focusArea);
   const clipped = useMemo(
-    () => (focusBBox ? clipGeoJSONToBBox(data, focusBBox) : null),
-    [data, focusBBox],
+    () => (focusArea ? clipGeoJSONToFocusArea(data, focusArea) : null),
+    [data, focusArea],
   );
 
   const interactionHandler = (feature: Feature, layer: L.Layer) => {
@@ -587,11 +623,11 @@ function RoadLayer({ data, focusBBox }: { data: FeatureCollection; focusBBox: Wa
         data={data}
         style={{
           color: '#fb923c',
-          weight: focusBBox ? 1.5 : 2.5,
-          opacity: focusBBox ? 0.12 : 0.7,
+          weight: focusArea ? 1.5 : 2.5,
+          opacity: focusArea ? 0.12 : 0.7,
           lineCap: 'round',
         }}
-        onEachFeature={focusBBox ? undefined : interactionHandler}
+        onEachFeature={focusArea ? undefined : interactionHandler}
       />
       {clipped && clipped.features.length > 0 && (
         <GeoJSON
@@ -658,24 +694,30 @@ function DistanceOverlay() {
 }
 
 // ======= Helpers =======
-function computeWardBBox(wardsGeo: FeatureCollection, wardId: string): WardBBox | null {
+function extractFocusArea(wardsGeo: FeatureCollection, wardId: string): FocusArea | null {
   const feat = wardsGeo.features.find((f) => f.properties?.id === wardId);
   if (!feat) return null;
-  const coords: number[][] = [];
-  const flatten = (c: unknown): void => {
-    if (Array.isArray(c) && typeof c[0] === 'number') {
-      coords.push(c as number[]);
-    } else if (Array.isArray(c)) {
-      for (const sub of c) flatten(sub);
-    }
-  };
-  flatten((feat.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon).coordinates);
-  if (coords.length === 0) return null;
+
+  const geom = feat.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
+  // ポリゴンのリングを抽出（MultiPolygonは最初のポリゴンを使用）
+  let rings: number[][][];
+  if (geom.type === 'Polygon') {
+    rings = geom.coordinates as number[][][];
+  } else {
+    // MultiPolygon: 全ポリゴンの外周を結合
+    rings = (geom.coordinates as number[][][][]).map((poly) => poly[0]);
+  }
+
+  if (rings.length === 0 || rings[0].length === 0) return null;
+
+  // bbox計算
+  const allCoords = rings.flat();
   return {
-    minLat: Math.min(...coords.map((c) => c[1])),
-    maxLat: Math.max(...coords.map((c) => c[1])),
-    minLng: Math.min(...coords.map((c) => c[0])),
-    maxLng: Math.max(...coords.map((c) => c[0])),
+    minLat: Math.min(...allCoords.map((c) => c[1])),
+    maxLat: Math.max(...allCoords.map((c) => c[1])),
+    minLng: Math.min(...allCoords.map((c) => c[0])),
+    maxLng: Math.max(...allCoords.map((c) => c[0])),
+    rings,
   };
 }
 
@@ -701,9 +743,9 @@ export default function MapLayers() {
     };
   }, [wardFocusActive, selectedWardId, objects]);
 
-  const focusBBox = useMemo(() => {
+  const focusArea = useMemo(() => {
     if (!wardFocusActive || !selectedWardId || !geoData.wards) return null;
-    return computeWardBBox(geoData.wards, selectedWardId);
+    return extractFocusArea(geoData.wards, selectedWardId);
   }, [wardFocusActive, selectedWardId, geoData.wards]);
 
   const effectiveRailLines = useMemo(() => {
@@ -723,7 +765,7 @@ export default function MapLayers() {
     railGeoData: geoData.railLines || emptyGeo,
     lineIndex,
     visibleLines: effectiveRailLines,
-    focusBBox,
+    focusArea,
   });
   const hasRailData = geoData.railLines !== null && lineIndex.length > 0;
 
@@ -742,18 +784,18 @@ export default function MapLayers() {
 
       {/* 路線（線のみ） */}
       {hasRailData && railData?.filteredGeo && (
-        <RailLineLayer geo={railData.filteredGeo} focusBBox={focusBBox} />
+        <RailLineLayer geo={railData.filteredGeo} focusArea={focusArea} />
       )}
 
-      {showRivers && geoData.rivers && <RiverLayer data={geoData.rivers} focusBBox={focusBBox} />}
-      {showRoads && geoData.roads && <RoadLayer data={geoData.roads} focusBBox={focusBBox} />}
+      {showRivers && geoData.rivers && <RiverLayer data={geoData.rivers} focusArea={focusArea} />}
+      {showRoads && geoData.roads && <RoadLayer data={geoData.roads} focusArea={focusArea} />}
 
       {layers.landmarks && geoData.landmarks && <LandmarkLayer data={geoData.landmarks} />}
       <DistanceOverlay />
 
       {/* 駅は最前面レイヤー */}
       {hasRailData && (railData?.activeStations?.length ?? 0) > 0 && (
-        <StationMarkers stations={railData!.activeStations} focusBBox={focusBBox} />
+        <StationMarkers stations={railData!.activeStations} focusArea={focusArea} />
       )}
     </>
   );
