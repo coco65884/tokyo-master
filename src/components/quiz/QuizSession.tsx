@@ -1,7 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  MapContainer,
+  TileLayer,
+  GeoJSON,
+  CircleMarker,
+  Marker,
+  Tooltip,
+  Popup,
+} from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { FeatureCollection } from 'geojson';
 import type { QuizQuestion, QuizConfig, QuizAnswer, QuizResult } from '@/types';
 import { matchesName, matchesNameString } from '@/utils/nameMatch';
 import {
@@ -11,19 +20,12 @@ import {
   getLineInfo,
   getWardCenter,
 } from '@/utils/quizDataLoader';
+import { loadRailLines } from '@/utils/dataLoader';
 
 interface Props {
   config: QuizConfig;
   onComplete: (result: QuizResult) => void;
 }
-
-/** 駅マーカー用のシンプルなアイコン */
-const stationIcon = L.divIcon({
-  className: 'quiz-station-icon',
-  html: '<div style="width:8px;height:8px;border-radius:50%;background:#1a73e8;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.3)"></div>',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-});
 
 export default function QuizSession({ config, onComplete }: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -32,11 +34,12 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [loading, setLoading] = useState(true);
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.6762, 139.6503]);
   const [mapZoom, setMapZoom] = useState(12);
-  const [lineColor, setLineColor] = useState<string>('#1a73e8');
+  const [lineColor, setLineColor] = useState<string>('#6b7280');
   const [lineName, setLineName] = useState<string>('');
+  const [lineGeo, setLineGeo] = useState<FeatureCollection | null>(null);
+  const [lineIds, setLineIds] = useState<string[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // 問題を読み込む
   useEffect(() => {
     let cancelled = false;
 
@@ -50,7 +53,7 @@ export default function QuizSession({ config, onComplete }: Props) {
         if (info && !cancelled) {
           setLineColor(info.color);
           setLineName(info.name);
-          // 路線の中央あたりにフォーカス
+          setLineIds(info.lineIds);
           if (info.stations.length > 0) {
             const midIdx = Math.floor(info.stations.length / 2);
             const mid = info.stations[midIdx];
@@ -58,6 +61,9 @@ export default function QuizSession({ config, onComplete }: Props) {
             setMapZoom(12);
           }
         }
+        // GeoJSON路線パスを読み込み
+        const railGeo = await loadRailLines();
+        if (!cancelled) setLineGeo(railGeo);
       } else if (config.scopeType === 'ward') {
         qs = await generateWardQuiz(config.scopeId);
         const center = await getWardCenter(config.scopeId);
@@ -115,12 +121,7 @@ export default function QuizSession({ config, onComplete }: Props) {
         ? matchesName(userAnswer, q.targetName)
         : matchesNameString(userAnswer, correctAnswer);
 
-      return {
-        questionId: q.id,
-        userAnswer,
-        correctAnswer,
-        isCorrect,
-      };
+      return { questionId: q.id, userAnswer, correctAnswer, isCorrect };
     });
 
     const correctCount = quizAnswers.filter((a) => a.isCorrect).length;
@@ -138,6 +139,16 @@ export default function QuizSession({ config, onComplete }: Props) {
 
     onComplete(result);
   };
+
+  // 路線GeoJSONをフィルタ（この路線のlineIdsだけ）
+  const filteredLineGeo = useMemo(() => {
+    if (!lineGeo || lineIds.length === 0) return null;
+    const idSet = new Set(lineIds);
+    return {
+      ...lineGeo,
+      features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
+    } as FeatureCollection;
+  }, [lineGeo, lineIds]);
 
   if (loading) {
     return (
@@ -157,14 +168,6 @@ export default function QuizSession({ config, onComplete }: Props) {
 
   const answeredCount = answers.filter((a) => a.trim() !== '').length;
   const progress = answeredCount / questions.length;
-
-  // 路線の座標リスト（polyline用）
-  const lineCoords: [number, number][] =
-    config.scopeType === 'line'
-      ? questions.filter((q) => q.lat && q.lng).map((q) => [q.lat!, q.lng!])
-      : [];
-
-  // 駅マーカー用データ
   const stationMarkers = questions.filter((q) => q.lat && q.lng);
 
   return (
@@ -181,12 +184,10 @@ export default function QuizSession({ config, onComplete }: Props) {
           </span>
         </div>
 
-        {/* Progress bar */}
         <div className="quiz-session__progress">
           <div className="quiz-session__progress-bar" style={{ width: `${progress * 100}%` }} />
         </div>
 
-        {/* Question inputs */}
         <div className="quiz-session__questions">
           {questions.map((q, i) => (
             <div key={q.id} className="quiz-session__question">
@@ -227,34 +228,93 @@ export default function QuizSession({ config, onComplete }: Props) {
         )}
       </div>
 
-      {/* Map */}
       <div className="quiz-session__right">
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
           scrollWheelZoom={true}
+          wheelDebounceTime={80}
+          wheelPxPerZoomLevel={200}
+          zoomSnap={0.5}
+          zoomDelta={0.5}
           className="quiz-session__map"
           style={{ width: '100%', height: '100%' }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           />
-          {lineCoords.length > 1 && (
-            <Polyline
-              positions={lineCoords}
-              pathOptions={{ color: lineColor, weight: 3, opacity: 0.7 }}
-            />
+
+          {/* 路線パス: GeoJSON（地図記号風: 灰色+白交互） */}
+          {filteredLineGeo && (
+            <>
+              <GeoJSON
+                key={`quiz-rail-base-${config.scopeId}`}
+                data={filteredLineGeo}
+                style={() => ({
+                  color: '#6b7280',
+                  weight: 5,
+                  opacity: 0.7,
+                  lineCap: 'butt',
+                  lineJoin: 'miter',
+                })}
+                interactive={false}
+              />
+              <GeoJSON
+                key={`quiz-rail-dash-${config.scopeId}`}
+                data={filteredLineGeo}
+                style={() => ({
+                  color: '#ffffff',
+                  weight: 3,
+                  opacity: 0.7,
+                  dashArray: '6, 6',
+                  lineCap: 'butt',
+                  lineJoin: 'miter',
+                })}
+                interactive={false}
+              />
+            </>
           )}
-          {stationMarkers.map((q) => (
-            <Marker key={q.id} position={[q.lat!, q.lng!]} icon={stationIcon}>
+
+          {/* 駅マーカー + 番号ラベル */}
+          {stationMarkers.map((q, i) => (
+            <CircleMarker
+              key={q.id}
+              center={[q.lat!, q.lng!]}
+              radius={5}
+              pathOptions={{
+                color: lineColor,
+                fillColor: '#fff',
+                fillOpacity: 1,
+                weight: 2,
+              }}
+            >
+              <Tooltip permanent direction="right" offset={[8, 0]} className="quiz-station-number">
+                {submitted ? q.targetName.kanji : `${i + 1}`}
+              </Tooltip>
               {submitted && (
                 <Popup>
                   <strong>{q.targetName.kanji}</strong>
                 </Popup>
               )}
-            </Marker>
+            </CircleMarker>
           ))}
+
+          {/* 番号マーカー（四角ボックス） */}
+          {!submitted &&
+            stationMarkers.map((q, i) => (
+              <Marker
+                key={`num-${q.id}`}
+                position={[q.lat!, q.lng!]}
+                icon={L.divIcon({
+                  className: 'quiz-number-icon',
+                  html: `<span>${i + 1}</span>`,
+                  iconSize: [22, 22],
+                  iconAnchor: [11, 28],
+                })}
+                interactive={false}
+              />
+            ))}
         </MapContainer>
       </div>
     </div>
