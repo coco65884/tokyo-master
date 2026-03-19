@@ -311,6 +311,13 @@ function RailLineLayer({
     lineJoin: 'miter' as const,
   };
 
+  const railInteraction = (feature: Feature, layer: L.Layer) => {
+    const name = feature.properties?.name || '';
+    const path = layer as L.Path;
+    path.bindTooltip(name, { sticky: true, className: 'rail-tooltip' });
+    path.bindPopup(`<strong>${name}</strong>`, { closeButton: false });
+  };
+
   return (
     <>
       {/* 背景: 全路線薄く */}
@@ -324,17 +331,17 @@ function RailLineLayer({
         key={`rail-dash-bg-${bk}-${geo.features.length}`}
         data={geo}
         style={() => ({ ...railDash, weight: 3, opacity: focusArea ? 0.08 : 0.7 })}
-        onEachFeature={
-          focusArea
-            ? undefined
-            : (feature, layer) => {
-                (layer as L.Path).bindTooltip(feature.properties?.name || '', {
-                  sticky: true,
-                  className: 'rail-tooltip',
-                });
-              }
-        }
+        interactive={false}
       />
+      {/* 当たり判定用の透明太線レイヤー */}
+      {!focusArea && (
+        <GeoJSON
+          key={`rail-hit-bg-${bk}-${geo.features.length}`}
+          data={geo}
+          style={() => ({ color: 'transparent', weight: 16, opacity: 0 })}
+          onEachFeature={railInteraction}
+        />
+      )}
       {/* フォーカス層: bbox内だけ濃く */}
       {clipped && clipped.features.length > 0 && (
         <>
@@ -348,12 +355,14 @@ function RailLineLayer({
             key={`rail-dash-focus-${bk}`}
             data={clipped}
             style={() => ({ ...railDash, weight: 3, opacity: 0.7 })}
-            onEachFeature={(feature, layer) => {
-              (layer as L.Path).bindTooltip(feature.properties?.name || '', {
-                sticky: true,
-                className: 'rail-tooltip',
-              });
-            }}
+            interactive={false}
+          />
+          {/* フォーカス層の当たり判定 */}
+          <GeoJSON
+            key={`rail-hit-focus-${bk}`}
+            data={clipped}
+            style={() => ({ color: 'transparent', weight: 16, opacity: 0 })}
+            onEachFeature={railInteraction}
           />
         </>
       )}
