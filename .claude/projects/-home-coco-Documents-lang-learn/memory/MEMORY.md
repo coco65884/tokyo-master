@@ -1,1 +1,0 @@
-- [feedback_no_push.md](feedback_no_push.md) - 動作確認前にgit pushしない
