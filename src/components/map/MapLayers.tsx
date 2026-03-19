@@ -546,34 +546,32 @@ function RiverLayer({ data, focusArea }: { data: FeatureCollection; focusArea: F
       className: 'river-popup',
     });
     path.on('mouseover', () => {
-      path.setStyle({ weight: 5, opacity: 1 });
+      path.setStyle({ weight: 7, opacity: 1 });
       path.bringToFront();
     });
     path.on('mouseout', () => {
-      path.setStyle({ weight: 3, opacity: 0.8 });
+      path.setStyle({ weight: 4, opacity: 0.8 });
     });
   };
 
   return (
     <>
-      {/* 背景: 全データ薄く */}
       <GeoJSON
         key={`rivers-bg-${bk}`}
         data={data}
         style={{
           color: '#38bdf8',
-          weight: focusArea ? 1.5 : 3,
+          weight: focusArea ? 2 : 4,
           opacity: focusArea ? 0.12 : 0.8,
           lineCap: 'round',
         }}
         onEachFeature={focusArea ? undefined : interactionHandler}
       />
-      {/* フォーカス層: bbox内だけ濃く */}
       {clipped && clipped.features.length > 0 && (
         <GeoJSON
           key={`rivers-focus-${bk}`}
           data={clipped}
-          style={{ color: '#38bdf8', weight: 3, opacity: 0.8, lineCap: 'round' }}
+          style={{ color: '#38bdf8', weight: 4, opacity: 0.8, lineCap: 'round' }}
           onEachFeature={interactionHandler}
         />
       )}
@@ -599,11 +597,11 @@ function RoadLayer({ data, focusArea }: { data: FeatureCollection; focusArea: Fo
       className: 'road-popup',
     });
     path.on('mouseover', () => {
-      path.setStyle({ weight: 4, opacity: 1 });
+      path.setStyle({ weight: 6, opacity: 1 });
       path.bringToFront();
     });
     path.on('mouseout', () => {
-      path.setStyle({ weight: 2.5, opacity: 0.7 });
+      path.setStyle({ weight: 3.5, opacity: 0.7 });
     });
   };
 
@@ -614,7 +612,7 @@ function RoadLayer({ data, focusArea }: { data: FeatureCollection; focusArea: Fo
         data={data}
         style={{
           color: '#fb923c',
-          weight: focusArea ? 1.5 : 2.5,
+          weight: focusArea ? 2 : 3.5,
           opacity: focusArea ? 0.12 : 0.7,
           lineCap: 'round',
         }}
@@ -624,7 +622,7 @@ function RoadLayer({ data, focusArea }: { data: FeatureCollection; focusArea: Fo
         <GeoJSON
           key={`roads-focus-${bk}`}
           data={clipped}
-          style={{ color: '#fb923c', weight: 2.5, opacity: 0.7, lineCap: 'round' }}
+          style={{ color: '#fb923c', weight: 3.5, opacity: 0.7, lineCap: 'round' }}
           onEachFeature={interactionHandler}
         />
       )}
@@ -639,6 +637,7 @@ interface GenrePOI {
   name: string;
   lat: number;
   lng: number;
+  group?: string;
 }
 interface GenreEntry {
   label: string;
@@ -648,39 +647,42 @@ interface GenreEntry {
 
 function GenrePOILayer({ genreKey }: { genreKey: string }) {
   const genre = (genrePoisData as Record<string, GenreEntry>)[genreKey];
+  const [highlightGroup, setHighlightGroup] = useState<string | null>(null);
   if (!genre) return null;
 
   return (
     <>
-      {genre.pois.map((poi, i) => (
-        <Marker
-          key={`genre-${genreKey}-${i}`}
-          position={[poi.lat, poi.lng]}
-          icon={L.divIcon({
-            className: 'genre-poi-icon',
-            html: `<span>${genre.icon}</span>`,
-            iconSize: [24, 24],
-            iconAnchor: [12, 12],
-          })}
-          eventHandlers={{
-            mouseover: (e) => {
-              const tooltip = (e.target as L.Marker).getTooltip();
-              if (tooltip) (e.target as L.Marker).closeTooltip();
-            },
-            mouseout: (e) => {
-              const tooltip = (e.target as L.Marker).getTooltip();
-              if (tooltip) (e.target as L.Marker).openTooltip();
-            },
-          }}
-        >
-          <Tooltip permanent direction="top" offset={[0, -12]} className="genre-poi-label">
-            {poi.name}
-          </Tooltip>
-          <Popup>
-            <strong>{poi.name}</strong>
-          </Popup>
-        </Marker>
-      ))}
+      {genre.pois.map((poi, i) => {
+        const group = (poi as GenrePOI).group;
+        const isHighlighted = highlightGroup && group && highlightGroup === group;
+        return (
+          <Marker
+            key={`genre-${genreKey}-${i}`}
+            position={[poi.lat, poi.lng]}
+            icon={L.divIcon({
+              className: `genre-poi-icon ${isHighlighted ? 'genre-poi-icon--highlight' : ''}`,
+              html: `<span>${genre.icon}</span>`,
+              iconSize: [24, 24],
+              iconAnchor: [12, 12],
+            })}
+            eventHandlers={{
+              click: () => {
+                if (group) setHighlightGroup(highlightGroup === group ? null : group);
+              },
+            }}
+          >
+            <Tooltip permanent direction="top" offset={[0, -12]} className="genre-poi-label">
+              {poi.name}
+            </Tooltip>
+            <Popup>
+              <strong>{poi.name}</strong>
+              {group && group !== poi.name && (
+                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>{group}</div>
+              )}
+            </Popup>
+          </Marker>
+        );
+      })}
     </>
   );
 }

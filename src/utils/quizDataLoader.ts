@@ -113,6 +113,7 @@ interface GenrePoi {
   name: string;
   lat: number;
   lng: number;
+  group?: string;
 }
 
 interface GenreEntry {
@@ -148,24 +149,37 @@ export function getGenreList(): { key: string; label: string; icon: string; coun
 
 /**
  * ジャンルPOIクイズ用の問題を生成する
+ * groupがある場合はgroup名を正解にし、同じgroupの番号を統一
  */
 export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
   const entry = typedGenrePois[genreKey];
   if (!entry) return [];
 
-  return entry.pois.map((poi, idx) => ({
-    id: `genre-${genreKey}-q-${idx}`,
-    targetName: {
-      kanji: poi.name,
-      hiragana: '',
-      katakana: '',
-      romaji: '',
-    },
-    lat: poi.lat,
-    lng: poi.lng,
-    hint: `${idx + 1}番目`,
-    category: genreKey as ThemeType,
-  }));
+  // group → 番号マッピング（同じgroupは同じ番号）
+  const groupNumbers = new Map<string, number>();
+  let nextNum = 1;
+
+  return entry.pois.map((poi, idx) => {
+    const group = poi.group || poi.name;
+    if (!groupNumbers.has(group)) {
+      groupNumbers.set(group, nextNum++);
+    }
+    const num = groupNumbers.get(group)!;
+
+    return {
+      id: `genre-${genreKey}-q-${idx}`,
+      targetName: {
+        kanji: group,
+        hiragana: '',
+        katakana: '',
+        romaji: '',
+      },
+      lat: poi.lat,
+      lng: poi.lng,
+      hint: `${num}番`,
+      category: genreKey as ThemeType,
+    };
+  });
 }
 
 /**
