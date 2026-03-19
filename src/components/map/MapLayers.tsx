@@ -654,14 +654,19 @@ interface GenreEntry {
   pois: GenrePOI[];
 }
 
-function GenrePOILayer({ genreKey }: { genreKey: string }) {
+function GenrePOILayer({ genreKey, focusArea }: { genreKey: string; focusArea: FocusArea | null }) {
   const genre = (genrePoisData as Record<string, GenreEntry>)[genreKey];
   const [highlightGroup, setHighlightGroup] = useState<string | null>(null);
   if (!genre) return null;
 
+  // Filter POIs to only those within the focused ward when ward focus is active
+  const visiblePois = focusArea
+    ? genre.pois.filter((poi) => pointInFocusArea([poi.lng, poi.lat], focusArea))
+    : genre.pois;
+
   return (
     <>
-      {genre.pois.map((poi, i) => {
+      {visiblePois.map((poi, i) => {
         const group = (poi as GenrePOI).group;
         const isHighlighted = highlightGroup && group && highlightGroup === group;
         return (
@@ -751,12 +756,12 @@ function extractFocusArea(wardsGeo: FeatureCollection, wardId: string): FocusAre
 export default function MapLayers() {
   const layers = useMapStore((s) => s.layers);
   const selectedWardId = useMapStore((s) => s.selectedWardId);
-  const wardFocusMode = useMapStore((s) => s.wardFocusMode);
-  const selectedGenre = useMapStore((s) => s.selectedGenre);
+  const selectedGenres = useMapStore((s) => s.selectedGenres);
   const { centers, objects } = useWardMeta();
   const lineIndex = useLineIndex();
 
-  const wardFocusActive = wardFocusMode && !!selectedWardId;
+  // Ward focus is active whenever a ward is selected (no separate toggle)
+  const wardFocusActive = !!selectedWardId;
   const geoData = useGeoData(layers, wardFocusActive);
 
   const focusData = useMemo(() => {
@@ -817,8 +822,10 @@ export default function MapLayers() {
       {showRivers && geoData.rivers && <RiverLayer data={geoData.rivers} focusArea={focusArea} />}
       {showRoads && geoData.roads && <RoadLayer data={geoData.roads} focusArea={focusArea} />}
 
-      {/* テーマPOI */}
-      {selectedGenre && <GenrePOILayer genreKey={selectedGenre} />}
+      {/* テーマPOI（複数ジャンル対応、フォーカスエリアでフィルタ） */}
+      {selectedGenres.map((genreKey) => (
+        <GenrePOILayer key={`genre-${genreKey}`} genreKey={genreKey} focusArea={focusArea} />
+      ))}
       <DistanceOverlay />
 
       {/* 駅は最前面レイヤー */}

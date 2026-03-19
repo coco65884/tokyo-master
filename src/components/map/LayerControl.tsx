@@ -49,6 +49,8 @@ export default function LayerControl() {
   const toggleLayer = useMapStore((s) => s.toggleLayer);
   const toggleRailLine = useMapStore((s) => s.toggleRailLine);
   const toggleOperator = useMapStore((s) => s.toggleOperator);
+  const setSelectedWard = useMapStore((s) => s.setSelectedWard);
+  const selectedWardId = useMapStore((s) => s.selectedWardId);
 
   const [linesByOp, setLinesByOp] = useState<Record<string, LineInfo[]>>({});
   const [expandedOps, setExpandedOps] = useState<Record<string, boolean>>({});
@@ -86,7 +88,27 @@ export default function LayerControl() {
   const handleOperatorToggle = (op: string) => {
     const opLines = linesByOp[op] || [];
     const keys = opLines.map((l) => l.key);
-    toggleOperator(op, keys, !isOperatorAllOn(op));
+    const willEnable = !isOperatorAllOn(op);
+    toggleOperator(op, keys, willEnable);
+    // Auto-deactivate ward focus is handled in the store
+  };
+
+  /** Toggling a rail line ON clears ward focus (handled in store).
+   *  This handler also explicitly clears ward when toggling ON rivers/roads. */
+  const handleBasicLayerToggle = (key: 'wards' | 'prefBorders' | 'rivers' | 'roads') => {
+    const currentlyOff = !layers[key];
+    // If turning ON rivers or roads while a ward is focused, clear ward (store handles this)
+    toggleLayer(key);
+    // The store's toggleLayer already handles clearing selectedWardId for rivers/roads
+    void currentlyOff; // read for clarity; logic is in store
+  };
+
+  const handleRailLineToggle = (lineKey: string) => {
+    const currentlyOff = !layers.railLines[lineKey];
+    if (currentlyOff && selectedWardId) {
+      setSelectedWard(null);
+    }
+    toggleRailLine(lineKey);
   };
 
   const basicLayers: {
@@ -106,7 +128,7 @@ export default function LayerControl() {
           <input
             type="checkbox"
             checked={layers[key] as boolean}
-            onChange={() => toggleLayer(key)}
+            onChange={() => handleBasicLayerToggle(key)}
           />
           <span>{label}</span>
         </label>
@@ -146,7 +168,7 @@ export default function LayerControl() {
                       <input
                         type="checkbox"
                         checked={!!layers.railLines[line.key]}
-                        onChange={() => toggleRailLine(line.key)}
+                        onChange={() => handleRailLineToggle(line.key)}
                       />
                       <span
                         className="layer-control__line-badge"
