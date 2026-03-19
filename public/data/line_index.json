@@ -5261,8 +5261,7 @@
       "operator": "Metro",
       "color": "#bb641d",
       "lineIds": [
-        "line-10036878",
-        "line-10036879"
+        "line-fukutoshin"
       ],
       "stations": [
         {
@@ -11534,8 +11533,7 @@
         "abbr": "F",
         "color": "#bb641d",
         "lineIds": [
-          "line-10036878",
-          "line-10036879"
+          "line-fukutoshin"
         ],
         "stationCount": 16
       }
