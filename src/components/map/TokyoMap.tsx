@@ -1,14 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
 import type { LatLngBoundsExpression } from 'leaflet';
 import { useMapStore } from '@/stores/mapStore';
 import MapLayers from './MapLayers';
 import HeatmapOverlay from './HeatmapOverlay';
 import 'leaflet/dist/leaflet.css';
 
-const TOKYO_MAX_BOUNDS: LatLngBoundsExpression = [
+const TOKYO_DEFAULT_BOUNDS: LatLngBoundsExpression = [
   [35.15, 138.85],
   [36.0, 140.05],
+];
+
+const EXTENDED_BOUNDS: LatLngBoundsExpression = [
+  [34.5, 138.0],
+  [36.5, 140.5],
 ];
 
 function MapClickHandler() {
@@ -46,6 +52,25 @@ function DistanceCursorManager() {
   return null;
 }
 
+/** 路線選択時にmaxBoundsを拡張 */
+function DynamicBounds() {
+  const map = useMap();
+  const layers = useMapStore((s) => s.layers);
+  const hasActiveRail = useMemo(
+    () => Object.values(layers.railLines).some(Boolean),
+    [layers.railLines],
+  );
+
+  useEffect(() => {
+    const bounds = hasActiveRail
+      ? L.latLngBounds(EXTENDED_BOUNDS as L.LatLngBoundsLiteral)
+      : L.latLngBounds(TOKYO_DEFAULT_BOUNDS as L.LatLngBoundsLiteral);
+    map.setMaxBounds(bounds);
+  }, [hasActiveRail, map]);
+
+  return null;
+}
+
 export default function TokyoMap() {
   const center = useMapStore((s) => s.center);
   const zoom = useMapStore((s) => s.zoom);
@@ -56,7 +81,7 @@ export default function TokyoMap() {
       zoom={zoom}
       minZoom={9}
       maxZoom={18}
-      maxBounds={TOKYO_MAX_BOUNDS}
+      maxBounds={TOKYO_DEFAULT_BOUNDS}
       maxBoundsViscosity={0.8}
       doubleClickZoom={false}
       scrollWheelZoom={true}
@@ -75,6 +100,7 @@ export default function TokyoMap() {
       <HeatmapOverlay />
       <MapClickHandler />
       <DistanceCursorManager />
+      <DynamicBounds />
     </MapContainer>
   );
 }
