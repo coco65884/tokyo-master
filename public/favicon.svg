@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1a73e8"/>
+  <text x="256" y="200" text-anchor="middle" font-size="120" font-weight="800" fill="white" font-family="sans-serif">TM</text>
+  <text x="256" y="340" text-anchor="middle" font-size="60" font-weight="600" fill="rgba(255,255,255,0.9)" font-family="sans-serif">東京</text>
+  <text x="256" y="420" text-anchor="middle" font-size="50" font-weight="600" fill="rgba(255,255,255,0.7)" font-family="sans-serif">MASTER</text>
+</svg>
