@@ -11,8 +11,8 @@ const genres = genrePois as Record<string, GenreEntry>;
 const genreKeys = Object.keys(genres);
 
 export default function GenreSelector() {
-  const selectedGenre = useMapStore((s) => s.selectedGenre);
-  const setSelectedGenre = useMapStore((s) => s.setSelectedGenre);
+  const selectedGenres = useMapStore((s) => s.selectedGenres);
+  const toggleGenre = useMapStore((s) => s.toggleGenre);
 
   return (
     <div className="genre-selector">
@@ -20,12 +20,12 @@ export default function GenreSelector() {
       <div className="genre-selector__list">
         {genreKeys.map((key) => {
           const g = genres[key];
-          const active = selectedGenre === key;
+          const active = selectedGenres.includes(key);
           return (
             <button
               key={key}
               className={`genre-selector__item ${active ? 'genre-selector__item--active' : ''}`}
-              onClick={() => setSelectedGenre(active ? null : key)}
+              onClick={() => toggleGenre(key)}
             >
               <span className="genre-selector__icon">{g.icon}</span>
               <span className="genre-selector__label">{g.label}</span>
