@@ -1,3 +1,16 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.local
+
 # Logs
 logs
 *.log
@@ -7,27 +20,23 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
 
-# Environment
-.env
-.env.local
-.env.*.local
+# OS
+.DS_Store
+Thumbs.db
 
-# Capacitor native projects
+# Capacitor native projects (platform-specific, generated locally)
 ios/
 android/
+
+# Claude Code project-specific memory (contains local paths)
+.claude/projects/
