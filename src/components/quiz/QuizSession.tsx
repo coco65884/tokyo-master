@@ -649,24 +649,55 @@ export default function QuizSession({ config, onComplete }: Props) {
             />
           )}
 
-          {/* 区クイズ: 対象区のハイライト */}
+          {/* 区クイズ: 対象区のハイライト（水色塗り+青枠、地理確認と同等） */}
           {wardHighlightGeo && (
             <GeoJSON
               key={`quiz-ward-highlight-${config.scopeId}`}
               data={wardHighlightGeo}
               style={{
-                color: '#f59e0b',
-                weight: 3,
-                fillColor: '#fef3c7',
-                fillOpacity: 0.15,
+                color: '#4a90d9',
+                weight: 2.5,
+                fillColor: '#a8d8ea',
+                fillOpacity: 0.2,
               }}
               interactive={false}
             />
           )}
 
-          {/* 路線パス: GeoJSON（地図記号風: 灰色+白交互） */}
+          {/* 路線パス: 区クイズは2層（全体薄+区内濃）、他は区内のみ */}
+          {config.scopeType === 'ward' && lineGeo && (
+            <>
+              {/* 背景: 全路線薄く */}
+              <GeoJSON
+                key={`quiz-rail-bg-base-${config.scopeId}`}
+                data={lineGeo}
+                style={() => ({
+                  color: '#6b7280',
+                  weight: 5,
+                  opacity: 0.1,
+                  lineCap: 'butt',
+                  lineJoin: 'miter',
+                })}
+                interactive={false}
+              />
+              <GeoJSON
+                key={`quiz-rail-bg-dash-${config.scopeId}`}
+                data={lineGeo}
+                style={() => ({
+                  color: '#ffffff',
+                  weight: 3,
+                  opacity: 0.08,
+                  dashArray: '6, 6',
+                  lineCap: 'butt',
+                  lineJoin: 'miter',
+                })}
+                interactive={false}
+              />
+            </>
+          )}
           {filteredLineGeo && (
             <>
+              {/* 区内 or 路線クイズ: 濃く */}
               <GeoJSON
                 key={`quiz-rail-base-${config.scopeId}`}
                 data={filteredLineGeo}
@@ -700,42 +731,43 @@ export default function QuizSession({ config, onComplete }: Props) {
             <GeoJSON
               key={`quiz-rivers-${config.scopeId}`}
               data={riversGeo}
-              style={() => ({
-                color: '#38bdf8',
-                weight: 3,
-                opacity: 0.8,
-                lineCap: 'round',
-              })}
+              style={() => ({ color: '#38bdf8', weight: 3, opacity: 0.8, lineCap: 'round' })}
               interactive={false}
             />
           )}
 
-          {/* 河川GeoJSON（区クイズ用: 区内の河川のみ） */}
+          {/* 河川: 区クイズは2層（全体薄+区内濃） */}
+          {config.scopeType === 'ward' && riversGeo && (
+            <GeoJSON
+              key={`quiz-ward-rivers-bg-${config.scopeId}`}
+              data={riversGeo}
+              style={() => ({ color: '#38bdf8', weight: 2, opacity: 0.12, lineCap: 'round' })}
+              interactive={false}
+            />
+          )}
           {filteredRiversGeo && config.scopeType === 'ward' && (
             <GeoJSON
               key={`quiz-ward-rivers-${config.scopeId}`}
               data={filteredRiversGeo}
-              style={() => ({
-                color: '#38bdf8',
-                weight: 4,
-                opacity: 0.8,
-                lineCap: 'round',
-              })}
+              style={() => ({ color: '#38bdf8', weight: 4, opacity: 0.8, lineCap: 'round' })}
               interactive={false}
             />
           )}
 
-          {/* 道路GeoJSON（区クイズ用: 区内の道路のみ） */}
+          {/* 道路: 区クイズは2層（全体薄+区内濃） */}
+          {config.scopeType === 'ward' && roadsGeo && (
+            <GeoJSON
+              key={`quiz-ward-roads-bg-${config.scopeId}`}
+              data={roadsGeo}
+              style={() => ({ color: '#fb923c', weight: 2, opacity: 0.12, lineCap: 'round' })}
+              interactive={false}
+            />
+          )}
           {filteredRoadsGeo && config.scopeType === 'ward' && (
             <GeoJSON
               key={`quiz-ward-roads-${config.scopeId}`}
               data={filteredRoadsGeo}
-              style={() => ({
-                color: '#fb923c',
-                weight: 3.5,
-                opacity: 0.7,
-                lineCap: 'round',
-              })}
+              style={() => ({ color: '#fb923c', weight: 3.5, opacity: 0.7, lineCap: 'round' })}
               interactive={false}
             />
           )}
