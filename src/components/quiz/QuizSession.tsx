@@ -162,9 +162,6 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [focusedQuestionIndex, setFocusedQuestionIndex] = useState<number | null>(null);
   // Ward quiz: line IDs for all rail lines passing through the ward
   const [wardRailLineIds, setWardRailLineIds] = useState<string[]>([]);
-  // Ward quiz: river/road names for filtering GeoJSON
-  const [wardRiverNames, setWardRiverNames] = useState<string[]>([]);
-  const [wardRoadNames, setWardRoadNames] = useState<string[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   /** Focus handler: set focused index and highlight the question's group */
@@ -244,8 +241,6 @@ export default function QuizSession({ config, onComplete }: Props) {
               }
             }
             setWardRailLineIds(allLineIds);
-            setWardRiverNames(wardObj.riverNames);
-            setWardRoadNames(wardObj.roadNames);
           }
         }
       } else if (config.scopeType === 'theme') {
@@ -383,26 +378,6 @@ export default function QuizSession({ config, onComplete }: Props) {
     }
     return null;
   }, [lineGeo, lineIds, wardRailLineIds, config.scopeType]);
-
-  // 河川GeoJSONをフィルタ（区クイズ用: ward内の河川名のみ）
-  const filteredRiversGeo = useMemo(() => {
-    if (!riversGeo || config.scopeType !== 'ward' || wardRiverNames.length === 0) return null;
-    const nameSet = new Set(wardRiverNames);
-    return {
-      ...riversGeo,
-      features: riversGeo.features.filter((f) => nameSet.has(f.properties?.name)),
-    } as FeatureCollection;
-  }, [riversGeo, wardRiverNames, config.scopeType]);
-
-  // 道路GeoJSONをフィルタ（区クイズ用: ward内の道路名のみ）
-  const filteredRoadsGeo = useMemo(() => {
-    if (!roadsGeo || config.scopeType !== 'ward' || wardRoadNames.length === 0) return null;
-    const nameSet = new Set(wardRoadNames);
-    return {
-      ...roadsGeo,
-      features: roadsGeo.features.filter((f) => nameSet.has(f.properties?.name)),
-    } as FeatureCollection;
-  }, [roadsGeo, wardRoadNames, config.scopeType]);
 
   // 区クイズの場合、対象区をハイライトするためにGeoJSONを分離
   const wardHighlightGeo = useMemo(() => {
@@ -657,24 +632,24 @@ export default function QuizSession({ config, onComplete }: Props) {
               style={{
                 color: '#4a90d9',
                 weight: 2.5,
-                fillColor: '#a8d8ea',
-                fillOpacity: 0.2,
+                fillColor: '#dbeafe',
+                fillOpacity: 0.35,
               }}
               interactive={false}
             />
           )}
 
-          {/* 路線パス: 区クイズは2層（全体薄+区内濃）、他は区内のみ */}
-          {config.scopeType === 'ward' && lineGeo && (
+          {/* 路線パス */}
+          {config.scopeType === 'ward' && lineGeo ? (
             <>
-              {/* 背景: 全路線薄く */}
+              {/* 区クイズ: 全路線を薄く表示（区外も含む） */}
               <GeoJSON
                 key={`quiz-rail-bg-base-${config.scopeId}`}
                 data={lineGeo}
                 style={() => ({
                   color: '#6b7280',
-                  weight: 5,
-                  opacity: 0.1,
+                  weight: 4,
+                  opacity: 0.12,
                   lineCap: 'butt',
                   lineJoin: 'miter',
                 })}
@@ -685,8 +660,8 @@ export default function QuizSession({ config, onComplete }: Props) {
                 data={lineGeo}
                 style={() => ({
                   color: '#ffffff',
-                  weight: 3,
-                  opacity: 0.08,
+                  weight: 2,
+                  opacity: 0.1,
                   dashArray: '6, 6',
                   lineCap: 'butt',
                   lineJoin: 'miter',
@@ -694,10 +669,9 @@ export default function QuizSession({ config, onComplete }: Props) {
                 interactive={false}
               />
             </>
-          )}
-          {filteredLineGeo && (
+          ) : filteredLineGeo ? (
             <>
-              {/* 区内 or 路線クイズ: 濃く */}
+              {/* 路線クイズ: 選択路線のみ濃く */}
               <GeoJSON
                 key={`quiz-rail-base-${config.scopeId}`}
                 data={filteredLineGeo}
@@ -724,7 +698,7 @@ export default function QuizSession({ config, onComplete }: Props) {
                 interactive={false}
               />
             </>
-          )}
+          ) : null}
 
           {/* 河川GeoJSON（河川テーマクイズ用） */}
           {riversGeo && config.scopeType === 'theme' && config.scopeId === 'rivers' && (
@@ -736,38 +710,22 @@ export default function QuizSession({ config, onComplete }: Props) {
             />
           )}
 
-          {/* 河川: 区クイズは2層（全体薄+区内濃） */}
+          {/* 河川: 区クイズは全体薄く表示 */}
           {config.scopeType === 'ward' && riversGeo && (
             <GeoJSON
-              key={`quiz-ward-rivers-bg-${config.scopeId}`}
-              data={riversGeo}
-              style={() => ({ color: '#38bdf8', weight: 2, opacity: 0.12, lineCap: 'round' })}
-              interactive={false}
-            />
-          )}
-          {filteredRiversGeo && config.scopeType === 'ward' && (
-            <GeoJSON
               key={`quiz-ward-rivers-${config.scopeId}`}
-              data={filteredRiversGeo}
-              style={() => ({ color: '#38bdf8', weight: 4, opacity: 0.8, lineCap: 'round' })}
+              data={riversGeo}
+              style={() => ({ color: '#38bdf8', weight: 2, opacity: 0.15, lineCap: 'round' })}
               interactive={false}
             />
           )}
 
-          {/* 道路: 区クイズは2層（全体薄+区内濃） */}
+          {/* 道路: 区クイズは全体薄く表示 */}
           {config.scopeType === 'ward' && roadsGeo && (
             <GeoJSON
-              key={`quiz-ward-roads-bg-${config.scopeId}`}
-              data={roadsGeo}
-              style={() => ({ color: '#fb923c', weight: 2, opacity: 0.12, lineCap: 'round' })}
-              interactive={false}
-            />
-          )}
-          {filteredRoadsGeo && config.scopeType === 'ward' && (
-            <GeoJSON
               key={`quiz-ward-roads-${config.scopeId}`}
-              data={filteredRoadsGeo}
-              style={() => ({ color: '#fb923c', weight: 3.5, opacity: 0.7, lineCap: 'round' })}
+              data={roadsGeo}
+              style={() => ({ color: '#fb923c', weight: 2, opacity: 0.15, lineCap: 'round' })}
               interactive={false}
             />
           )}
