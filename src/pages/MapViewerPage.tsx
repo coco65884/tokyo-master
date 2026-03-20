@@ -73,6 +73,12 @@ export default function MapViewerPage() {
       </aside>
       <main className="map-main">
         <TokyoMap />
+        {/* Mobile home button */}
+        {isMobile && (
+          <Link to="/" className="mobile-home-btn" aria-label="ホームに戻る">
+            &#8592;
+          </Link>
+        )}
         {/* Mobile bottom menu */}
         {isMobile && <MobileMapMenu onSelectWard={handleSelectWard} />}
       </main>

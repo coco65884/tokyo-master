@@ -654,6 +654,8 @@ interface GenreEntry {
   pois: GenrePOI[];
 }
 
+const allGenreKeys = Object.keys(genrePoisData as Record<string, GenreEntry>);
+
 function GenrePOILayer({ genreKey, focusArea }: { genreKey: string; focusArea: FocusArea | null }) {
   const genre = (genrePoisData as Record<string, GenreEntry>)[genreKey];
   const [highlightGroup, setHighlightGroup] = useState<string | null>(null);
@@ -822,10 +824,17 @@ export default function MapLayers() {
       {showRivers && geoData.rivers && <RiverLayer data={geoData.rivers} focusArea={focusArea} />}
       {showRoads && geoData.roads && <RoadLayer data={geoData.roads} focusArea={focusArea} />}
 
-      {/* テーマPOI（複数ジャンル対応、フォーカスエリアでフィルタ） */}
-      {selectedGenres.map((genreKey) => (
-        <GenrePOILayer key={`genre-${genreKey}`} genreKey={genreKey} focusArea={focusArea} />
-      ))}
+      {/* テーマPOI: 区フォーカス時は全ジャンルを自動表示 */}
+      {wardFocusActive &&
+        focusArea &&
+        allGenreKeys.map((key) => (
+          <GenrePOILayer key={`auto-${key}`} genreKey={key} focusArea={focusArea} />
+        ))}
+      {/* テーマPOI: 手動ジャンル選択（区フォーカスでないとき） */}
+      {!wardFocusActive &&
+        selectedGenres.map((genreKey) => (
+          <GenrePOILayer key={`genre-${genreKey}`} genreKey={genreKey} focusArea={focusArea} />
+        ))}
       <DistanceOverlay />
 
       {/* 駅は最前面レイヤー */}

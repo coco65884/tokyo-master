@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { useEffect, useMemo, useState } from 'react';
+import { MapContainer, TileLayer, Polyline, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import type { LatLngBoundsExpression } from 'leaflet';
 import { useMapStore } from '@/stores/mapStore';
@@ -30,6 +30,33 @@ function MapClickHandler() {
   });
 
   return null;
+}
+
+/** 距離モード: 1点目を打った後、マウスカーソルまで破線を描画（デスクトップのみ） */
+function DistanceCursorLine() {
+  const distanceMode = useMapStore((s) => s.distanceMode);
+  const points = useMapStore((s) => s.distancePoints);
+  const [cursorPos, setCursorPos] = useState<[number, number] | null>(null);
+
+  // タッチデバイス判定（coarse pointer = タッチ）
+  const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
+  useMapEvents({
+    mousemove(e) {
+      if (distanceMode && points.length === 1 && !isTouch) {
+        setCursorPos([e.latlng.lat, e.latlng.lng]);
+      }
+    },
+  });
+
+  if (!distanceMode || points.length !== 1 || !cursorPos || isTouch) return null;
+
+  return (
+    <Polyline
+      positions={[points[0], cursorPos]}
+      pathOptions={{ color: '#e91e63', weight: 1.5, dashArray: '6, 6', opacity: 0.6 }}
+    />
+  );
 }
 
 /** 距離モード中にカーソルをクロスヘアに変更 */
@@ -99,6 +126,7 @@ export default function TokyoMap() {
       <MapLayers />
       <HeatmapOverlay />
       <MapClickHandler />
+      <DistanceCursorLine />
       <DistanceCursorManager />
       <DynamicBounds />
     </MapContainer>
