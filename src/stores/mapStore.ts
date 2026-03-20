@@ -124,6 +124,7 @@ export const useMapStore = create<MapState>((set) => ({
       if (idx >= 0) {
         return { selectedGenres: state.selectedGenres.filter((g) => g !== genre) };
       }
-      return { selectedGenres: [...state.selectedGenres, genre] };
+      // テーマON時は区フォーカスを解除
+      return { selectedGenres: [...state.selectedGenres, genre], selectedWardId: null };
     }),
 }));

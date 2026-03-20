@@ -50,6 +50,11 @@ export default function MapViewerPage() {
   const setSelectedWard = useMapStore((s) => s.setSelectedWard);
   const isMobile = useIsMobile();
 
+  // ページ遷移後に戻ってきたときに前のフォーカスが残らないようクリア
+  useEffect(() => {
+    setSelectedWard(null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSelectWard = useCallback(
     (wardId: string | null) => {
       setSelectedWard(wardId);
