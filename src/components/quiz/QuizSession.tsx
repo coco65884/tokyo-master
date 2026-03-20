@@ -84,6 +84,30 @@ function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
   return null;
 }
 
+/**
+ * 入力フォーカス時に対応する地図座標へパンするコンポーネント。
+ * useMap() は MapContainer の内部でのみ使用可能なため、独立コンポーネントとして定義。
+ */
+function MapPanToFocused({
+  focusedIndex,
+  questions,
+}: {
+  focusedIndex: number | null;
+  questions: QuizQuestion[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (focusedIndex == null) return;
+    const q = questions[focusedIndex];
+    if (q?.lat != null && q?.lng != null) {
+      map.panTo([q.lat, q.lng], { animate: true });
+    }
+  }, [focusedIndex, questions, map]);
+
+  return null;
+}
+
 export default function QuizSession({ config, onComplete }: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -101,6 +125,7 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [genreIcon, setGenreIcon] = useState<string>('');
   const [genreLabel, setGenreLabel] = useState<string>('');
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
+  const [focusedQuestionIndex, setFocusedQuestionIndex] = useState<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -365,6 +390,7 @@ export default function QuizSession({ config, onComplete }: Props) {
                 value={answers[i] ?? ''}
                 onChange={(e) => handleInputChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, i)}
+                onFocus={() => setFocusedQuestionIndex(i)}
                 placeholder={config.showHints && q.hint ? q.hint : getLabel(i)}
                 disabled={submitted}
                 autoComplete="off"
@@ -409,6 +435,9 @@ export default function QuizSession({ config, onComplete }: Props) {
 
           {/* グループハイライト時に地図をフィット */}
           <GroupFitBounds highlightedGroup={highlightedGroup} questions={questions} />
+
+          {/* 入力フォーカス時に対応座標へパン */}
+          <MapPanToFocused focusedIndex={focusedQuestionIndex} questions={questions} />
 
           {/* 区境界（ヒント） */}
           {wardsGeo && (
@@ -530,7 +559,18 @@ export default function QuizSession({ config, onComplete }: Props) {
                     iconAnchor: [submitted ? 40 : 11, 11],
                   })}
                   eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
-                />
+                >
+                  {submitted && q.poiDisplayName && (
+                    <Tooltip
+                      permanent
+                      direction="bottom"
+                      offset={[0, 8]}
+                      className="quiz-station-number"
+                    >
+                      {q.poiDisplayName}
+                    </Tooltip>
+                  )}
+                </Marker>
               );
             })}
 
@@ -554,7 +594,18 @@ export default function QuizSession({ config, onComplete }: Props) {
                     iconAnchor: [submitted ? 40 : 11, 11],
                   })}
                   eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
-                />
+                >
+                  {submitted && loc.name && (
+                    <Tooltip
+                      permanent
+                      direction="bottom"
+                      offset={[0, 8]}
+                      className="quiz-station-number"
+                    >
+                      {loc.name}
+                    </Tooltip>
+                  )}
+                </Marker>
               ));
             })}
 
