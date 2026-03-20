@@ -7,7 +7,8 @@ import {
   Marker,
   Tooltip,
   Popup,
-  Polyline,
+  useMap,
+  useMapEvents,
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -31,6 +32,58 @@ interface Props {
   onComplete: (result: QuizResult) => void;
 }
 
+/**
+ * 同一グループのハイライト時に地図をフィットさせる子コンポーネント。
+ * useMap() は MapContainer の内部でのみ使用可能なため、独立コンポーネントとして定義。
+ */
+function GroupFitBounds({
+  highlightedGroup,
+  questions,
+}: {
+  highlightedGroup: string | null;
+  questions: QuizQuestion[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!highlightedGroup) return;
+
+    const points: [number, number][] = [];
+    for (const q of questions) {
+      if (q.group !== highlightedGroup) continue;
+      if (q.lat != null && q.lng != null) {
+        points.push([q.lat, q.lng]);
+      }
+      if (q.extraLocations) {
+        for (const loc of q.extraLocations) {
+          points.push([loc.lat, loc.lng]);
+        }
+      }
+    }
+
+    if (points.length >= 2) {
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+    } else if (points.length === 1) {
+      map.setView(points[0], 13);
+    }
+  }, [highlightedGroup, questions, map]);
+
+  return null;
+}
+
+/**
+ * 地図上のクリックでハイライトを解除するコンポーネント
+ */
+function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
+  useMapEvents({
+    click: () => {
+      onMapClick();
+    },
+  });
+  return null;
+}
+
 export default function QuizSession({ config, onComplete }: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -47,6 +100,7 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
   const [genreIcon, setGenreIcon] = useState<string>('');
   const [genreLabel, setGenreLabel] = useState<string>('');
+  const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
@@ -151,6 +205,23 @@ export default function QuizSession({ config, onComplete }: Props) {
     [questions.length],
   );
 
+  /** マーカークリック時: 入力フォーカス + グループハイライト */
+  const handleMarkerClick = useCallback(
+    (index: number) => {
+      inputRefs.current[index]?.focus();
+      const q = questions[index];
+      if (q?.group) {
+        setHighlightedGroup((prev) => (prev === q.group ? null : (q.group ?? null)));
+      }
+    },
+    [questions],
+  );
+
+  /** 地図クリック時: ハイライト解除 */
+  const handleMapClick = useCallback(() => {
+    setHighlightedGroup(null);
+  }, []);
+
   const handleSubmit = () => {
     setSubmitted(true);
 
@@ -220,26 +291,6 @@ export default function QuizSession({ config, onComplete }: Props) {
     });
   }, [riversGeo, config.scopeType]);
 
-  // グループ接続線: 同じ group の POI を結ぶ（ジャンルクイズ用）
-  const groupLines = useMemo(() => {
-    if (config.scopeType !== 'theme' || config.scopeId === 'rivers') return [];
-    const groupMap = new Map<string, [number, number][]>();
-    for (const q of questions) {
-      if (!q.group || q.lat == null || q.lng == null) continue;
-      const arr = groupMap.get(q.group) || [];
-      arr.push([q.lat, q.lng]);
-      groupMap.set(q.group, arr);
-    }
-    // 2つ以上の座標を持つグループだけ線を描画
-    const lines: [number, number][][] = [];
-    for (const positions of groupMap.values()) {
-      if (positions.length >= 2) {
-        lines.push(positions);
-      }
-    }
-    return lines;
-  }, [questions, config.scopeType, config.scopeId]);
-
   if (loading) {
     return (
       <div className="quiz-session__loading">
@@ -266,6 +317,11 @@ export default function QuizSession({ config, onComplete }: Props) {
       return `${lineAbbr}${String(index + 1).padStart(2, '0')}`;
     }
     return `${index + 1}`;
+  };
+
+  /** 問題のindexを取得（stationMarkersのindexからquestionsのindexに変換） */
+  const getQuestionIndex = (q: QuizQuestion): number => {
+    return questions.indexOf(q);
   };
 
   return (
@@ -348,6 +404,12 @@ export default function QuizSession({ config, onComplete }: Props) {
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           />
 
+          {/* 地図クリックでハイライト解除 */}
+          <MapClickHandler onMapClick={handleMapClick} />
+
+          {/* グループハイライト時に地図をフィット */}
+          <GroupFitBounds highlightedGroup={highlightedGroup} questions={questions} />
+
           {/* 区境界（ヒント） */}
           {wardsGeo && (
             <GeoJSON
@@ -424,7 +486,7 @@ export default function QuizSession({ config, onComplete }: Props) {
                     iconSize: [22, 22],
                     iconAnchor: [11, 11],
                   })}
-                  interactive={false}
+                  eventHandlers={{ click: () => inputRefs.current[i]?.focus() }}
                 />
               ) : null,
             )}
@@ -449,86 +511,106 @@ export default function QuizSession({ config, onComplete }: Props) {
               ) : null,
             )}
 
-          {/* ジャンルPOIマーカー（ジャンルテーマクイズ用） */}
+          {/* ジャンルPOIメインマーカー（ジャンルテーマクイズ用） */}
           {config.scopeType === 'theme' &&
             config.scopeId !== 'rivers' &&
-            stationMarkers.map((q, i) => (
-              <Marker
-                key={`genre-poi-${q.id}`}
-                position={[q.lat!, q.lng!]}
-                icon={L.divIcon({
-                  className: 'quiz-number-icon',
-                  html: submitted
-                    ? `<span>${q.targetName.kanji}${q.suffix ?? ''}</span>`
-                    : `<span>${i + 1}</span>`,
-                  iconSize: [submitted ? 80 : 22, 22],
-                  iconAnchor: [submitted ? 40 : 11, 11],
-                })}
-                interactive={false}
-              />
-            ))}
+            stationMarkers.map((q, i) => {
+              const qIdx = getQuestionIndex(q);
+              const isHighlighted = highlightedGroup != null && q.group === highlightedGroup;
+              return (
+                <Marker
+                  key={`genre-poi-${q.id}`}
+                  position={[q.lat!, q.lng!]}
+                  icon={L.divIcon({
+                    className: `quiz-number-icon${isHighlighted ? ' quiz-marker-highlight' : ''}`,
+                    html: submitted
+                      ? `<span>${q.targetName.kanji}${q.suffix ?? ''}</span>`
+                      : `<span>${i + 1}</span>`,
+                    iconSize: [submitted ? 80 : 22, 22],
+                    iconAnchor: [submitted ? 40 : 11, 11],
+                  })}
+                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                />
+              );
+            })}
 
-          {/* グループ接続線（同じグループのPOIを結ぶ破線） */}
-          {groupLines.map((positions, i) => (
-            <Polyline
-              key={`group-line-${i}`}
-              positions={positions}
-              pathOptions={{
-                color: '#6366f1',
-                weight: 1.5,
-                dashArray: '6, 4',
-                opacity: 0.5,
-              }}
-              interactive={false}
-            />
-          ))}
+          {/* ジャンルPOI追加キャンパスマーカー（extraLocations） */}
+          {config.scopeType === 'theme' &&
+            config.scopeId !== 'rivers' &&
+            stationMarkers.map((q, i) => {
+              if (!q.extraLocations) return null;
+              const qIdx = getQuestionIndex(q);
+              const isHighlighted = highlightedGroup != null && q.group === highlightedGroup;
+              return q.extraLocations.map((loc, j) => (
+                <Marker
+                  key={`genre-extra-${q.id}-${j}`}
+                  position={[loc.lat, loc.lng]}
+                  icon={L.divIcon({
+                    className: `quiz-number-icon${isHighlighted ? ' quiz-marker-highlight' : ''}`,
+                    html: submitted
+                      ? `<span>${q.targetName.kanji}${q.suffix ?? ''}</span>`
+                      : `<span>${i + 1}</span>`,
+                    iconSize: [submitted ? 80 : 22, 22],
+                    iconAnchor: [submitted ? 40 : 11, 11],
+                  })}
+                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                />
+              ));
+            })}
 
           {/* 駅マーカー + 番号ラベル（路線・区クイズ用。ジャンルPOIクイズでは専用マーカーを使用） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
-            stationMarkers.map((q, i) => (
-              <CircleMarker
-                key={q.id}
-                center={[q.lat!, q.lng!]}
-                radius={5}
-                pathOptions={{
-                  color: lineColor,
-                  fillColor: '#fff',
-                  fillOpacity: 1,
-                  weight: 2,
-                }}
-              >
-                <Tooltip
-                  permanent
-                  direction="right"
-                  offset={[8, 0]}
-                  className="quiz-station-number"
+            stationMarkers.map((q, i) => {
+              const qIdx = getQuestionIndex(q);
+              return (
+                <CircleMarker
+                  key={q.id}
+                  center={[q.lat!, q.lng!]}
+                  radius={5}
+                  pathOptions={{
+                    color: lineColor,
+                    fillColor: '#fff',
+                    fillOpacity: 1,
+                    weight: 2,
+                  }}
+                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
                 >
-                  {submitted ? q.targetName.kanji : getLabel(i)}
-                </Tooltip>
-                {submitted && (
-                  <Popup>
-                    <strong>{q.targetName.kanji}</strong>
-                  </Popup>
-                )}
-              </CircleMarker>
-            ))}
+                  <Tooltip
+                    permanent
+                    direction="right"
+                    offset={[8, 0]}
+                    className="quiz-station-number"
+                  >
+                    {submitted ? q.targetName.kanji : getLabel(i)}
+                  </Tooltip>
+                  {submitted && (
+                    <Popup>
+                      <strong>{q.targetName.kanji}</strong>
+                    </Popup>
+                  )}
+                </CircleMarker>
+              );
+            })}
 
-          {/* 番号マーカー（四角ボックス。ジャンルPOIクイズでは専用マーカーを使用） */}
+          {/* 番号マーカー（四角ボックス。路線・区クイズ用） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
             !submitted &&
-            stationMarkers.map((q, i) => (
-              <Marker
-                key={`num-${q.id}`}
-                position={[q.lat!, q.lng!]}
-                icon={L.divIcon({
-                  className: 'quiz-number-icon',
-                  html: `<span>${getLabel(i)}</span>`,
-                  iconSize: [config.scopeType === 'line' && lineAbbr ? 38 : 22, 22],
-                  iconAnchor: [config.scopeType === 'line' && lineAbbr ? 19 : 11, 28],
-                })}
-                interactive={false}
-              />
-            ))}
+            stationMarkers.map((q, i) => {
+              const qIdx = getQuestionIndex(q);
+              return (
+                <Marker
+                  key={`num-${q.id}`}
+                  position={[q.lat!, q.lng!]}
+                  icon={L.divIcon({
+                    className: 'quiz-number-icon',
+                    html: `<span>${getLabel(i)}</span>`,
+                    iconSize: [config.scopeType === 'line' && lineAbbr ? 38 : 22, 22],
+                    iconAnchor: [config.scopeType === 'line' && lineAbbr ? 19 : 11, 28],
+                  })}
+                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                />
+              );
+            })}
         </MapContainer>
       </div>
     </div>

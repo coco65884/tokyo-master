@@ -26,19 +26,26 @@ export async function generateLineQuiz(lineKey: string): Promise<QuizQuestion[]>
   const line = lines.find((l) => l.key === lineKey);
   if (!line) return [];
 
-  return line.stations.map((station, idx) => ({
-    id: `line-q-${idx}`,
-    targetName: {
-      kanji: station.name,
-      hiragana: '',
-      katakana: '',
-      romaji: '',
-    },
-    lat: station.lat,
-    lng: station.lng,
-    hint: `${idx + 1}番目の駅`,
-    category: 'stations' as const,
-  }));
+  return line.stations.map((station, idx) => {
+    // 駅名から「駅」サフィックスを除去（末尾に「駅」がある場合）
+    const rawName = station.name;
+    const answerName = rawName.endsWith('駅') ? rawName.slice(0, -1) : rawName;
+
+    return {
+      id: `line-q-${idx}`,
+      targetName: {
+        kanji: answerName,
+        hiragana: '',
+        katakana: '',
+        romaji: '',
+      },
+      lat: station.lat,
+      lng: station.lng,
+      hint: `${idx + 1}番目の駅`,
+      category: 'stations' as const,
+      suffix: '駅',
+    };
+  });
 }
 
 /**
@@ -68,23 +75,27 @@ export async function generateWardQuiz(wardId: string): Promise<QuizQuestion[]> 
   const questions: QuizQuestion[] = [];
   let idx = 0;
 
-  // 駅名クイズ
+  // 駅名クイズ（サフィックス「駅」付き）
   for (const [name, st] of stationMap) {
+    const answerName = name.endsWith('駅') ? name.slice(0, -1) : name;
     questions.push({
       id: `ward-station-${idx++}`,
-      targetName: { kanji: name, hiragana: '', katakana: '', romaji: '' },
+      targetName: { kanji: answerName, hiragana: '', katakana: '', romaji: '' },
       lat: st.lat,
       lng: st.lng,
       category: 'stations',
+      suffix: '駅',
     });
   }
 
-  // 河川クイズ
+  // 河川クイズ（サフィックス「川」付き）
   for (const riverName of wardObj.riverNames) {
+    const answerName = riverName.endsWith('川') ? riverName.slice(0, -1) : riverName;
     questions.push({
       id: `ward-river-${idx++}`,
-      targetName: { kanji: riverName, hiragana: '', katakana: '', romaji: '' },
+      targetName: { kanji: answerName, hiragana: '', katakana: '', romaji: '' },
       category: 'rivers',
+      suffix: '川',
     });
   }
 
@@ -96,16 +107,42 @@ export async function generateWardQuiz(wardId: string): Promise<QuizQuestion[]> 
  */
 export function generateRiverQuiz(): QuizQuestion[] {
   const rivers = riversData as RiverMeta[];
-  return rivers.map((river, idx) => ({
-    id: `river-q-${idx}`,
-    targetName: {
-      kanji: river.name.kanji,
-      hiragana: river.name.hiragana,
-      katakana: river.name.katakana,
-      romaji: river.name.romaji,
-    },
-    category: 'rivers' as const,
-  }));
+  return rivers.map((river, idx) => {
+    // 河川名から「川」サフィックスを除去（末尾に「川」がある場合）
+    const rawKanji = river.name.kanji;
+    const answerKanji = rawKanji.endsWith('川') ? rawKanji.slice(0, -1) : rawKanji;
+    // ひらがな・カタカナ・ローマ字も同様に除去
+    const rawHira = river.name.hiragana;
+    const answerHira = rawHira.endsWith('がわ')
+      ? rawHira.slice(0, -2)
+      : rawHira.endsWith('かわ')
+        ? rawHira.slice(0, -2)
+        : rawHira;
+    const rawKata = river.name.katakana;
+    const answerKata = rawKata.endsWith('ガワ')
+      ? rawKata.slice(0, -2)
+      : rawKata.endsWith('カワ')
+        ? rawKata.slice(0, -2)
+        : rawKata;
+    const rawRomaji = river.name.romaji;
+    const answerRomaji = rawRomaji.toLowerCase().endsWith('gawa')
+      ? rawRomaji.slice(0, -4)
+      : rawRomaji.toLowerCase().endsWith('kawa')
+        ? rawRomaji.slice(0, -4)
+        : rawRomaji;
+
+    return {
+      id: `river-q-${idx}`,
+      targetName: {
+        kanji: answerKanji,
+        hiragana: answerHira,
+        katakana: answerKata,
+        romaji: answerRomaji,
+      },
+      category: 'rivers' as const,
+      suffix: '川',
+    };
+  });
 }
 
 /** ジャンルPOIデータの型 */
@@ -136,11 +173,20 @@ export function getGenreList(): { key: string; label: string; icon: string; coun
   ];
 
   for (const [key, entry] of Object.entries(typedGenrePois)) {
+    // groupがある場合はユニークグループ数をカウント
+    const hasGroups = entry.pois.some((poi) => poi.group);
+    let count: number;
+    if (hasGroups) {
+      const uniqueGroups = new Set(entry.pois.map((poi) => poi.group || poi.name));
+      count = uniqueGroups.size;
+    } else {
+      count = entry.pois.length;
+    }
     result.push({
       key,
       label: entry.label,
       icon: entry.icon,
-      count: entry.pois.length,
+      count,
     });
   }
 
@@ -156,7 +202,7 @@ const GENRE_SUFFIX: Record<string, { suffix: string; strip: boolean }> = {
 
 /**
  * ジャンルPOIクイズ用の問題を生成する
- * groupがある場合はgroup名を正解にし、同じgroupの番号を統一
+ * groupフィールドがある場合は同じgroupを1つの問題に統合し、追加座標をextraLocationsに格納
  * サフィックスがある場合は正解名から除去し、suffix フィールドに設定
  */
 export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
@@ -165,19 +211,60 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
 
   const suffixConfig = GENRE_SUFFIX[genreKey];
 
-  // group → 番号マッピング（同じgroupは同じ番号）
-  const groupNumbers = new Map<string, number>();
-  let nextNum = 1;
+  // groupフィールドを持つエントリがあるか判定
+  const hasGroups = entry.pois.some((poi) => poi.group);
 
-  return entry.pois.map((poi, idx) => {
-    const group = poi.group || poi.name;
-    if (!groupNumbers.has(group)) {
-      groupNumbers.set(group, nextNum++);
+  if (hasGroups) {
+    // グループ統合モード: 同じgroupを1つの問題にまとめる
+    const groupMap = new Map<string, { first: GenrePoi; extras: { lat: number; lng: number }[] }>();
+    const groupOrder: string[] = [];
+
+    for (const poi of entry.pois) {
+      const group = poi.group || poi.name;
+      if (!groupMap.has(group)) {
+        groupMap.set(group, { first: poi, extras: [] });
+        groupOrder.push(group);
+      } else {
+        groupMap.get(group)!.extras.push({ lat: poi.lat, lng: poi.lng });
+      }
     }
-    const num = groupNumbers.get(group)!;
 
+    return groupOrder.map((group, idx) => {
+      const { first, extras } = groupMap.get(group)!;
+
+      // サフィックス処理: 正解名から末尾のサフィックスを除去
+      let answerName = group;
+      let suffix: string | undefined;
+      if (suffixConfig) {
+        suffix = suffixConfig.suffix;
+        if (suffixConfig.strip && answerName.endsWith(suffixConfig.suffix)) {
+          answerName = answerName.slice(0, -suffixConfig.suffix.length);
+        }
+      }
+
+      return {
+        id: `genre-${genreKey}-q-${idx}`,
+        targetName: {
+          kanji: answerName,
+          hiragana: '',
+          katakana: '',
+          romaji: '',
+        },
+        lat: first.lat,
+        lng: first.lng,
+        hint: `${idx + 1}番`,
+        category: genreKey as ThemeType,
+        suffix,
+        group,
+        extraLocations: extras.length > 0 ? extras : undefined,
+      };
+    });
+  }
+
+  // 非グループモード（従来動作）
+  return entry.pois.map((poi, idx) => {
     // サフィックス処理: 正解名から末尾のサフィックスを除去
-    let answerName = group;
+    let answerName = poi.name;
     let suffix: string | undefined;
     if (suffixConfig) {
       suffix = suffixConfig.suffix;
@@ -196,10 +283,9 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
       },
       lat: poi.lat,
       lng: poi.lng,
-      hint: `${num}番`,
+      hint: `${idx + 1}番`,
       category: genreKey as ThemeType,
       suffix,
-      group,
     };
   });
 }
