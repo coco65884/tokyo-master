@@ -210,6 +210,22 @@
   overflow-y: auto;
 }
 
+/* Category section for ward quiz */
+.quiz-session__category-section {
+  margin-bottom: 0.6rem;
+}
+
+.quiz-session__category-header {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  padding: 0.3rem 0.4rem;
+  margin-bottom: 0.2rem;
+  border-bottom: 1.5px solid var(--color-border);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
 .quiz-session__question {
   display: flex;
   align-items: center;

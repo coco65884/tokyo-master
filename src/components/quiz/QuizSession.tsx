@@ -13,7 +13,7 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { FeatureCollection } from 'geojson';
-import type { QuizQuestion, QuizConfig, QuizAnswer, QuizResult } from '@/types';
+import type { QuizQuestion, QuizConfig, QuizAnswer, QuizResult, ThemeType } from '@/types';
 import { matchesName, matchesNameString } from '@/utils/nameMatch';
 import {
   generateLineQuiz,
@@ -24,13 +24,36 @@ import {
   getWardCenter,
   getGenreInfo,
 } from '@/utils/quizDataLoader';
-import { loadRailLines, loadRivers, loadWards } from '@/utils/dataLoader';
+import {
+  loadRailLines,
+  loadRivers,
+  loadRoads,
+  loadWards,
+  loadWardObjects,
+  loadLineIndex,
+} from '@/utils/dataLoader';
 import riversData from '@/data/rivers.json';
 
 interface Props {
   config: QuizConfig;
   onComplete: (result: QuizResult) => void;
 }
+
+/** 区クイズのカテゴリ順序とセクションヘッダー */
+const WARD_CATEGORY_ORDER: ThemeType[] = [
+  'stations',
+  'rivers',
+  'roads',
+  'universities',
+  'landmarks',
+];
+const WARD_CATEGORY_LABELS: Record<string, string> = {
+  stations: '駅',
+  rivers: '川',
+  roads: '道路',
+  universities: '大学',
+  landmarks: 'ランドマーク',
+};
 
 /**
  * 同一グループのハイライト時に地図をフィットさせる子コンポーネント。
@@ -131,11 +154,17 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [lineIds, setLineIds] = useState<string[]>([]);
   const [lineAbbr, setLineAbbr] = useState<string>('');
   const [riversGeo, setRiversGeo] = useState<FeatureCollection | null>(null);
+  const [roadsGeo, setRoadsGeo] = useState<FeatureCollection | null>(null);
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
   const [genreIcon, setGenreIcon] = useState<string>('');
   const [genreLabel, setGenreLabel] = useState<string>('');
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
   const [focusedQuestionIndex, setFocusedQuestionIndex] = useState<number | null>(null);
+  // Ward quiz: line IDs for all rail lines passing through the ward
+  const [wardRailLineIds, setWardRailLineIds] = useState<string[]>([]);
+  // Ward quiz: river/road names for filtering GeoJSON
+  const [wardRiverNames, setWardRiverNames] = useState<string[]>([]);
+  const [wardRoadNames, setWardRoadNames] = useState<string[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   /** Focus handler: set focused index and highlight the question's group */
@@ -189,6 +218,35 @@ export default function QuizSession({ config, onComplete }: Props) {
         if (center && !cancelled) {
           setMapCenter([center.lat, center.lng]);
           setMapZoom(13);
+        }
+
+        // Load map layers for ward quiz: rail lines, rivers, roads
+        const [railGeo, riverGeoData, roadGeoData, wardObjects, lineIndex] = await Promise.all([
+          loadRailLines(),
+          loadRivers(),
+          loadRoads(),
+          loadWardObjects(),
+          loadLineIndex(),
+        ]);
+        if (!cancelled) {
+          setLineGeo(railGeo);
+          setRiversGeo(riverGeoData);
+          setRoadsGeo(roadGeoData);
+
+          // Collect all line IDs for rail lines passing through this ward
+          const wardObj = wardObjects[config.scopeId];
+          if (wardObj) {
+            const allLineIds: string[] = [];
+            for (const lineKey of wardObj.lineKeys) {
+              const line = lineIndex.lines.find((l) => l.key === lineKey);
+              if (line) {
+                allLineIds.push(...line.lineIds);
+              }
+            }
+            setWardRailLineIds(allLineIds);
+            setWardRiverNames(wardObj.riverNames);
+            setWardRoadNames(wardObj.roadNames);
+          }
         }
       } else if (config.scopeType === 'theme') {
         if (config.scopeId === 'rivers') {
@@ -306,13 +364,54 @@ export default function QuizSession({ config, onComplete }: Props) {
 
   // 路線GeoJSONをフィルタ（この路線のlineIdsだけ）
   const filteredLineGeo = useMemo(() => {
-    if (!lineGeo || lineIds.length === 0) return null;
-    const idSet = new Set(lineIds);
+    if (!lineGeo) return null;
+    // Line quiz: filter by lineIds
+    if (config.scopeType === 'line' && lineIds.length > 0) {
+      const idSet = new Set(lineIds);
+      return {
+        ...lineGeo,
+        features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
+      } as FeatureCollection;
+    }
+    // Ward quiz: filter by wardRailLineIds
+    if (config.scopeType === 'ward' && wardRailLineIds.length > 0) {
+      const idSet = new Set(wardRailLineIds);
+      return {
+        ...lineGeo,
+        features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
+      } as FeatureCollection;
+    }
+    return null;
+  }, [lineGeo, lineIds, wardRailLineIds, config.scopeType]);
+
+  // 河川GeoJSONをフィルタ（区クイズ用: ward内の河川名のみ）
+  const filteredRiversGeo = useMemo(() => {
+    if (!riversGeo || config.scopeType !== 'ward' || wardRiverNames.length === 0) return null;
+    const nameSet = new Set(wardRiverNames);
     return {
-      ...lineGeo,
-      features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
+      ...riversGeo,
+      features: riversGeo.features.filter((f) => nameSet.has(f.properties?.name)),
     } as FeatureCollection;
-  }, [lineGeo, lineIds]);
+  }, [riversGeo, wardRiverNames, config.scopeType]);
+
+  // 道路GeoJSONをフィルタ（区クイズ用: ward内の道路名のみ）
+  const filteredRoadsGeo = useMemo(() => {
+    if (!roadsGeo || config.scopeType !== 'ward' || wardRoadNames.length === 0) return null;
+    const nameSet = new Set(wardRoadNames);
+    return {
+      ...roadsGeo,
+      features: roadsGeo.features.filter((f) => nameSet.has(f.properties?.name)),
+    } as FeatureCollection;
+  }, [roadsGeo, wardRoadNames, config.scopeType]);
+
+  // 区クイズの場合、対象区をハイライトするためにGeoJSONを分離
+  const wardHighlightGeo = useMemo(() => {
+    if (!wardsGeo || config.scopeType !== 'ward') return null;
+    return {
+      ...wardsGeo,
+      features: wardsGeo.features.filter((f) => f.properties?.id === config.scopeId),
+    } as FeatureCollection;
+  }, [wardsGeo, config.scopeType, config.scopeId]);
 
   // 河川GeoJSONの中心座標を計算（テーマクイズ用）
   const riverCenters = useMemo(() => {
@@ -340,6 +439,29 @@ export default function QuizSession({ config, onComplete }: Props) {
       return { name: river.name.kanji, lat: midCoord[1], lng: midCoord[0] };
     });
   }, [riversGeo, config.scopeType]);
+
+  // 区クイズ用: カテゴリ別にグループ化された問題
+  const wardCategoryGroups = useMemo(() => {
+    if (config.scopeType !== 'ward') return null;
+    const groups: {
+      category: ThemeType;
+      label: string;
+      questions: { q: QuizQuestion; globalIndex: number }[];
+    }[] = [];
+    for (const cat of WARD_CATEGORY_ORDER) {
+      const catQuestions = questions
+        .map((q, i) => ({ q, globalIndex: i }))
+        .filter(({ q }) => q.category === cat);
+      if (catQuestions.length > 0) {
+        groups.push({
+          category: cat,
+          label: WARD_CATEGORY_LABELS[cat] ?? cat,
+          questions: catQuestions,
+        });
+      }
+    }
+    return groups;
+  }, [questions, config.scopeType]);
 
   if (loading) {
     return (
@@ -374,6 +496,43 @@ export default function QuizSession({ config, onComplete }: Props) {
     return questions.indexOf(q);
   };
 
+  /** 区クイズ用: 問題入力行をレンダリング */
+  const renderQuestionInput = (q: QuizQuestion, globalIndex: number, localLabel: string) => (
+    <div key={q.id} className="quiz-session__question">
+      <span className="quiz-session__question-num">{localLabel}</span>
+      <input
+        ref={(el) => {
+          inputRefs.current[globalIndex] = el;
+        }}
+        className={`quiz-session__input ${
+          submitted
+            ? answers[globalIndex] &&
+              (q.targetName.hiragana !== '' || q.targetName.romaji !== ''
+                ? matchesName(answers[globalIndex], q.targetName)
+                : matchesNameString(answers[globalIndex], q.targetName.kanji))
+              ? 'quiz-session__input--correct'
+              : 'quiz-session__input--incorrect'
+            : ''
+        }`}
+        type="text"
+        value={answers[globalIndex] ?? ''}
+        onChange={(e) => handleInputChange(globalIndex, e.target.value)}
+        onKeyDown={(e) => handleKeyDown(e, globalIndex)}
+        onFocus={() => handleInputFocus(globalIndex)}
+        placeholder={config.showHints && q.hint ? q.hint : localLabel}
+        disabled={submitted}
+        autoComplete="off"
+      />
+      {q.suffix && <span className="quiz-session__suffix">{q.suffix}</span>}
+      {submitted && (
+        <span className="quiz-session__correct-answer">
+          {q.targetName.kanji}
+          {q.suffix ?? ''}
+        </span>
+      )}
+    </div>
+  );
+
   return (
     <div className="quiz-session">
       <div className="quiz-session__left">
@@ -394,41 +553,52 @@ export default function QuizSession({ config, onComplete }: Props) {
         </div>
 
         <div className="quiz-session__questions">
-          {questions.map((q, i) => (
-            <div key={q.id} className="quiz-session__question">
-              <span className="quiz-session__question-num">{getLabel(i)}</span>
-              <input
-                ref={(el) => {
-                  inputRefs.current[i] = el;
-                }}
-                className={`quiz-session__input ${
-                  submitted
-                    ? answers[i] &&
-                      (q.targetName.hiragana !== '' || q.targetName.romaji !== ''
-                        ? matchesName(answers[i], q.targetName)
-                        : matchesNameString(answers[i], q.targetName.kanji))
-                      ? 'quiz-session__input--correct'
-                      : 'quiz-session__input--incorrect'
-                    : ''
-                }`}
-                type="text"
-                value={answers[i] ?? ''}
-                onChange={(e) => handleInputChange(i, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(e, i)}
-                onFocus={() => handleInputFocus(i)}
-                placeholder={config.showHints && q.hint ? q.hint : getLabel(i)}
-                disabled={submitted}
-                autoComplete="off"
-              />
-              {q.suffix && <span className="quiz-session__suffix">{q.suffix}</span>}
-              {submitted && (
-                <span className="quiz-session__correct-answer">
-                  {q.targetName.kanji}
-                  {q.suffix ?? ''}
-                </span>
-              )}
-            </div>
-          ))}
+          {/* 区クイズ: カテゴリ別グループ表示 */}
+          {config.scopeType === 'ward' && wardCategoryGroups
+            ? wardCategoryGroups.map((group) => (
+                <div key={group.category} className="quiz-session__category-section">
+                  <div className="quiz-session__category-header">{group.label}</div>
+                  {group.questions.map(({ q, globalIndex }, localIdx) =>
+                    renderQuestionInput(q, globalIndex, `${localIdx + 1}`),
+                  )}
+                </div>
+              ))
+            : /* 路線・テーマクイズ: フラット表示 */
+              questions.map((q, i) => (
+                <div key={q.id} className="quiz-session__question">
+                  <span className="quiz-session__question-num">{getLabel(i)}</span>
+                  <input
+                    ref={(el) => {
+                      inputRefs.current[i] = el;
+                    }}
+                    className={`quiz-session__input ${
+                      submitted
+                        ? answers[i] &&
+                          (q.targetName.hiragana !== '' || q.targetName.romaji !== ''
+                            ? matchesName(answers[i], q.targetName)
+                            : matchesNameString(answers[i], q.targetName.kanji))
+                          ? 'quiz-session__input--correct'
+                          : 'quiz-session__input--incorrect'
+                        : ''
+                    }`}
+                    type="text"
+                    value={answers[i] ?? ''}
+                    onChange={(e) => handleInputChange(i, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(e, i)}
+                    onFocus={() => handleInputFocus(i)}
+                    placeholder={config.showHints && q.hint ? q.hint : getLabel(i)}
+                    disabled={submitted}
+                    autoComplete="off"
+                  />
+                  {q.suffix && <span className="quiz-session__suffix">{q.suffix}</span>}
+                  {submitted && (
+                    <span className="quiz-session__correct-answer">
+                      {q.targetName.kanji}
+                      {q.suffix ?? ''}
+                    </span>
+                  )}
+                </div>
+              ))}
         </div>
 
         {!submitted && (
@@ -479,6 +649,21 @@ export default function QuizSession({ config, onComplete }: Props) {
             />
           )}
 
+          {/* 区クイズ: 対象区のハイライト */}
+          {wardHighlightGeo && (
+            <GeoJSON
+              key={`quiz-ward-highlight-${config.scopeId}`}
+              data={wardHighlightGeo}
+              style={{
+                color: '#f59e0b',
+                weight: 3,
+                fillColor: '#fef3c7',
+                fillOpacity: 0.15,
+              }}
+              interactive={false}
+            />
+          )}
+
           {/* 路線パス: GeoJSON（地図記号風: 灰色+白交互） */}
           {filteredLineGeo && (
             <>
@@ -519,6 +704,36 @@ export default function QuizSession({ config, onComplete }: Props) {
                 color: '#38bdf8',
                 weight: 3,
                 opacity: 0.8,
+                lineCap: 'round',
+              })}
+              interactive={false}
+            />
+          )}
+
+          {/* 河川GeoJSON（区クイズ用: 区内の河川のみ） */}
+          {filteredRiversGeo && config.scopeType === 'ward' && (
+            <GeoJSON
+              key={`quiz-ward-rivers-${config.scopeId}`}
+              data={filteredRiversGeo}
+              style={() => ({
+                color: '#38bdf8',
+                weight: 4,
+                opacity: 0.8,
+                lineCap: 'round',
+              })}
+              interactive={false}
+            />
+          )}
+
+          {/* 道路GeoJSON（区クイズ用: 区内の道路のみ） */}
+          {filteredRoadsGeo && config.scopeType === 'ward' && (
+            <GeoJSON
+              key={`quiz-ward-roads-${config.scopeId}`}
+              data={filteredRoadsGeo}
+              style={() => ({
+                color: '#fb923c',
+                weight: 3.5,
+                opacity: 0.7,
                 lineCap: 'round',
               })}
               interactive={false}
