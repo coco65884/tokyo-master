@@ -121,15 +121,56 @@ function isInBbox(lat: number, lng: number, bbox: WardBbox): boolean {
   return lat >= bbox.minLat && lat <= bbox.maxLat && lng >= bbox.minLng && lng <= bbox.maxLng;
 }
 
+/** Ray casting: 点がポリゴンリング内にあるか判定 */
+function pointInRing(lng: number, lat: number, ring: number[][]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const xi = ring[i][0],
+      yi = ring[i][1];
+    const xj = ring[j][0],
+      yj = ring[j][1];
+    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+/** 区のポリゴンリングを抽出 */
+async function getWardRings(wardId: string): Promise<number[][][] | null> {
+  const wardsGeo = await loadWards();
+  const feature = wardsGeo.features.find((f) => f.properties?.id === wardId);
+  if (!feature) return null;
+  const geom = feature.geometry;
+  if (geom.type === 'Polygon') {
+    return (geom as GeoJSON.Polygon).coordinates as number[][][];
+  } else if (geom.type === 'MultiPolygon') {
+    return (geom as GeoJSON.MultiPolygon).coordinates.map((p) => p[0]) as number[][][];
+  }
+  return null;
+}
+
+/** POIが区のポリゴン内にあるか判定（bbox粗フィルタ+ray casting） */
+function isInWardPolygon(lat: number, lng: number, bbox: WardBbox, rings: number[][][]): boolean {
+  // bbox粗フィルタ
+  if (!isInBbox(lat, lng, bbox)) return false;
+  // ray casting
+  for (const ring of rings) {
+    if (pointInRing(lng, lat, ring)) return true;
+  }
+  return false;
+}
+
 /**
  * 区クイズ用の問題を生成する。
  * 駅、河川、道路、大学、ランドマークを出題する。
  */
 export async function generateWardQuiz(wardId: string): Promise<QuizQuestion[]> {
-  const [wardObjects, { lines }, wardBbox] = await Promise.all([
+  const [wardObjects, { lines }, wardBbox, wardRings] = await Promise.all([
     loadWardObjects(),
     loadLineIndex(),
     computeWardBbox(wardId),
+    getWardRings(wardId),
   ]);
 
   const wardObj: WardObjects | undefined = wardObjects[wardId];
@@ -142,8 +183,9 @@ export async function generateWardQuiz(wardId: string): Promise<QuizQuestion[]> 
     const line = lines.find((l) => l.key === lineKey);
     if (!line) continue;
     for (const station of line.stations) {
-      // bbox内の駅のみ採用（区を通る路線でも区外の駅を除外）
-      if (wardBbox && !isInBbox(station.lat, station.lng, wardBbox)) continue;
+      // ポリゴン内の駅のみ採用（区を通る路線でも区外の駅を除外）
+      if (wardBbox && wardRings && !isInWardPolygon(station.lat, station.lng, wardBbox, wardRings))
+        continue;
       // 重複回避（同じ駅名は1つに）
       if (!stationMap.has(station.name)) {
         stationMap.set(station.name, station);
@@ -201,7 +243,8 @@ export async function generateWardQuiz(wardId: string): Promise<QuizQuestion[]> 
       const groupOrder: string[] = [];
 
       for (const poi of uniEntry.pois) {
-        if (!isInBbox(poi.lat, poi.lng, wardBbox)) continue;
+        if (wardBbox && wardRings && !isInWardPolygon(poi.lat, poi.lng, wardBbox, wardRings))
+          continue;
         const group = poi.group || poi.name;
         if (!groupMap.has(group)) {
           groupMap.set(group, { first: poi, extras: [] });
@@ -235,7 +278,8 @@ export async function generateWardQuiz(wardId: string): Promise<QuizQuestion[]> 
     const lmEntry = typedGenrePois['landmarks'];
     if (lmEntry) {
       for (const poi of lmEntry.pois) {
-        if (!isInBbox(poi.lat, poi.lng, wardBbox)) continue;
+        if (wardBbox && wardRings && !isInWardPolygon(poi.lat, poi.lng, wardBbox, wardRings))
+          continue;
         questions.push({
           id: `ward-landmark-${idx++}`,
           targetName: { kanji: poi.name, hiragana: '', katakana: '', romaji: '' },
