@@ -138,11 +138,20 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [focusedQuestionIndex, setFocusedQuestionIndex] = useState<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  /** Fix 1: Focus handler that also clears highlightedGroup */
-  const handleInputFocus = useCallback((index: number) => {
-    setFocusedQuestionIndex(index);
-    setHighlightedGroup(null);
-  }, []);
+  /** Focus handler: set focused index and highlight the question's group */
+  const handleInputFocus = useCallback(
+    (index: number) => {
+      setFocusedQuestionIndex(index);
+      // If the focused question has a group (multi-campus), highlight it
+      const q = questions[index];
+      if (q?.group && q.extraLocations && q.extraLocations.length > 0) {
+        setHighlightedGroup(q.group);
+      } else {
+        setHighlightedGroup(null);
+      }
+    },
+    [questions],
+  );
 
   useEffect(() => {
     let cancelled = false;
