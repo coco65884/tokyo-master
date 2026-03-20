@@ -147,13 +147,23 @@ export function getGenreList(): { key: string; label: string; icon: string; coun
   return result;
 }
 
+/** ジャンルごとのサフィックス設定 */
+const GENRE_SUFFIX: Record<string, { suffix: string; strip: boolean }> = {
+  universities: { suffix: '大学', strip: true },
+  high_schools: { suffix: '高校', strip: true },
+  jiro: { suffix: '店', strip: false },
+};
+
 /**
  * ジャンルPOIクイズ用の問題を生成する
  * groupがある場合はgroup名を正解にし、同じgroupの番号を統一
+ * サフィックスがある場合は正解名から除去し、suffix フィールドに設定
  */
 export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
   const entry = typedGenrePois[genreKey];
   if (!entry) return [];
+
+  const suffixConfig = GENRE_SUFFIX[genreKey];
 
   // group → 番号マッピング（同じgroupは同じ番号）
   const groupNumbers = new Map<string, number>();
@@ -166,10 +176,20 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
     }
     const num = groupNumbers.get(group)!;
 
+    // サフィックス処理: 正解名から末尾のサフィックスを除去
+    let answerName = group;
+    let suffix: string | undefined;
+    if (suffixConfig) {
+      suffix = suffixConfig.suffix;
+      if (suffixConfig.strip && answerName.endsWith(suffixConfig.suffix)) {
+        answerName = answerName.slice(0, -suffixConfig.suffix.length);
+      }
+    }
+
     return {
       id: `genre-${genreKey}-q-${idx}`,
       targetName: {
-        kanji: group,
+        kanji: answerName,
         hiragana: '',
         katakana: '',
         romaji: '',
@@ -178,6 +198,8 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
       lng: poi.lng,
       hint: `${num}番`,
       category: genreKey as ThemeType,
+      suffix,
+      group,
     };
   });
 }

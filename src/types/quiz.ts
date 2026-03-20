@@ -34,6 +34,10 @@ export interface QuizQuestion {
   lng?: number;
   hint?: string;
   category: ThemeType;
+  /** ジャンルクイズで入力欄の後に表示するサフィックス（例: "大学", "高校", "店"） */
+  suffix?: string;
+  /** グループ名（同じグループのPOIを視覚的に接続するために使用） */
+  group?: string;
 }
 
 /** クイズ結果 */

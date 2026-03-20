@@ -255,6 +255,14 @@
   background: #fef2f2;
 }
 
+.quiz-session__suffix {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .quiz-session__correct-answer {
   font-size: 0.8rem;
   color: var(--color-text-secondary);
@@ -1040,9 +1048,9 @@
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-  /* Stack quiz session vertically: left panel on top, map below */
+  /* Stack quiz session: map on top, inputs at bottom */
   .quiz-session {
-    flex-direction: column;
+    flex-direction: column-reverse;
   }
 
   .quiz-session__left {
@@ -1051,7 +1059,8 @@
     max-height: 45vh;
     min-height: 0;
     border-right: none;
-    border-bottom: 1px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
+    border-bottom: none;
     padding: 0.75rem 1rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;

@@ -7,6 +7,7 @@ import {
   Marker,
   Tooltip,
   Popup,
+  Polyline,
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -160,8 +161,10 @@ export default function QuizSession({ config, onComplete }: Props) {
       const isCorrect = hasVariants
         ? matchesName(userAnswer, q.targetName)
         : matchesNameString(userAnswer, correctAnswer);
+      // 結果表示用: サフィックス付きの正解名
+      const displayAnswer = q.suffix ? correctAnswer + q.suffix : correctAnswer;
 
-      return { questionId: q.id, userAnswer, correctAnswer, isCorrect };
+      return { questionId: q.id, userAnswer, correctAnswer: displayAnswer, isCorrect };
     });
 
     const correctCount = quizAnswers.filter((a) => a.isCorrect).length;
@@ -216,6 +219,26 @@ export default function QuizSession({ config, onComplete }: Props) {
       return { name: river.name.kanji, lat: midCoord[1], lng: midCoord[0] };
     });
   }, [riversGeo, config.scopeType]);
+
+  // グループ接続線: 同じ group の POI を結ぶ（ジャンルクイズ用）
+  const groupLines = useMemo(() => {
+    if (config.scopeType !== 'theme' || config.scopeId === 'rivers') return [];
+    const groupMap = new Map<string, [number, number][]>();
+    for (const q of questions) {
+      if (!q.group || q.lat == null || q.lng == null) continue;
+      const arr = groupMap.get(q.group) || [];
+      arr.push([q.lat, q.lng]);
+      groupMap.set(q.group, arr);
+    }
+    // 2つ以上の座標を持つグループだけ線を描画
+    const lines: [number, number][][] = [];
+    for (const positions of groupMap.values()) {
+      if (positions.length >= 2) {
+        lines.push(positions);
+      }
+    }
+    return lines;
+  }, [questions, config.scopeType, config.scopeId]);
 
   if (loading) {
     return (
@@ -290,8 +313,12 @@ export default function QuizSession({ config, onComplete }: Props) {
                 disabled={submitted}
                 autoComplete="off"
               />
+              {q.suffix && <span className="quiz-session__suffix">{q.suffix}</span>}
               {submitted && (
-                <span className="quiz-session__correct-answer">{q.targetName.kanji}</span>
+                <span className="quiz-session__correct-answer">
+                  {q.targetName.kanji}
+                  {q.suffix ?? ''}
+                </span>
               )}
             </div>
           ))}
@@ -431,13 +458,30 @@ export default function QuizSession({ config, onComplete }: Props) {
                 position={[q.lat!, q.lng!]}
                 icon={L.divIcon({
                   className: 'quiz-number-icon',
-                  html: submitted ? `<span>${q.targetName.kanji}</span>` : `<span>${i + 1}</span>`,
+                  html: submitted
+                    ? `<span>${q.targetName.kanji}${q.suffix ?? ''}</span>`
+                    : `<span>${i + 1}</span>`,
                   iconSize: [submitted ? 80 : 22, 22],
                   iconAnchor: [submitted ? 40 : 11, 11],
                 })}
                 interactive={false}
               />
             ))}
+
+          {/* グループ接続線（同じグループのPOIを結ぶ破線） */}
+          {groupLines.map((positions, i) => (
+            <Polyline
+              key={`group-line-${i}`}
+              positions={positions}
+              pathOptions={{
+                color: '#6366f1',
+                weight: 1.5,
+                dashArray: '6, 4',
+                opacity: 0.5,
+              }}
+              interactive={false}
+            />
+          ))}
 
           {/* 駅マーカー + 番号ラベル（路線・区クイズ用。ジャンルPOIクイズでは専用マーカーを使用） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
