@@ -216,7 +216,10 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
 
   if (hasGroups) {
     // グループ統合モード: 同じgroupを1つの問題にまとめる
-    const groupMap = new Map<string, { first: GenrePoi; extras: { lat: number; lng: number }[] }>();
+    const groupMap = new Map<
+      string,
+      { first: GenrePoi; extras: { lat: number; lng: number; name?: string }[] }
+    >();
     const groupOrder: string[] = [];
 
     for (const poi of entry.pois) {
@@ -225,7 +228,7 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
         groupMap.set(group, { first: poi, extras: [] });
         groupOrder.push(group);
       } else {
-        groupMap.get(group)!.extras.push({ lat: poi.lat, lng: poi.lng });
+        groupMap.get(group)!.extras.push({ lat: poi.lat, lng: poi.lng, name: poi.name });
       }
     }
 
@@ -257,6 +260,7 @@ export function generateGenreQuiz(genreKey: string): QuizQuestion[] {
         suffix,
         group,
         extraLocations: extras.length > 0 ? extras : undefined,
+        poiDisplayName: first.name,
       };
     });
   }

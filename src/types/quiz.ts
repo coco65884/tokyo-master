@@ -39,7 +39,9 @@ export interface QuizQuestion {
   /** グループ名（同じグループのPOIを視覚的に接続するために使用） */
   group?: string;
   /** 同一グループの追加キャンパス座標（統合後の追加ロケーション） */
-  extraLocations?: { lat: number; lng: number }[];
+  extraLocations?: { lat: number; lng: number; name?: string }[];
+  /** メインマーカーの表示名（キャンパス名を含むフル名称） */
+  poiDisplayName?: string;
 }
 
 /** クイズ結果 */

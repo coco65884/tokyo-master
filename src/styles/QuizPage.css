@@ -1198,9 +1198,9 @@
 
 @keyframes quiz-glow {
   from {
-    box-shadow: 0 0 4px #6366f1;
+    box-shadow: 0 0 4px #f97316;
   }
   to {
-    box-shadow: 0 0 12px #6366f1;
+    box-shadow: 0 0 12px #f97316;
   }
 }
