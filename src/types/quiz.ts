@@ -9,6 +9,7 @@ export type QuizScopeType = 'ward' | 'line' | 'theme';
 /** テーマタイプ（組み込みテーマ + ジャンルPOIキー） */
 export type ThemeType =
   | 'rivers'
+  | 'roads'
   | 'landmarks'
   | 'stations'
   | 'universities'
