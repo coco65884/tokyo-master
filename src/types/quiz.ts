@@ -38,6 +38,8 @@ export interface QuizQuestion {
   suffix?: string;
   /** グループ名（同じグループのPOIを視覚的に接続するために使用） */
   group?: string;
+  /** 同一グループの追加キャンパス座標（統合後の追加ロケーション） */
+  extraLocations?: { lat: number; lng: number }[];
 }
 
 /** クイズ結果 */

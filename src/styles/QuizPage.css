@@ -1190,3 +1190,17 @@
   background: none !important;
   border: none !important;
 }
+
+/* ===== Quiz Marker Highlight (same-group glow) ===== */
+.quiz-marker-highlight span {
+  animation: quiz-glow 1s infinite alternate;
+}
+
+@keyframes quiz-glow {
+  from {
+    box-shadow: 0 0 4px #6366f1;
+  }
+  to {
+    box-shadow: 0 0 12px #6366f1;
+  }
+}
