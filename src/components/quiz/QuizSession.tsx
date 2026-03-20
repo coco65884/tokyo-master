@@ -100,8 +100,18 @@ function MapPanToFocused({
   useEffect(() => {
     if (focusedIndex == null) return;
     const q = questions[focusedIndex];
-    if (q?.lat != null && q?.lng != null) {
-      map.panTo([q.lat, q.lng], { animate: true });
+    if (q?.lat == null || q?.lng == null) return;
+
+    // For questions with extraLocations, fit bounds around all locations
+    if (q.extraLocations && q.extraLocations.length > 0) {
+      const points: [number, number][] = [[q.lat, q.lng]];
+      for (const loc of q.extraLocations) {
+        points.push([loc.lat, loc.lng]);
+      }
+      const bounds = L.latLngBounds(points);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+    } else {
+      map.setView([q.lat, q.lng], 14, { animate: true });
     }
   }, [focusedIndex, questions, map]);
 
@@ -127,6 +137,12 @@ export default function QuizSession({ config, onComplete }: Props) {
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
   const [focusedQuestionIndex, setFocusedQuestionIndex] = useState<number | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  /** Fix 1: Focus handler that also clears highlightedGroup */
+  const handleInputFocus = useCallback((index: number) => {
+    setFocusedQuestionIndex(index);
+    setHighlightedGroup(null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -390,7 +406,7 @@ export default function QuizSession({ config, onComplete }: Props) {
                 value={answers[i] ?? ''}
                 onChange={(e) => handleInputChange(i, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(e, i)}
-                onFocus={() => setFocusedQuestionIndex(i)}
+                onFocus={() => handleInputFocus(i)}
                 placeholder={config.showHints && q.hint ? q.hint : getLabel(i)}
                 disabled={submitted}
                 autoComplete="off"
@@ -662,6 +678,21 @@ export default function QuizSession({ config, onComplete }: Props) {
                 />
               );
             })}
+
+          {/* フォーカス中マーカーのハイライトリング */}
+          {focusedQuestionIndex !== null && questions[focusedQuestionIndex]?.lat && (
+            <CircleMarker
+              center={[questions[focusedQuestionIndex].lat!, questions[focusedQuestionIndex].lng!]}
+              radius={15}
+              pathOptions={{
+                color: '#f97316',
+                fillColor: 'transparent',
+                weight: 3,
+                dashArray: '4,4',
+              }}
+              className="quiz-focus-ring"
+            />
+          )}
         </MapContainer>
       </div>
     </div>
