@@ -1,7 +1,10 @@
 import type { NameVariants } from './geography';
 
+/** 難易度レベル */
+export type DifficultyLevel = 'kantan' | 'futsuu' | 'muzukashii';
+
 /** クイズの回答形式 */
-export type AnswerMode = 'text' | 'drag-and-drop';
+export type AnswerMode = 'text' | 'multiple-choice' | 'drag-and-drop';
 
 /** クイズの出題範囲タイプ */
 export type QuizScopeType = 'ward' | 'line' | 'theme';
@@ -19,12 +22,33 @@ export type ThemeType =
   | 'stadiums'
   | 'high_schools';
 
+/** 選択肢（4択モード用） */
+export interface QuizChoice {
+  id: string;
+  label: string;
+  isCorrect: boolean;
+}
+
+/** 難易度設定パラメータ */
+export interface DifficultySettings {
+  answerMode: AnswerMode;
+  choiceCount: number;
+  showHints: boolean;
+  showMapNumbers: boolean;
+  showSuffix: boolean;
+  revealOnCorrect: boolean;
+  questionOrder: 'sequential' | 'shuffled';
+}
+
 /** クイズの設定 */
 export interface QuizConfig {
   scopeType: QuizScopeType;
   scopeId: string;
-  answerMode: AnswerMode;
-  showHints: boolean;
+  difficulty: DifficultyLevel;
+  /** @deprecated difficulty から導出される。後方互換性のため残す */
+  answerMode?: AnswerMode;
+  /** @deprecated difficulty から導出される。後方互換性のため残す */
+  showHints?: boolean;
 }
 
 /** クイズ問題 */
@@ -43,6 +67,8 @@ export interface QuizQuestion {
   extraLocations?: { lat: number; lng: number; name?: string }[];
   /** メインマーカーの表示名（キャンパス名を含むフル名称） */
   poiDisplayName?: string;
+  /** かんたんモード用の選択肢 */
+  choices?: QuizChoice[];
 }
 
 /** クイズ結果 */
@@ -50,6 +76,7 @@ export interface QuizResult {
   quizConfigId: string;
   scopeType: QuizScopeType;
   scopeId: string;
+  difficulty?: DifficultyLevel;
   totalQuestions: number;
   correctAnswers: number;
   accuracy: number;
@@ -63,4 +90,5 @@ export interface QuizAnswer {
   userAnswer: string;
   correctAnswer: string;
   isCorrect: boolean;
+  selectedChoiceId?: string;
 }

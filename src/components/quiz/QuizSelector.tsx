@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { QuizScopeType } from '@/types';
+import type { QuizScopeType, DifficultyLevel } from '@/types';
 import { getOperatorLines, getWardList, getGenreList } from '@/utils/quizDataLoader';
+import { getDifficultySettings } from '@/utils/difficultySettings';
 import { useQuizStore } from '@/stores/quizStore';
+import DifficultyPicker from './DifficultyPicker';
 
 type TabType = QuizScopeType | 'speedrun' | 'blankmap';
 
@@ -22,6 +24,17 @@ const OPERATOR_LABELS: Record<string, string> = {
   TWR: 'りんかい線',
   TamaMonorail: '多摩モノレール',
 };
+
+/** localStorage から前回の難易度を復元する */
+function loadPreferredDifficulty(): DifficultyLevel {
+  try {
+    const stored = localStorage.getItem('tokyo-master-difficulty');
+    if (stored === 'kantan' || stored === 'futsuu' || stored === 'muzukashii') return stored;
+  } catch {
+    // ignore
+  }
+  return 'futsuu';
+}
 
 interface Props {
   onStart: () => void;
@@ -45,7 +58,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
   const [selectedLine, setSelectedLine] = useState<string>('');
   const [selectedWard, setSelectedWard] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('rivers');
-  const [showHints, setShowHints] = useState<boolean>(true);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>(loadPreferredDifficulty);
   // Speed run state
   const [speedRunOperator, setSpeedRunOperator] = useState<string>('');
   const [speedRunLine, setSpeedRunLine] = useState<string>('');
@@ -73,6 +86,15 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
     setSpeedRunLine('');
   }, []);
 
+  const handleDifficultyChange = useCallback((level: DifficultyLevel) => {
+    setDifficulty(level);
+    try {
+      localStorage.setItem('tokyo-master-difficulty', level);
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const currentScopeId =
     tab === 'line' ? selectedLine : tab === 'ward' ? selectedWard : selectedTheme;
 
@@ -86,11 +108,13 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
 
   const handleStart = () => {
     if (!canStart) return;
+    const settings = getDifficultySettings(difficulty);
     setConfig({
       scopeType: tab as QuizScopeType,
       scopeId: currentScopeId,
-      answerMode: 'text',
-      showHints,
+      difficulty,
+      answerMode: settings.answerMode,
+      showHints: settings.showHints,
     });
     onStart();
   };
@@ -286,17 +310,10 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
         )}
       </div>
 
-      {/* Settings (only for standard quiz modes) */}
+      {/* Difficulty picker (standard quiz modes) */}
       {(tab === 'line' || tab === 'ward' || tab === 'theme') && (
         <div className="quiz-selector__settings">
-          <label className="quiz-selector__hint-toggle">
-            <input
-              type="checkbox"
-              checked={showHints}
-              onChange={(e) => setShowHints(e.target.checked)}
-            />
-            ヒントを表示
-          </label>
+          <DifficultyPicker value={difficulty} onChange={handleDifficultyChange} />
         </div>
       )}
 

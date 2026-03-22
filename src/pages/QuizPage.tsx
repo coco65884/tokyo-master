@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import QuizSelector from '@/components/quiz/QuizSelector';
 import QuizSession from '@/components/quiz/QuizSession';
+import MultipleChoiceSession from '@/components/quiz/MultipleChoiceSession';
 import QuizResult from '@/components/quiz/QuizResult';
 import SpeedRunSession from '@/components/quiz/SpeedRunSession';
 import BlankMapQuiz from '@/components/quiz/BlankMapQuiz';
@@ -59,6 +60,8 @@ export default function QuizPage() {
     setPhase('blankmap');
   }, []);
 
+  const isKantanMode = config?.difficulty === 'kantan';
+
   return (
     <div className="quiz-page">
       <header className="quiz-header">
@@ -77,9 +80,13 @@ export default function QuizPage() {
           />
         )}
 
-        {phase === 'active' && config && (
-          <QuizSession config={config} onComplete={handleComplete} />
-        )}
+        {phase === 'active' &&
+          config &&
+          (isKantanMode ? (
+            <MultipleChoiceSession config={config} onComplete={handleComplete} />
+          ) : (
+            <QuizSession config={config} onComplete={handleComplete} />
+          ))}
 
         {phase === 'result' && lastResult && (
           <QuizResult
