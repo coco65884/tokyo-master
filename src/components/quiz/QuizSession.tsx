@@ -141,6 +141,30 @@ function MapPanToFocused({
   return null;
 }
 
+/** カテゴリ別の絵文字アイコン */
+const CATEGORY_EMOJI: Record<string, string> = {
+  universities: '🎓',
+  landmarks: '🗼',
+};
+
+/**
+ * フォーカスされた河川/道路のGeoJSONフィーチャーにフィットするコンポーネント
+ */
+function MapFitToFeature({ featureGeo }: { featureGeo: FeatureCollection | null }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!featureGeo || featureGeo.features.length === 0) return;
+    const layer = L.geoJSON(featureGeo);
+    const bounds = layer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+    }
+  }, [featureGeo, map]);
+
+  return null;
+}
+
 export default function QuizSession({ config, onComplete }: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
@@ -438,6 +462,37 @@ export default function QuizSession({ config, onComplete }: Props) {
     return groups;
   }, [questions, config.scopeType]);
 
+  // フォーカス中の問題のフルネーム（河川/道路ハイライト用）
+  const focusedFeatureName = useMemo(() => {
+    if (focusedQuestionIndex == null) return null;
+    const q = questions[focusedQuestionIndex];
+    if (!q) return null;
+    if (q.category === 'rivers' || q.category === 'roads') {
+      return q.targetName.kanji + (q.suffix ?? '');
+    }
+    return null;
+  }, [focusedQuestionIndex, questions]);
+
+  // フォーカス中の河川GeoJSON（ハイライト表示用）
+  const focusedRiverGeo = useMemo(() => {
+    if (!focusedFeatureName || !riversGeo) return null;
+    const q = questions[focusedQuestionIndex!];
+    if (q?.category !== 'rivers') return null;
+    const features = riversGeo.features.filter((f) => f.properties?.name === focusedFeatureName);
+    if (features.length === 0) return null;
+    return { type: 'FeatureCollection' as const, features };
+  }, [focusedFeatureName, riversGeo, questions, focusedQuestionIndex]);
+
+  // フォーカス中の道路GeoJSON（ハイライト表示用）
+  const focusedRoadGeo = useMemo(() => {
+    if (!focusedFeatureName || !roadsGeo) return null;
+    const q = questions[focusedQuestionIndex!];
+    if (q?.category !== 'roads') return null;
+    const features = roadsGeo.features.filter((f) => f.properties?.name === focusedFeatureName);
+    if (features.length === 0) return null;
+    return { type: 'FeatureCollection' as const, features };
+  }, [focusedFeatureName, roadsGeo, questions, focusedQuestionIndex]);
+
   if (loading) {
     return (
       <div className="quiz-session__loading">
@@ -710,6 +765,24 @@ export default function QuizSession({ config, onComplete }: Props) {
             />
           )}
 
+          {/* 河川テーマクイズ: フォーカス中の河川をハイライト */}
+          {config.scopeType === 'theme' && config.scopeId === 'rivers' && focusedRiverGeo && (
+            <>
+              <GeoJSON
+                key={`quiz-theme-river-highlight-${focusedFeatureName}`}
+                data={focusedRiverGeo}
+                style={() => ({
+                  color: '#0ea5e9',
+                  weight: 7,
+                  opacity: 1,
+                  lineCap: 'round',
+                })}
+                interactive={false}
+              />
+              <MapFitToFeature featureGeo={focusedRiverGeo} />
+            </>
+          )}
+
           {/* 河川: 区クイズは全体薄く表示 */}
           {config.scopeType === 'ward' && riversGeo && (
             <GeoJSON
@@ -720,6 +793,24 @@ export default function QuizSession({ config, onComplete }: Props) {
             />
           )}
 
+          {/* 河川: フォーカス中の河川をハイライト */}
+          {focusedRiverGeo && (
+            <>
+              <GeoJSON
+                key={`quiz-river-highlight-${focusedFeatureName}`}
+                data={focusedRiverGeo}
+                style={() => ({
+                  color: '#38bdf8',
+                  weight: 5,
+                  opacity: 0.9,
+                  lineCap: 'round',
+                })}
+                interactive={false}
+              />
+              <MapFitToFeature featureGeo={focusedRiverGeo} />
+            </>
+          )}
+
           {/* 道路: 区クイズは全体薄く表示 */}
           {config.scopeType === 'ward' && roadsGeo && (
             <GeoJSON
@@ -728,6 +819,24 @@ export default function QuizSession({ config, onComplete }: Props) {
               style={() => ({ color: '#fb923c', weight: 2, opacity: 0.15, lineCap: 'round' })}
               interactive={false}
             />
+          )}
+
+          {/* 道路: フォーカス中の道路をハイライト */}
+          {focusedRoadGeo && (
+            <>
+              <GeoJSON
+                key={`quiz-road-highlight-${focusedFeatureName}`}
+                data={focusedRoadGeo}
+                style={() => ({
+                  color: '#fb923c',
+                  weight: 5,
+                  opacity: 0.9,
+                  lineCap: 'round',
+                })}
+                interactive={false}
+              />
+              <MapFitToFeature featureGeo={focusedRoadGeo} />
+            </>
           )}
 
           {/* 河川番号マーカー（河川テーマクイズ用） */}
@@ -841,57 +950,139 @@ export default function QuizSession({ config, onComplete }: Props) {
 
           {/* 駅マーカー + 番号ラベル（路線・区クイズ用。ジャンルPOIクイズでは専用マーカーを使用） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
-            stationMarkers.map((q, i) => {
-              const qIdx = getQuestionIndex(q);
-              return (
-                <CircleMarker
-                  key={q.id}
-                  center={[q.lat!, q.lng!]}
-                  radius={5}
-                  pathOptions={{
-                    color: lineColor,
-                    fillColor: '#fff',
-                    fillOpacity: 1,
-                    weight: 2,
-                  }}
-                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
-                >
-                  <Tooltip
-                    permanent
-                    direction="right"
-                    offset={[8, 0]}
-                    className="quiz-station-number"
+            stationMarkers
+              .filter(
+                (q) =>
+                  config.scopeType !== 'ward' ||
+                  (q.category !== 'universities' && q.category !== 'landmarks'),
+              )
+              .map((q, i) => {
+                const qIdx = getQuestionIndex(q);
+                return (
+                  <CircleMarker
+                    key={q.id}
+                    center={[q.lat!, q.lng!]}
+                    radius={5}
+                    pathOptions={{
+                      color: lineColor,
+                      fillColor: '#fff',
+                      fillOpacity: 1,
+                      weight: 2,
+                    }}
+                    eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
                   >
-                    {submitted ? q.targetName.kanji : getLabel(i)}
-                  </Tooltip>
-                  {submitted && (
-                    <Popup>
-                      <strong>{q.targetName.kanji}</strong>
-                    </Popup>
-                  )}
-                </CircleMarker>
-              );
-            })}
+                    <Tooltip
+                      permanent
+                      direction="right"
+                      offset={[8, 0]}
+                      className="quiz-station-number"
+                    >
+                      {submitted ? q.targetName.kanji : getLabel(i)}
+                    </Tooltip>
+                    {submitted && (
+                      <Popup>
+                        <strong>{q.targetName.kanji}</strong>
+                      </Popup>
+                    )}
+                  </CircleMarker>
+                );
+              })}
 
           {/* 番号マーカー（四角ボックス。路線・区クイズ用） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
             !submitted &&
-            stationMarkers.map((q, i) => {
-              const qIdx = getQuestionIndex(q);
-              return (
-                <Marker
-                  key={`num-${q.id}`}
-                  position={[q.lat!, q.lng!]}
-                  icon={L.divIcon({
-                    className: 'quiz-number-icon',
-                    html: `<span>${getLabel(i)}</span>`,
-                    iconSize: [config.scopeType === 'line' && lineAbbr ? 38 : 22, 22],
-                    iconAnchor: [config.scopeType === 'line' && lineAbbr ? 19 : 11, 28],
-                  })}
-                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
-                />
-              );
-            })}
+            stationMarkers
+              .filter(
+                (q) =>
+                  config.scopeType !== 'ward' ||
+                  (q.category !== 'universities' && q.category !== 'landmarks'),
+              )
+              .map((q, i) => {
+                const qIdx = getQuestionIndex(q);
+                return (
+                  <Marker
+                    key={`num-${q.id}`}
+                    position={[q.lat!, q.lng!]}
+                    icon={L.divIcon({
+                      className: 'quiz-number-icon',
+                      html: `<span>${getLabel(i)}</span>`,
+                      iconSize: [config.scopeType === 'line' && lineAbbr ? 38 : 22, 22],
+                      iconAnchor: [config.scopeType === 'line' && lineAbbr ? 19 : 11, 28],
+                    })}
+                    eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                  />
+                );
+              })}
+
+          {/* 区クイズ: 大学・ランドマークの絵文字マーカー */}
+          {config.scopeType === 'ward' &&
+            stationMarkers
+              .filter((q) => q.category === 'universities' || q.category === 'landmarks')
+              .map((q) => {
+                const qIdx = getQuestionIndex(q);
+                const emoji = CATEGORY_EMOJI[q.category] ?? '';
+                const isHighlighted = highlightedGroup != null && q.group === highlightedGroup;
+                const isFocused = focusedQuestionIndex === qIdx;
+                return (
+                  <Marker
+                    key={`emoji-${q.id}`}
+                    position={[q.lat!, q.lng!]}
+                    icon={L.divIcon({
+                      className: `genre-poi-icon${isHighlighted ? ' genre-poi-icon--highlight' : ''}${isFocused ? ' genre-poi-icon--focused' : ''}`,
+                      html: `<span>${emoji}</span>`,
+                      iconSize: [24, 24],
+                      iconAnchor: [12, 12],
+                    })}
+                    eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                  >
+                    {submitted && (
+                      <Tooltip
+                        permanent
+                        direction="top"
+                        offset={[0, -12]}
+                        className="genre-poi-label"
+                      >
+                        {q.targetName.kanji}
+                        {q.suffix ?? ''}
+                      </Tooltip>
+                    )}
+                  </Marker>
+                );
+              })}
+
+          {/* 区クイズ: 大学の追加キャンパス絵文字マーカー */}
+          {config.scopeType === 'ward' &&
+            stationMarkers
+              .filter((q) => q.category === 'universities' && q.extraLocations)
+              .map((q) => {
+                const qIdx = getQuestionIndex(q);
+                const isHighlighted = highlightedGroup != null && q.group === highlightedGroup;
+                const isFocused = focusedQuestionIndex === qIdx;
+                return q.extraLocations!.map((loc, j) => (
+                  <Marker
+                    key={`emoji-extra-${q.id}-${j}`}
+                    position={[loc.lat, loc.lng]}
+                    icon={L.divIcon({
+                      className: `genre-poi-icon${isHighlighted ? ' genre-poi-icon--highlight' : ''}${isFocused ? ' genre-poi-icon--focused' : ''}`,
+                      html: '<span>🎓</span>',
+                      iconSize: [24, 24],
+                      iconAnchor: [12, 12],
+                    })}
+                    eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                  >
+                    {submitted && loc.name && (
+                      <Tooltip
+                        permanent
+                        direction="top"
+                        offset={[0, -12]}
+                        className="genre-poi-label"
+                      >
+                        {loc.name}
+                      </Tooltip>
+                    )}
+                  </Marker>
+                ));
+              })}
 
           {/* フォーカス中マーカーのハイライトリング */}
           {focusedQuestionIndex !== null && questions[focusedQuestionIndex]?.lat && (

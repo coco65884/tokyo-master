@@ -1432,3 +1432,45 @@
     box-shadow: 0 0 12px #f97316;
   }
 }
+
+/* ===== Quiz Emoji POI Markers (universities, landmarks) ===== */
+.genre-poi-icon {
+  background: none !important;
+  border: none !important;
+}
+
+.genre-poi-icon span {
+  font-size: 20px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+.genre-poi-icon--highlight {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 50% !important;
+}
+
+.genre-poi-icon--focused span {
+  font-size: 26px;
+  filter: drop-shadow(0 0 6px rgba(249, 115, 22, 0.8));
+}
+
+.genre-poi-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+  text-shadow:
+    1px 1px 0 #fff,
+    -1px -1px 0 #fff,
+    1px -1px 0 #fff,
+    -1px 1px 0 #fff !important;
+  white-space: nowrap !important;
+}
+
+.genre-poi-label::before {
+  display: none;
+}
