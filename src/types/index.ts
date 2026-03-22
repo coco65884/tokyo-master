@@ -19,9 +19,12 @@ export type {
 } from './geography';
 
 export type {
+  DifficultyLevel,
   AnswerMode,
   QuizScopeType,
   ThemeType,
+  QuizChoice,
+  DifficultySettings,
   QuizConfig,
   QuizQuestion,
   QuizResult,
