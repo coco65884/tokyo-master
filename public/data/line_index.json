@@ -10725,7 +10725,9 @@
       "abbr": "R",
       "operator": "TWR",
       "color": "#00b5ad",
-      "lineIds": [],
+      "lineIds": [
+        "line-rinkai"
+      ],
       "stations": [
         {
           "id": "station-rinkai-新木場",
