@@ -1006,17 +1006,37 @@ export default function QuizSession({ config, onComplete }: Props) {
 
           {/* フォーカス中マーカーのハイライトリング */}
           {focusedQuestionIndex !== null && questions[focusedQuestionIndex]?.lat && (
-            <CircleMarker
-              center={[questions[focusedQuestionIndex].lat!, questions[focusedQuestionIndex].lng!]}
-              radius={15}
-              pathOptions={{
-                color: '#f97316',
-                fillColor: 'transparent',
-                weight: 3,
-                dashArray: '4,4',
-              }}
-              className="quiz-focus-ring"
-            />
+            <>
+              <CircleMarker
+                center={[
+                  questions[focusedQuestionIndex].lat!,
+                  questions[focusedQuestionIndex].lng!,
+                ]}
+                radius={15}
+                pathOptions={{
+                  color: '#f97316',
+                  fillColor: 'transparent',
+                  weight: 3,
+                  dashArray: '4,4',
+                }}
+                className="quiz-focus-ring"
+              />
+              {/* 複数キャンパス: 全キャンパスに点線リングを表示 */}
+              {questions[focusedQuestionIndex].extraLocations?.map((loc, j) => (
+                <CircleMarker
+                  key={`focus-extra-${j}`}
+                  center={[loc.lat, loc.lng]}
+                  radius={15}
+                  pathOptions={{
+                    color: '#f97316',
+                    fillColor: 'transparent',
+                    weight: 3,
+                    dashArray: '4,4',
+                  }}
+                  className="quiz-focus-ring"
+                />
+              ))}
+            </>
           )}
         </MapContainer>
       </div>
