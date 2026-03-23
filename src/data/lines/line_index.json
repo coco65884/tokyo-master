@@ -10785,7 +10785,9 @@
       "abbr": "TT",
       "operator": "TamaMonorail",
       "color": "#f25192",
-      "lineIds": [],
+      "lineIds": [
+        "line-tama-monorail"
+      ],
       "stations": [
         {
           "id": "station-tama-多摩センター",
