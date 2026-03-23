@@ -7,6 +7,9 @@ import DifficultyPicker from './DifficultyPicker';
 
 type TabType = QuizScopeType | 'speedrun' | 'blankmap';
 
+/** スピードランモードの表示フラグ（一時的に非表示） */
+const SHOW_SPEEDRUN = false;
+
 /** 事業者キー → 日本語表示名 */
 const OPERATOR_LABELS: Record<string, string> = {
   JR: 'JR東日本',
@@ -148,12 +151,14 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
         >
           テーマクイズ
         </button>
-        <button
-          className={`quiz-selector__tab ${tab === 'speedrun' ? 'quiz-selector__tab--active' : ''}`}
-          onClick={() => setTab('speedrun')}
-        >
-          スピードラン
-        </button>
+        {SHOW_SPEEDRUN && (
+          <button
+            className={`quiz-selector__tab ${tab === 'speedrun' ? 'quiz-selector__tab--active' : ''}`}
+            onClick={() => setTab('speedrun')}
+          >
+            スピードラン
+          </button>
+        )}
         <button
           className={`quiz-selector__tab ${tab === 'blankmap' ? 'quiz-selector__tab--active' : ''}`}
           onClick={() => setTab('blankmap')}
@@ -329,7 +334,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
         </button>
       )}
 
-      {tab === 'speedrun' && (
+      {SHOW_SPEEDRUN && tab === 'speedrun' && (
         <button
           className="quiz-selector__start-btn"
           disabled={!speedRunLine}
