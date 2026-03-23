@@ -460,35 +460,30 @@ export default function QuizSession({ config, onComplete }: Props) {
     });
   }, [riversGeo, config.scopeType]);
 
-  // 区クイズ: フォーカス中の川・道路名
-  const focusedFeatureName = useMemo(() => {
-    if (focusedQuestionIndex === null || config.scopeType !== 'ward') return null;
-    const q = questions[focusedQuestionIndex];
-    if (!q) return null;
-    if (q.category === 'rivers' || q.category === 'roads') {
-      return q.targetName.kanji;
-    }
-    return null;
-  }, [focusedQuestionIndex, questions, config.scopeType]);
-
-  // フォーカス中の川・道路のGeoJSONフィルタ
+  // 区クイズ: フォーカス中の川・道路のGeoJSONフィルタ
   const focusedRiverGeo = useMemo(() => {
-    if (!focusedFeatureName || !riversGeo) return null;
-    const q = questions[focusedQuestionIndex!];
-    if (q?.category !== 'rivers') return null;
-    const filtered = riversGeo.features.filter((f) => f.properties?.name === focusedFeatureName);
+    if (focusedQuestionIndex === null || config.scopeType !== 'ward' || !riversGeo) return null;
+    const q = questions[focusedQuestionIndex];
+    if (!q || q.category !== 'rivers') return null;
+    // targetName.kanjiはサフィックス除去済み（例: "仙"）、GeoJSONのnameは "仙川"
+    const fullName = q.targetName.kanji + (q.suffix ?? '');
+    const filtered = riversGeo.features.filter((f) => f.properties?.name === fullName);
     if (filtered.length === 0) return null;
     return { ...riversGeo, features: filtered } as FeatureCollection;
-  }, [focusedFeatureName, riversGeo, questions, focusedQuestionIndex]);
+  }, [focusedQuestionIndex, questions, config.scopeType, riversGeo]);
 
   const focusedRoadGeo = useMemo(() => {
-    if (!focusedFeatureName || !roadsGeo) return null;
-    const q = questions[focusedQuestionIndex!];
-    if (q?.category !== 'roads') return null;
-    const filtered = roadsGeo.features.filter((f) => f.properties?.name === focusedFeatureName);
+    if (focusedQuestionIndex === null || config.scopeType !== 'ward' || !roadsGeo) return null;
+    const q = questions[focusedQuestionIndex];
+    if (!q || q.category !== 'roads') return null;
+    // 道路名: targetName.kanji + suffix（例: "環七" + "通り" → "環七通り"）
+    const fullName = q.targetName.kanji + (q.suffix ?? '');
+    const filtered = roadsGeo.features.filter((f) => f.properties?.name === fullName);
     if (filtered.length === 0) return null;
     return { ...roadsGeo, features: filtered } as FeatureCollection;
-  }, [focusedFeatureName, roadsGeo, questions, focusedQuestionIndex]);
+  }, [focusedQuestionIndex, questions, config.scopeType, roadsGeo]);
+
+  // focusedRiverGeo / focusedRoadGeo がnon-nullならハイライト表示される
 
   // 区クイズ用: カテゴリ別にグループ化された問題
   const wardCategoryGroups = useMemo(() => {
@@ -815,7 +810,7 @@ export default function QuizSession({ config, onComplete }: Props) {
           {/* 区クイズ: フォーカス中の川をハイライト */}
           {focusedRiverGeo && (
             <GeoJSON
-              key={`ward-river-highlight-${focusedFeatureName}`}
+              key={`ward-river-hl-${focusedQuestionIndex}`}
               data={focusedRiverGeo}
               style={() => ({ color: '#38bdf8', weight: 4, opacity: 0.9, lineCap: 'round' })}
               interactive={false}
@@ -825,7 +820,7 @@ export default function QuizSession({ config, onComplete }: Props) {
           {/* 区クイズ: フォーカス中の道路をハイライト */}
           {focusedRoadGeo && (
             <GeoJSON
-              key={`ward-road-highlight-${focusedFeatureName}`}
+              key={`ward-road-hl-${focusedQuestionIndex}`}
               data={focusedRoadGeo}
               style={() => ({ color: '#fb923c', weight: 4, opacity: 0.9, lineCap: 'round' })}
               interactive={false}
