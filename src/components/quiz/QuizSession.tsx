@@ -24,6 +24,7 @@ import {
   getWardCenter,
   getGenreInfo,
 } from '@/utils/quizDataLoader';
+import { getDifficultySettings } from '@/utils/difficultySettings';
 import {
   loadRailLines,
   loadRivers,
@@ -142,10 +143,13 @@ function MapPanToFocused({
 }
 
 export default function QuizSession({ config, onComplete }: Props) {
+  const diffSettings = useMemo(() => getDifficultySettings(config.difficulty), [config.difficulty]);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timerEndRef = useRef<number>(0);
   const [mapCenter, setMapCenter] = useState<[number, number]>([35.6762, 139.6503]);
   const [mapZoom, setMapZoom] = useState(12);
   const [lineColor, setLineColor] = useState<string>('#6b7280');
@@ -163,6 +167,21 @@ export default function QuizSession({ config, onComplete }: Props) {
   // Ward quiz: line IDs for all rail lines passing through the ward
   const [wardRailLineIds, setWardRailLineIds] = useState<string[]>([]);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  /** 頭文字ヒントを生成 */
+  const getPlaceholder = useCallback(
+    (q: QuizQuestion, fallback: string) => {
+      if (diffSettings.showFirstChar && q.targetName.kanji) {
+        const kanji = q.targetName.kanji;
+        return kanji[0] + '○'.repeat(kanji.length - 1);
+      }
+      if (config.showHints && q.hint) {
+        return q.hint;
+      }
+      return fallback;
+    },
+    [diffSettings.showFirstChar, config.showHints],
+  );
 
   /** Focus handler: set focused index and highlight the question's group */
   const handleInputFocus = useCallback(
@@ -287,6 +306,32 @@ export default function QuizSession({ config, onComplete }: Props) {
       cancelled = true;
     };
   }, [config]);
+
+  // 制限時間タイマー（refベースで再レンダリングをトリガー）
+  const [timerTick, setTimerTick] = useState(0);
+  useEffect(() => {
+    if (loading || submitted) return;
+    const limit = diffSettings.timeLimitPerQuestion;
+    if (limit <= 0) return;
+
+    const totalTime = limit * questions.length;
+    timerEndRef.current = Date.now() + totalTime * 1000;
+
+    timerRef.current = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
+      setTimerTick(remaining);
+      if (remaining <= 0) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setSubmitted(true);
+      }
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [loading, submitted, diffSettings.timeLimitPerQuestion, questions.length]);
+
+  const timeLeft = timerTick;
 
   const handleInputChange = useCallback((index: number, value: string) => {
     setAnswers((prev) => {
@@ -494,7 +539,7 @@ export default function QuizSession({ config, onComplete }: Props) {
         onChange={(e) => handleInputChange(globalIndex, e.target.value)}
         onKeyDown={(e) => handleKeyDown(e, globalIndex)}
         onFocus={() => handleInputFocus(globalIndex)}
-        placeholder={config.showHints && q.hint ? q.hint : localLabel}
+        placeholder={getPlaceholder(q, localLabel)}
         disabled={submitted}
         autoComplete="off"
       />
@@ -521,6 +566,13 @@ export default function QuizSession({ config, onComplete }: Props) {
           <span className="quiz-session__count">
             {answeredCount}/{questions.length}
           </span>
+          {diffSettings.timeLimitPerQuestion > 0 && !submitted && (
+            <span
+              className={`quiz-session__timer ${timeLeft <= 10 ? 'quiz-session__timer--urgent' : ''}`}
+            >
+              ⏱ {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+            </span>
+          )}
         </div>
 
         <div className="quiz-session__progress">
@@ -561,7 +613,7 @@ export default function QuizSession({ config, onComplete }: Props) {
                     onChange={(e) => handleInputChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, i)}
                     onFocus={() => handleInputFocus(i)}
-                    placeholder={config.showHints && q.hint ? q.hint : getLabel(i)}
+                    placeholder={getPlaceholder(q, getLabel(i))}
                     disabled={submitted}
                     autoComplete="off"
                   />

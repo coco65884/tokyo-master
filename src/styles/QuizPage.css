@@ -367,6 +367,28 @@
   font-weight: 600;
 }
 
+.quiz-session__timer {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  margin-left: 0.5rem;
+}
+
+.quiz-session__timer--urgent {
+  color: #e53e3e;
+  animation: timer-pulse 1s infinite;
+}
+
+@keyframes timer-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* Progress bar */
 .quiz-session__progress {
   height: 6px;
