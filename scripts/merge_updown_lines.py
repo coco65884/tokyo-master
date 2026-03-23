@@ -94,8 +94,45 @@ def sample_proximity(coords1: list, coords2: list, threshold_m: float = 200) -> 
     return near_count / len(samples1)
 
 
+def are_name_duplicates(name1: str, name2: str) -> bool:
+    """名前パターンから上り/下り等の方向違いかどうかを判定。"""
+    import re
+
+    def strip_direction(name):
+        name = re.sub(r"（上り）|（下り）|（北行）|（南行）", "", name)
+        name = re.sub(r"\(上り\)|\(下り\)", "", name)
+        name = re.sub(r"上り$|下り$|北行$|南行$", "", name)
+        # 方向の矢印を正規化: A→B と B→A は同じ
+        m = re.search(r"[（(]?\s*(.+?)\s*[=→=>]+\s*(.+?)\s*[)）]?$", name)
+        if m:
+            name = name[: m.start()]
+        return name.strip()
+
+    n1 = strip_direction(name1)
+    n2 = strip_direction(name2)
+
+    if not n1 or not n2:
+        return False
+
+    # 正規化後の名前が一致、または片方が他方に含まれる
+    if n1 == n2:
+        return True
+    if len(n1) >= 4 and len(n2) >= 4:
+        if n1 in n2 or n2 in n1:
+            return True
+
+    return False
+
+
 def are_geographic_duplicates(feat1: dict, feat2: dict) -> bool:
     """2つのfeatureが地理的に同一ルートかどうかを判定。"""
+    name1 = feat1["properties"]["name"]
+    name2 = feat2["properties"]["name"]
+
+    # Step 0: 名前パターンで上り/下りの方向違いなら重複とみなす
+    if are_name_duplicates(name1, name2):
+        return True
+
     coords1 = get_all_coords(feat1)
     coords2 = get_all_coords(feat2)
 

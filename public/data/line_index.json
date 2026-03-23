@@ -201,8 +201,6 @@
       "color": "#f15a22",
       "lineIds": [
         "line-9069258",
-        "line-9069259",
-        "line-12022275",
         "line-10021165",
         "line-18788965"
       ],
@@ -1048,8 +1046,6 @@
       "color": "#f68b1e",
       "lineIds": [
         "line-8519860",
-        "line-9069219",
-        "line-8519859",
         "line-12200093"
       ],
       "stations": [
@@ -1612,10 +1608,8 @@
       "operator": "JR",
       "color": "#e5560d",
       "lineIds": [
-        "line-4684035",
-        "line-5419188",
         "line-4673470",
-        "line-4684034"
+        "line-5419188"
       ],
       "stations": [
         {
@@ -2667,7 +2661,6 @@
       "color": "#007b43",
       "lineIds": [
         "line-1872548",
-        "line-8506268",
         "line-14330371"
       ],
       "stations": [
@@ -3578,8 +3571,7 @@
       "operator": "JR",
       "color": "#f68b1e",
       "lineIds": [
-        "line-5430809",
-        "line-5430810"
+        "line-5430809"
       ],
       "stations": [
         {
