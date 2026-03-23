@@ -22,7 +22,7 @@ import {
   getGenreInfo,
 } from '@/utils/quizDataLoader';
 import { generateChoicesForQuestions } from '@/utils/distractorGenerator';
-import { loadRailLines, loadWards } from '@/utils/dataLoader';
+import { loadRailLines, loadRivers, loadRoads, loadWards } from '@/utils/dataLoader';
 import ChoiceButton from './ChoiceButton';
 
 interface Props {
@@ -58,6 +58,9 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
   const [lineIds, setLineIds] = useState<string[]>([]);
   const [lineAbbr, setLineAbbr] = useState('');
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
+  const [riversGeo, setRiversGeo] = useState<FeatureCollection | null>(null);
+  const [roadsGeo, setRoadsGeo] = useState<FeatureCollection | null>(null);
+  const [quizTitle, setQuizTitle] = useState('');
 
   // Load questions
   useEffect(() => {
@@ -96,6 +99,12 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
         if (center && !cancelled) {
           setMapCenter([center.lat, center.lng]);
           setMapZoom(13);
+          setQuizTitle('区内の地理');
+        }
+        const [riverGeo, roadGeo] = await Promise.all([loadRivers(), loadRoads()]);
+        if (!cancelled) {
+          setRiversGeo(riverGeo);
+          setRoadsGeo(roadGeo);
         }
         qs = await generateChoicesForQuestions(qs);
       } else if (config.scopeType === 'theme') {
@@ -104,13 +113,17 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
           if (!cancelled) {
             setMapCenter([35.6762, 139.6503]);
             setMapZoom(11);
+            setQuizTitle('河川クイズ');
           }
+          const riverGeo = await loadRivers();
+          if (!cancelled) setRiversGeo(riverGeo);
         } else {
           qs = generateGenreQuiz(config.scopeId);
           const info = getGenreInfo(config.scopeId);
           if (info && !cancelled) {
             setMapCenter([35.6762, 139.6503]);
             setMapZoom(11);
+            setQuizTitle(`${info.icon} ${info.label}クイズ`);
           }
         }
         qs = await generateChoicesForQuestions(qs);
@@ -269,6 +282,82 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
             ) : null,
           )}
 
+          {/* 川GeoJSON（テーマ/区クイズ用）: 全体薄く表示 */}
+          {riversGeo && (
+            <GeoJSON
+              key={`mc-rivers-${currentIndex}`}
+              data={riversGeo}
+              style={() => ({
+                color: '#38bdf8',
+                weight: currentQuestion?.category === 'rivers' ? 2 : 2,
+                opacity: currentQuestion?.category === 'rivers' ? 0.15 : 0.15,
+                lineCap: 'round' as const,
+              })}
+              interactive={false}
+            />
+          )}
+
+          {/* フォーカス中の川をハイライト */}
+          {currentQuestion?.category === 'rivers' &&
+            riversGeo &&
+            (() => {
+              const fullName = currentQuestion.targetName.kanji + (currentQuestion.suffix ?? '');
+              const filtered = riversGeo.features.filter((f) => f.properties?.name === fullName);
+              if (filtered.length === 0) return null;
+              const data = { ...riversGeo, features: filtered } as FeatureCollection;
+              return (
+                <GeoJSON
+                  key={`mc-river-hl-${currentIndex}`}
+                  data={data}
+                  style={() => ({
+                    color: '#38bdf8',
+                    weight: 5,
+                    opacity: 0.9,
+                    lineCap: 'round' as const,
+                  })}
+                  interactive={false}
+                />
+              );
+            })()}
+
+          {/* 道路GeoJSON: 全体薄く */}
+          {roadsGeo && (
+            <GeoJSON
+              key={`mc-roads-${currentIndex}`}
+              data={roadsGeo}
+              style={() => ({
+                color: '#fb923c',
+                weight: 2,
+                opacity: 0.15,
+                lineCap: 'round' as const,
+              })}
+              interactive={false}
+            />
+          )}
+
+          {/* フォーカス中の道路をハイライト */}
+          {currentQuestion?.category === 'roads' &&
+            roadsGeo &&
+            (() => {
+              const fullName = currentQuestion.targetName.kanji + (currentQuestion.suffix ?? '');
+              const filtered = roadsGeo.features.filter((f) => f.properties?.name === fullName);
+              if (filtered.length === 0) return null;
+              const data = { ...roadsGeo, features: filtered } as FeatureCollection;
+              return (
+                <GeoJSON
+                  key={`mc-road-hl-${currentIndex}`}
+                  data={data}
+                  style={() => ({
+                    color: '#fb923c',
+                    weight: 5,
+                    opacity: 0.9,
+                    lineCap: 'round' as const,
+                  })}
+                  interactive={false}
+                />
+              );
+            })()}
+
           {/* Highlight current question */}
           {currentQuestion?.lat != null && currentQuestion?.lng != null && (
             <>
@@ -282,6 +371,20 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
                   fillOpacity: 0.3,
                 }}
               />
+              {/* 複数キャンパス: 点線囲み */}
+              {currentQuestion.extraLocations?.map((loc, j) => (
+                <CircleMarker
+                  key={`mc-extra-${j}`}
+                  center={[loc.lat, loc.lng]}
+                  radius={16}
+                  pathOptions={{
+                    color: '#f97316',
+                    fillColor: 'transparent',
+                    weight: 3,
+                    dashArray: '4,4',
+                  }}
+                />
+              ))}
               <MapPanTo lat={currentQuestion.lat} lng={currentQuestion.lng} />
             </>
           )}
@@ -311,7 +414,7 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
       <div className="mc-session__question-area">
         {/* Progress */}
         <div className="mc-session__header">
-          <span className="mc-session__title">{lineName}</span>
+          <span className="mc-session__title">{lineName || quizTitle}</span>
           <span className="mc-session__count">
             {currentIndex + 1} / {questions.length}
           </span>
@@ -323,7 +426,18 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
 
         {/* Question prompt */}
         <div className="mc-session__prompt">
-          <span className="mc-session__prompt-num">{currentIndex + 1}番目の駅</span>
+          <span className="mc-session__prompt-num">
+            {currentQuestion.category === 'stations' && `${currentIndex + 1}番目の駅`}
+            {currentQuestion.category === 'rivers' && `${currentIndex + 1}番目の川`}
+            {currentQuestion.category === 'roads' && `${currentIndex + 1}番目の道路`}
+            {currentQuestion.category === 'universities' && `${currentIndex + 1}番目の大学`}
+            {currentQuestion.category === 'high_schools' && `${currentIndex + 1}番目の高校`}
+            {currentQuestion.category === 'landmarks' && `${currentIndex + 1}番`}
+            {currentQuestion.category === 'jiro' && `${currentIndex + 1}番目の店舗`}
+            {currentQuestion.category === 'museums' && `${currentIndex + 1}番`}
+            {currentQuestion.category === 'parks' && `${currentIndex + 1}番`}
+            {currentQuestion.category === 'stadiums' && `${currentIndex + 1}番`}
+          </span>
           {lineAbbr && (
             <span className="mc-session__prompt-line" style={{ color: lineColor }}>
               {lineAbbr}
