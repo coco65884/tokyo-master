@@ -100,8 +100,26 @@ async function generateStationDistractors(
 }
 
 /**
+ * 同カテゴリの問題プールからディストラクターを生成する（汎用）
+ */
+function generateSameCategoryDistractors(
+  question: QuizQuestion,
+  allQuestions: QuizQuestion[],
+  count: number = 3,
+): string[] {
+  const correctName = question.targetName.kanji;
+  const candidates = allQuestions
+    .filter((q) => q.category === question.category && q.targetName.kanji !== correctName)
+    .map((q) => q.targetName.kanji);
+  // 重複除去
+  const unique = [...new Set(candidates)];
+  return shuffle(unique).slice(0, count);
+}
+
+/**
  * QuizQuestion に4択の選択肢を生成して付与する。
- * 路線クイズ用: excludeLineKey で同路線の駅を除外可能。
+ * 駅カテゴリ: 近隣駅からディストラクター生成。
+ * その他カテゴリ: 同カテゴリの他の問題からディストラクター生成。
  */
 export async function generateChoicesForQuestions(
   questions: QuizQuestion[],
@@ -111,28 +129,31 @@ export async function generateChoicesForQuestions(
 
   const result: QuizQuestion[] = [];
   for (const q of questions) {
+    let distractors: string[];
+
     if (q.category === 'stations') {
-      const distractors = await generateStationDistractors(
-        q,
-        options?.excludeLineKey,
-        allCorrectNames,
-      );
-      const correctChoice: QuizChoice = {
-        id: `${q.id}-correct`,
-        label: q.targetName.kanji,
-        isCorrect: true,
-      };
-      const distractorChoices: QuizChoice[] = distractors.map((name, i) => ({
-        id: `${q.id}-d${i}`,
-        label: name,
-        isCorrect: false,
-      }));
-      const choices = shuffle([correctChoice, ...distractorChoices]);
-      result.push({ ...q, choices });
+      distractors = await generateStationDistractors(q, options?.excludeLineKey, allCorrectNames);
     } else {
-      // 他カテゴリは Phase 2 で実装
-      result.push(q);
+      distractors = generateSameCategoryDistractors(q, questions);
     }
+
+    if (distractors.length === 0) {
+      result.push(q);
+      continue;
+    }
+
+    const correctChoice: QuizChoice = {
+      id: `${q.id}-correct`,
+      label: q.targetName.kanji,
+      isCorrect: true,
+    };
+    const distractorChoices: QuizChoice[] = distractors.map((name, i) => ({
+      id: `${q.id}-d${i}`,
+      label: name,
+      isCorrect: false,
+    }));
+    const choices = shuffle([correctChoice, ...distractorChoices]);
+    result.push({ ...q, choices });
   }
 
   return result;
