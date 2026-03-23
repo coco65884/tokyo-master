@@ -40,3 +40,18 @@ gh pr create --title "..." --body "Closes #<NUMBER>" --base main
 - `npm run build` — TypeScript型チェック + Viteビルド
 - `npm run lint` — ESLint
 - `npm run format:check` — Prettierフォーマットチェック
+
+## 地理データ管理
+
+### ドキュメント
+- `docs/geodata-management.md` — データソース、加工パイプライン、既知の問題パターン、修正手順の総合ガイド
+
+### 専用エージェント
+- `@geodata` — 地理データの調査・修正・検証を行う専用エージェント。路線・駅・河川・道路・POIのデータ品質問題に対して使用する
+
+### 地理データ修正のルール
+- データ修正は個別Issue単位で行い、PRは自動マージせずオーナーの確認を待つ
+- 手動JSON編集より `scripts/` のスクリプト改善を優先する
+- GeoJSON座標は小数点5桁精度に丸める（`scripts/optimize_geojson.py`）
+- コミットメッセージは `data:` プレフィックスを使用する
+- `public/data/` の同期を忘れないこと
