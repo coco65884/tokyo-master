@@ -254,6 +254,208 @@ def phase2_fetch_overpass(geo: dict) -> int:
     return updated
 
 
+# ── Phase 2.5: route=railway インフラrelationからギャップ補完 ──
+
+# 路線名 → route=railway relation のマッピング
+RAILWAY_INFRA_MAP = {
+    "中央": [8836495, 8836496],  # 中央本線（下り/上り）JR東日本
+    "東北本線": [1872548],  # ※既存relation
+    "常磐": [8506268],
+    "東海道": [8519859, 8519860],
+    "高崎": [5430809],
+    "総武": [10312042],
+}
+
+
+def phase2_5_fill_gaps_from_infra(geo: dict) -> int:
+    """
+    Phase 2で取得できなかったギャップに対して、
+    route=railway のインフラrelationからジオメトリを取得して補完。
+    """
+    # ギャップがあるfeatureを特定
+    gap_features = []
+    for feat in geo["features"]:
+        geom = feat["geometry"]
+        if geom["type"] != "MultiLineString":
+            continue
+        segs = geom["coordinates"]
+        has_gap = False
+        for i in range(len(segs) - 1):
+            gap = coord_dist(segs[i][-1], segs[i + 1][0])
+            if gap > 5000:  # 5km以上のギャップ
+                has_gap = True
+                break
+        if has_gap:
+            gap_features.append(feat)
+
+    if not gap_features:
+        print("  No features with large gaps")
+        return 0
+
+    print(f"\nPhase 2.5: {len(gap_features)} features have gaps > 5km")
+
+    # 路線名からインフラrelation IDを検索
+    # まずOverpass APIで route=railway のrelationを検索
+    print("  Searching for route=railway relations...")
+    try:
+        result = query_overpass("""
+        [out:json][timeout:30];
+        rel["type"="route"]["route"="railway"]["operator"~"東日本旅客鉄道|東海旅客鉄道|東京地下鉄|東京都交通局|東急電鉄|小田急電鉄|京王電鉄|西武鉄道|東武鉄道|京成電鉄|京浜急行電鉄"];
+        out tags;
+        """)
+    except Exception as e:
+        print(f"  Error searching: {e}")
+        return 0
+
+    infra_rels = {}
+    for elem in result.get("elements", []):
+        if elem["type"] == "relation":
+            name = elem.get("tags", {}).get("name", "")
+            infra_rels[elem["id"]] = name
+
+    print(f"  Found {len(infra_rels)} infrastructure relations")
+
+    # ギャップがあるfeatureごとに、最適なインフラrelationを見つけて取得
+    updated = 0
+    fetched_rels: dict[int, list[list]] = {}
+
+    for feat in gap_features:
+        name = feat["properties"]["name"]
+        geom = feat["geometry"]
+        segs = geom["coordinates"]
+
+        # ギャップの位置を特定
+        gaps = []
+        for i in range(len(segs) - 1):
+            gap_dist = coord_dist(segs[i][-1], segs[i + 1][0])
+            if gap_dist > 5000:
+                gaps.append({
+                    "idx": i,
+                    "start": segs[i][-1],
+                    "end": segs[i + 1][0],
+                    "dist": gap_dist,
+                })
+
+        if not gaps:
+            continue
+
+        # 該当するインフラrelationを検索
+        # 路線名を正規化してマッチング
+        def normalize(s):
+            for rm in ["JR", "（上り）", "（下り）", "東京メトロ", "都営", "線", "（", "）"]:
+                s = s.replace(rm, "")
+            return s.strip()
+
+        feat_norm = normalize(name)
+        best_rel_id = None
+        best_score = 0
+        for rel_id, rel_name in infra_rels.items():
+            rel_norm = normalize(rel_name)
+            # 共通文字列の長さでスコアリング
+            score = 0
+            for i in range(len(feat_norm)):
+                for j in range(i + 2, len(feat_norm) + 1):
+                    substr = feat_norm[i:j]
+                    if substr in rel_norm and len(substr) > score:
+                        score = len(substr)
+            if score > best_score and score >= 2:
+                best_score = score
+                best_rel_id = rel_id
+
+        if not best_rel_id:
+            continue
+
+        # インフラrelationからジオメトリ取得（キャッシュ）
+        if best_rel_id not in fetched_rels:
+            print(f"  Fetching infra relation {best_rel_id} ({infra_rels[best_rel_id]})...")
+            try:
+                time.sleep(REQUEST_DELAY)
+                infra_result = query_overpass(f"""
+                [out:json][timeout:180];
+                rel({best_rel_id});
+                out geom;
+                """)
+                infra_segments = []
+                for elem in infra_result.get("elements", []):
+                    if elem["type"] != "relation":
+                        continue
+                    for member in elem.get("members", []):
+                        if member["type"] != "way" or member.get("role", "") == "platform":
+                            continue
+                        geom_data = member.get("geometry", [])
+                        coords = [
+                            [round(pt["lon"], 5), round(pt["lat"], 5)]
+                            for pt in geom_data
+                            if "lon" in pt
+                        ]
+                        if len(coords) >= 2:
+                            infra_segments.append(coords)
+                chains = chain_segments_tolerant(infra_segments)
+                fetched_rels[best_rel_id] = chains
+                total = sum(len(c) for c in chains)
+                print(f"    Got {len(chains)} chains, {total} coords")
+            except Exception as e:
+                print(f"    Error: {e}")
+                fetched_rels[best_rel_id] = []
+                continue
+
+        infra_chains = fetched_rels[best_rel_id]
+        if not infra_chains:
+            continue
+
+        # ギャップごとに、インフラチェーンから該当部分を抽出して挿入
+        new_segs = list(segs)
+        inserted = 0
+        offset = 0
+
+        for gap in gaps:
+            gap_start = gap["start"]
+            gap_end = gap["end"]
+
+            # インフラチェーンから、ギャップを埋める部分を抽出
+            for chain in infra_chains:
+                # ギャップ始点・終点に最も近いチェーン上の座標を見つける
+                best_start_idx = -1
+                best_start_dist = 3000  # 3km以内
+                best_end_idx = -1
+                best_end_dist = 3000
+
+                for ci, c in enumerate(chain):
+                    d_start = coord_dist(c, gap_start)
+                    d_end = coord_dist(c, gap_end)
+                    if d_start < best_start_dist:
+                        best_start_dist = d_start
+                        best_start_idx = ci
+                    if d_end < best_end_dist:
+                        best_end_dist = d_end
+                        best_end_idx = ci
+
+                if best_start_idx >= 0 and best_end_idx >= 0 and best_start_idx != best_end_idx:
+                    # 抽出
+                    lo = min(best_start_idx, best_end_idx)
+                    hi = max(best_start_idx, best_end_idx)
+                    fill_segment = chain[lo : hi + 1]
+
+                    if len(fill_segment) >= 3:
+                        # 方向を合わせる
+                        if coord_dist(fill_segment[0], gap_start) > coord_dist(fill_segment[-1], gap_start):
+                            fill_segment = list(reversed(fill_segment))
+
+                        insert_pos = gap["idx"] + 1 + offset
+                        new_segs.insert(insert_pos, fill_segment)
+                        inserted += 1
+                        offset += 1
+                        print(f"  {name}: filled {gap['dist']/1000:.1f}km gap with {len(fill_segment)} coords from {infra_rels[best_rel_id]}")
+                        break
+
+        if inserted > 0:
+            geom["type"] = "MultiLineString"
+            geom["coordinates"] = new_segs
+            updated += 1
+
+    return updated
+
+
 # ── Phase 3: 小ギャップ補完 (100m以下のみ) ───────────────────
 
 def phase3_fill_small_gaps(geo: dict) -> int:
@@ -306,6 +508,11 @@ def main() -> None:
     # Phase 2
     updated = phase2_fetch_overpass(geo)
     print(f"  Total updated: {updated}\n")
+
+    # Phase 2.5
+    print("Phase 2.5: Filling gaps from route=railway infra relations...")
+    infra_updated = phase2_5_fill_gaps_from_infra(geo)
+    print(f"  Total filled from infra: {infra_updated}\n")
 
     # Phase 3
     print("Phase 3: Filling small gaps (≤100m)...")
