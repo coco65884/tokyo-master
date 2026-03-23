@@ -172,8 +172,8 @@ export default function QuizSession({ config, onComplete }: Props) {
   const getPlaceholder = useCallback(
     (q: QuizQuestion, fallback: string) => {
       if (diffSettings.showFirstChar && q.targetName.kanji) {
-        const firstChar = q.targetName.kanji[0];
-        return `${firstChar}○○…`;
+        const kanji = q.targetName.kanji;
+        return kanji[0] + '○'.repeat(kanji.length - 1);
       }
       if (config.showHints && q.hint) {
         return q.hint;
