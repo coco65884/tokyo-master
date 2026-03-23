@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-rail_lines.geojson から不正な直線ジャンプセグメントを除去する。
+rail_lines.geojson の路線を駅データに基づいて再構築する。
 
-OSMデータの加工時に生じた短い直線セグメントのうち、路線の駅間接続ではない
-不正なワープを検出・除去。
+各路線のMultiLineStringセグメントを駅順序でソートし、
+ルートに属さないセグメントを除去、ギャップを直線接続で埋める。
 
-判定基準:
-- 短セグメント(2-5座標)で、かつ
-- 端点が路線の駅から離れている(駅間接続ではない)場合のみ除去
-- 端点が駅に近い場合は正当な駅間接続として保持
+アルゴリズム:
+1. 各セグメントがどの駅区間をカバーするか判定
+2. 駅順にセグメントをソートし、カバー範囲の重複を解決
+3. カバーされないギャップを駅間直線で補完
+4. ルートに属さないセグメント（どの駅にも近くない）を除去
 """
 
 import json
@@ -19,10 +20,8 @@ import shutil
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "data")
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "data")
 
-# セグメントの端点が駅からこの距離(m)以内なら「駅に近い」と判定
-STATION_PROXIMITY_M = 500
-# 短セグメントの最小長(m)。これ未満は除去対象にしない
-MIN_SUSPICIOUS_LENGTH_M = 500
+# セグメントの座標が駅からこの距離(m)以内なら「駅をカバーする」と判定
+STATION_COVERAGE_M = 800
 
 
 def haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
@@ -36,45 +35,108 @@ def haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
-def segment_length(coords: list) -> float:
+def segment_length_m(coords: list) -> float:
     total = 0.0
     for i in range(1, len(coords)):
-        total += haversine_m(coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0])
+        total += haversine_m(
+            coords[i - 1][1], coords[i - 1][0], coords[i][1], coords[i][0]
+        )
     return total
 
 
-def nearest_station_dist(coord: list, stations: list[dict]) -> float:
-    """座標[lng, lat]から最も近い駅までの距離(m)を返す"""
-    if not stations:
-        return float("inf")
-    return min(haversine_m(coord[1], coord[0], st["lat"], st["lng"]) for st in stations)
+def find_station_coverage(
+    seg_coords: list, stations: list[dict]
+) -> set[int]:
+    """セグメントがカバーする駅のインデックス集合を返す。
+    セグメントの座標を間引きチェックして高速化。"""
+    covered = set()
+    # 全座標チェックすると遅いので、一定間隔 + 端点をチェック
+    step = max(1, len(seg_coords) // 50)
+    check_indices = list(range(0, len(seg_coords), step))
+    if len(seg_coords) - 1 not in check_indices:
+        check_indices.append(len(seg_coords) - 1)
+
+    for ci in check_indices:
+        c = seg_coords[ci]
+        for si, st in enumerate(stations):
+            if si in covered:
+                continue
+            if haversine_m(c[1], c[0], st["lat"], st["lng"]) < STATION_COVERAGE_M:
+                covered.add(si)
+    return covered
 
 
-def is_orphan_jump(coords: list, stations: list[dict]) -> bool:
+def reconstruct_route(
+    segments: list[list], stations: list[dict]
+) -> list[list]:
     """
-    駅間接続ではない不正ジャンプかどうかを判定。
+    駅順序に基づいてセグメントを再構築する。
 
-    - 短セグメント(<=5座標)で500m超の長さ
-    - かつ、端点の少なくとも片方が駅から遠い場合 → 不正ジャンプ
+    1. 各セグメントの駅カバー範囲を判定
+    2. 駅をカバーするセグメントは全て保持
+    3. 駅順にソートし、向きを揃える
+    4. セグメント間のギャップを直線接続で補完
+    5. どの駅もカバーしないセグメント（孤児）のみ除去
     """
-    n = len(coords)
-    if n < 2 or n > 5:
-        return False
+    if not stations or not segments:
+        return segments
 
-    length = segment_length(coords)
-    if length < MIN_SUSPICIOUS_LENGTH_M:
-        return False
+    # 各セグメントの駅カバー情報を計算
+    seg_infos = []
+    orphans = []
+    for i, seg in enumerate(segments):
+        coverage = find_station_coverage(seg, stations)
+        if coverage:
+            seg_infos.append(
+                {
+                    "idx": i,
+                    "min_st": min(coverage),
+                    "max_st": max(coverage),
+                    "coverage": coverage,
+                    "coords": seg,
+                    "n_coords": len(seg),
+                }
+            )
+        else:
+            orphans.append(i)
 
-    # 端点が駅に近いか確認
-    start_near = nearest_station_dist(coords[0], stations) < STATION_PROXIMITY_M
-    end_near = nearest_station_dist(coords[-1], stations) < STATION_PROXIMITY_M
+    if not seg_infos:
+        # どのセグメントも駅をカバーしない → そのまま返す
+        return segments
 
-    # 両端が駅に近い → 正当な駅間接続。保持する
-    if start_near and end_near:
-        return False
+    # 駅カバー範囲の開始順でソート、同じ開始なら座標数が多い方を優先
+    seg_infos.sort(key=lambda x: (x["min_st"], -x["n_coords"]))
 
-    # 少なくとも片方が駅から遠い → 不正ジャンプ
-    return True
+    # セグメントの向きを揃える（駅順序に沿うように）
+    oriented = []
+    for info in seg_infos:
+        seg = info["coords"]
+        first_st = stations[info["min_st"]]
+        last_st = stations[info["max_st"]]
+        d_start_first = haversine_m(
+            seg[0][1], seg[0][0], first_st["lat"], first_st["lng"]
+        )
+        d_end_first = haversine_m(
+            seg[-1][1], seg[-1][0], first_st["lat"], first_st["lng"]
+        )
+        if d_start_first > d_end_first:
+            seg = list(reversed(seg))
+        oriented.append(seg)
+
+    # ギャップを直線接続で補完
+    result = []
+    for i, seg in enumerate(oriented):
+        if i > 0 and result:
+            last_end = result[-1][-1]
+            this_start = seg[0]
+            gap = haversine_m(
+                last_end[1], last_end[0], this_start[1], this_start[0]
+            )
+            if gap > 50:  # 50m以上離れていたら接続セグメントを追加
+                result.append([last_end, this_start])
+        result.append(seg)
+
+    return result
 
 
 def main() -> None:
@@ -86,55 +148,49 @@ def main() -> None:
     with open(index_path, encoding="utf-8") as f:
         index = json.load(f)
 
-    # lineId → 駅リストのマッピングを構築
+    # lineId → 駅リスト
     lid_to_stations: dict[str, list[dict]] = {}
     for line in index["lines"]:
         stations = line.get("stations", [])
         for lid in line.get("lineIds", []):
             lid_to_stations[lid] = stations
 
-    total_removed = 0
-    features_affected = 0
+    reconstructed = 0
+    removed_segs = 0
 
     for feat in geo["features"]:
-        geom = feat["geometry"]
         fid = feat["properties"]["id"]
         name = feat["properties"]["name"]
+        geom = feat["geometry"]
 
         if geom["type"] != "MultiLineString":
             continue
 
         stations = lid_to_stations.get(fid, [])
+        if len(stations) < 2:
+            continue
 
-        original_count = len(geom["coordinates"])
-        kept = []
-        removed_here = 0
+        original_segments = geom["coordinates"]
+        original_count = len(original_segments)
 
-        for seg in geom["coordinates"]:
-            if is_orphan_jump(seg, stations):
-                removed_here += 1
-                length = segment_length(seg)
-                print(f"  Removed: {name} ({len(seg)} coords, {length:.0f}m)")
-            else:
-                kept.append(seg)
+        new_segments = reconstruct_route(original_segments, stations)
 
-        if removed_here > 0:
-            total_removed += removed_here
-            features_affected += 1
+        if len(new_segments) != original_count:
+            removed = original_count - len(new_segments)
+            removed_segs += abs(removed)
+            reconstructed += 1
+            print(
+                f"  {name}: {original_count} segs -> {len(new_segments)} segs "
+                f"({'+' if removed < 0 else '-'}{abs(removed)})"
+            )
 
-            if len(kept) == 0:
-                longest = max(geom["coordinates"], key=lambda s: segment_length(s))
-                kept = [longest]
-                total_removed -= 1
-                print(f"  Warning: {name} - kept longest segment to avoid empty geometry")
+        if len(new_segments) == 1:
+            geom["type"] = "LineString"
+            geom["coordinates"] = new_segments[0]
+        else:
+            geom["coordinates"] = new_segments
 
-            if len(kept) == 1:
-                geom["type"] = "LineString"
-                geom["coordinates"] = kept[0]
-            else:
-                geom["coordinates"] = kept
-
-    print(f"\nRemoved {total_removed} jump segments from {features_affected} features")
+    print(f"\nReconstructed {reconstructed} features")
 
     # 保存
     with open(geojson_path, "w", encoding="utf-8") as f:
