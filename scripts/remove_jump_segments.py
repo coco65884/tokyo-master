@@ -3,10 +3,11 @@
 rail_lines.geojson の連続性を改善する。
 
 既存のセグメントはすべてそのまま保持し、
-隣接セグメント間の小さなギャップのみ直線で補完する。
+隣接セグメント間のギャップをセグメント端点同士の直線で補完する。
 
-- セグメントの削除・並べ替えは行わない
+- セグメントの削除は行わない
 - 連続性チェック: 隣接セグメントの端点間距離を計測
+- セグメント-to-セグメント接続: 4つの端点組み合わせから最短を選択
 - 閾値以下のギャップに直線接続セグメントを挿入
 """
 
@@ -33,25 +34,47 @@ def haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
+def coord_dist(c1: list, c2: list) -> float:
+    return haversine_m(c1[1], c1[0], c2[1], c2[0])
+
+
 def fill_gaps(segments: list[list]) -> list[list]:
     """
-    隣接セグメント間の小さなギャップを直線で補完する。
-    セグメントの順序・内容は変更しない。
+    隣接セグメント間のギャップをセグメント端点同士で補完する。
+
+    各ギャップについて、前セグメントの末尾と次セグメントの先頭の
+    4つの端点組み合わせから最短距離のペアを選んで接続。
+    必要に応じてセグメントを反転させる。
     """
     if len(segments) < 2:
         return segments
 
-    result = [segments[0]]
+    result = [list(segments[0])]
     for i in range(1, len(segments)):
-        prev_end = result[-1][-1]
-        curr_start = segments[i][0]
-        gap = haversine_m(prev_end[1], prev_end[0], curr_start[1], curr_start[0])
+        prev = result[-1]
+        curr = list(segments[i])
 
-        if 1 < gap <= GAP_FILL_THRESHOLD_M:
-            # 小さなギャップ → 直線で接続
-            result.append([prev_end, curr_start])
+        # 4つの端点組み合わせの距離を計算
+        candidates = [
+            (coord_dist(prev[-1], curr[0]), False, False),   # prev_end -> curr_start
+            (coord_dist(prev[-1], curr[-1]), False, True),    # prev_end -> curr_end (reverse curr)
+            (coord_dist(prev[0], curr[0]), True, False),      # prev_start -> curr_start (reverse prev)
+            (coord_dist(prev[0], curr[-1]), True, True),      # prev_start -> curr_end (reverse both)
+        ]
+        best_dist, reverse_prev, reverse_curr = min(candidates, key=lambda x: x[0])
 
-        result.append(segments[i])
+        if reverse_prev:
+            result[-1] = list(reversed(result[-1]))
+        if reverse_curr:
+            curr = list(reversed(curr))
+
+        prev = result[-1]
+
+        if best_dist <= GAP_FILL_THRESHOLD_M and best_dist > 1:
+            # ギャップを直線で接続
+            result.append([prev[-1], curr[0]])
+
+        result.append(curr)
 
     return result
 
