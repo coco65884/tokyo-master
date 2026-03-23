@@ -45,15 +45,6 @@
     }
   },
   {
-    "id": "road-鎌倉街道",
-    "name": {
-      "kanji": "鎌倉街道",
-      "hiragana": "",
-      "katakana": "",
-      "romaji": ""
-    }
-  },
-  {
     "id": "road-中山道",
     "name": {
       "kanji": "中山道",
@@ -72,36 +63,9 @@
     }
   },
   {
-    "id": "road-日光街道",
-    "name": {
-      "kanji": "日光街道",
-      "hiragana": "",
-      "katakana": "",
-      "romaji": ""
-    }
-  },
-  {
-    "id": "road-中央通り",
-    "name": {
-      "kanji": "中央通り",
-      "hiragana": "",
-      "katakana": "",
-      "romaji": ""
-    }
-  },
-  {
     "id": "road-山手通り",
     "name": {
       "kanji": "山手通り",
-      "hiragana": "",
-      "katakana": "",
-      "romaji": ""
-    }
-  },
-  {
-    "id": "road-五日市街道",
-    "name": {
-      "kanji": "五日市街道",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
@@ -126,6 +90,24 @@
     }
   },
   {
+    "id": "road-鎌倉街道",
+    "name": {
+      "kanji": "鎌倉街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-日光街道",
+    "name": {
+      "kanji": "日光街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
     "id": "road-川越街道",
     "name": {
       "kanji": "川越街道",
@@ -138,6 +120,15 @@
     "id": "road-新青梅街道",
     "name": {
       "kanji": "新青梅街道",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-五日市街道",
+    "name": {
+      "kanji": "五日市街道",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
@@ -162,27 +153,9 @@
     }
   },
   {
-    "id": "road-昭和通り",
-    "name": {
-      "kanji": "昭和通り",
-      "hiragana": "",
-      "katakana": "",
-      "romaji": ""
-    }
-  },
-  {
     "id": "road-外堀通り",
     "name": {
       "kanji": "外堀通り",
-      "hiragana": "",
-      "katakana": "",
-      "romaji": ""
-    }
-  },
-  {
-    "id": "road-旧甲州街道",
-    "name": {
-      "kanji": "旧甲州街道",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
@@ -198,18 +171,18 @@
     }
   },
   {
-    "id": "road-早稲田通り",
+    "id": "road-昭和通り",
     "name": {
-      "kanji": "早稲田通り",
+      "kanji": "昭和通り",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
     }
   },
   {
-    "id": "road-春日通り",
+    "id": "road-早稲田通り",
     "name": {
-      "kanji": "春日通り",
+      "kanji": "早稲田通り",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
@@ -225,9 +198,9 @@
     }
   },
   {
-    "id": "road-白山通り",
+    "id": "road-春日通り",
     "name": {
-      "kanji": "白山通り",
+      "kanji": "春日通り",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
@@ -270,9 +243,27 @@
     }
   },
   {
+    "id": "road-白山通り",
+    "name": {
+      "kanji": "白山通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
     "id": "road-駒沢通り",
     "name": {
       "kanji": "駒沢通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-旧甲州街道",
+    "name": {
+      "kanji": "旧甲州街道",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
@@ -300,6 +291,15 @@
     "id": "road-四ツ目通り",
     "name": {
       "kanji": "四ツ目通り",
+      "hiragana": "",
+      "katakana": "",
+      "romaji": ""
+    }
+  },
+  {
+    "id": "road-中央通り",
+    "name": {
+      "kanji": "中央通り",
       "hiragana": "",
       "katakana": "",
       "romaji": ""
