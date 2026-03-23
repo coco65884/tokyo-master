@@ -78,16 +78,43 @@ def fill_gaps(segments: list[list]) -> list[list]:
 
 def remove_straight_line_artifacts(segments: list[list]) -> list[list]:
     """
-    2座標の直線セグメント（500m以上）を除去する。
-    これらはデータ加工時に生じた駅間直線接続のアーティファクトで、
-    実際の線路ジオメトリではない。
+    2座標の直線セグメント（500m以上）のうち、同じエリアに
+    詳細ジオメトリが既に存在するものだけを除去する。
+
+    判定: 2座標セグメントの中点に対して、3座標以上のセグメントの
+    座標が近くに存在すれば「カバー済み」とみなして除去する。
     """
+    real_segs = [s for s in segments if len(s) >= 3]
+    if not real_segs:
+        return segments
+
+    # 詳細セグメントの全座標を収集（間引き）
+    real_coords = []
+    for seg in real_segs:
+        step = max(1, len(seg) // 100)
+        for i in range(0, len(seg), step):
+            real_coords.append(seg[i])
+        if seg[-1] not in real_coords:
+            real_coords.append(seg[-1])
+
+    def is_covered_by_real(two_coord_seg: list) -> bool:
+        """2座標セグメントの中点が詳細ジオメトリの近くにあるか"""
+        mid_lat = (two_coord_seg[0][1] + two_coord_seg[1][1]) / 2
+        mid_lng = (two_coord_seg[0][0] + two_coord_seg[1][0]) / 2
+        # 中点から最も近い詳細座標までの距離
+        min_dist = min(
+            haversine_m(mid_lat, mid_lng, c[1], c[0]) for c in real_coords
+        )
+        seg_len = coord_dist(two_coord_seg[0], two_coord_seg[1])
+        # セグメント長の半分以内に詳細座標があれば、カバー済み
+        return min_dist < seg_len * 0.5
+
     kept = []
     for seg in segments:
         if len(seg) == 2:
             d = coord_dist(seg[0], seg[1])
-            if d >= GAP_FILL_THRESHOLD_M:
-                continue  # 長い直線 → 除去
+            if d >= GAP_FILL_THRESHOLD_M and is_covered_by_real(seg):
+                continue  # カバー済みの直線 → 除去
         kept.append(seg)
     return kept
 
