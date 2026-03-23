@@ -1,16 +1,15 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { MapContainer, TileLayer, GeoJSON, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { FeatureCollection, Feature } from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import { loadWards } from '@/utils/dataLoader';
 import { matchesNameString } from '@/utils/nameMatch';
 
-interface WardAnswer {
+interface WardEntry {
   wardId: string;
   wardName: string;
-  userAnswer: string;
-  isCorrect: boolean | null; // null = not answered
+  center: [number, number]; // [lat, lng]
 }
 
 /** 白地図クイズの出題範囲 */
@@ -45,116 +44,136 @@ function filterByRange(data: FeatureCollection, range: BlankMapRange): FeatureCo
   const filtered = data.features.filter((f) => {
     const type = f.properties?.type as string;
     if (range === 'ku') return type === 'ku';
-    // 'city' = 23区 + 市
     return type === 'ku' || type === 'shi';
   });
   return { ...data, features: filtered };
 }
 
+/** ポリゴンの重心を計算 */
+function getCentroid(feature: Feature): [number, number] {
+  const coords: number[][] = [];
+  const geom = feature.geometry;
+  if (geom.type === 'Polygon') {
+    for (const ring of geom.coordinates) {
+      coords.push(...(ring as number[][]));
+    }
+  } else if (geom.type === 'MultiPolygon') {
+    for (const poly of geom.coordinates) {
+      for (const ring of poly) {
+        coords.push(...(ring as number[][]));
+      }
+    }
+  }
+  if (coords.length === 0) return [35.68, 139.75];
+  const sumLat = coords.reduce((s, c) => s + c[1], 0);
+  const sumLng = coords.reduce((s, c) => s + c[0], 0);
+  return [sumLat / coords.length, sumLng / coords.length];
+}
+
 export default function BlankMapQuiz({ onBack, range }: Props) {
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
-  const [answers, setAnswers] = useState<Record<string, WardAnswer>>({});
-  const [selectedWardId, setSelectedWardId] = useState<string | null>(null);
-  const [inputValue, setInputValue] = useState('');
-  const [finished, setFinished] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [wardList, setWardList] = useState<WardEntry[]>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     loadWards().then((rawData) => {
       const data = filterByRange(rawData, range);
       setWardsGeo(data);
-      // Initialize answers for filtered wards
-      const init: Record<string, WardAnswer> = {};
-      for (const feature of data.features) {
-        const id = feature.properties?.id as string;
-        const name = feature.properties?.name as string;
-        init[id] = { wardId: id, wardName: name, userAnswer: '', isCorrect: null };
-      }
-      setAnswers(init);
+
+      const entries: WardEntry[] = data.features.map((f) => ({
+        wardId: f.properties?.id as string,
+        wardName: f.properties?.name as string,
+        center: getCentroid(f),
+      }));
+      setWardList(entries);
+      setAnswers(new Array(entries.length).fill(''));
     });
   }, [range]);
 
-  const totalWards = wardsGeo?.features.length ?? 0;
-  const answeredCount = Object.values(answers).filter((a) => a.isCorrect !== null).length;
-  const correctCount = Object.values(answers).filter((a) => a.isCorrect === true).length;
+  const totalWards = wardList.length;
 
-  const handleWardClick = useCallback(
-    (wardId: string) => {
-      if (finished) return;
-      const ward = answers[wardId];
-      if (!ward || ward.isCorrect !== null) return; // Already answered
-      setSelectedWardId(wardId);
-      setInputValue('');
-      setTimeout(() => inputRef.current?.focus(), 50);
-    },
-    [answers, finished],
-  );
-
-  const handleSubmitAnswer = useCallback(() => {
-    if (!selectedWardId || finished) return;
-    const ward = answers[selectedWardId];
-    if (!ward || ward.isCorrect !== null) return;
-
-    const isCorrect = matchesNameString(inputValue, ward.wardName);
-    const newAnswers = {
-      ...answers,
-      [selectedWardId]: {
-        ...ward,
-        userAnswer: inputValue,
-        isCorrect,
-      },
-    };
-    setAnswers(newAnswers);
-    setSelectedWardId(null);
-    setInputValue('');
-
-    // Check if all answered
-    const newAnsweredCount = Object.values(newAnswers).filter((a) => a.isCorrect !== null).length;
-    if (newAnsweredCount >= totalWards) {
-      setFinished(true);
-    }
-  }, [selectedWardId, inputValue, answers, finished, totalWards]);
+  const handleInputChange = useCallback((index: number, value: string) => {
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  }, []);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
+    (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleSubmitAnswer();
-      }
-      if (e.key === 'Escape') {
-        setSelectedWardId(null);
-        setInputValue('');
+        // Move to next unanswered input
+        const nextIdx = answers.findIndex((a, i) => i > index && !a.trim());
+        if (nextIdx >= 0) {
+          inputRefs.current[nextIdx]?.focus();
+        }
       }
     },
-    [handleSubmitAnswer],
+    [answers],
   );
 
-  const handleFinish = useCallback(() => {
-    // Mark all unanswered as incorrect
-    const newAnswers = { ...answers };
-    for (const id of Object.keys(newAnswers)) {
-      if (newAnswers[id].isCorrect === null) {
-        newAnswers[id] = { ...newAnswers[id], isCorrect: false };
-      }
-    }
-    setAnswers(newAnswers);
-    setFinished(true);
-    setSelectedWardId(null);
-  }, [answers]);
+  const handleSubmit = useCallback(() => {
+    setSubmitted(true);
+  }, []);
 
   const handleReset = useCallback(() => {
-    if (!wardsGeo) return;
-    const init: Record<string, WardAnswer> = {};
-    for (const feature of wardsGeo.features) {
-      const id = feature.properties?.id as string;
-      const name = feature.properties?.name as string;
-      init[id] = { wardId: id, wardName: name, userAnswer: '', isCorrect: null };
-    }
-    setAnswers(init);
-    setFinished(false);
-    setSelectedWardId(null);
-    setInputValue('');
-  }, [wardsGeo]);
+    setAnswers(new Array(wardList.length).fill(''));
+    setSubmitted(false);
+    setFocusedIndex(null);
+  }, [wardList.length]);
+
+  const results = useMemo(() => {
+    if (!submitted) return null;
+    return wardList.map((w, i) => ({
+      ...w,
+      userAnswer: answers[i],
+      isCorrect: matchesNameString(answers[i], w.wardName),
+    }));
+  }, [submitted, wardList, answers]);
+
+  const correctCount = results?.filter((r) => r.isCorrect).length ?? 0;
+  const answeredCount = answers.filter((a) => a.trim()).length;
+
+  const styleFunc = useCallback(
+    (feature?: Feature): L.PathOptions => {
+      const wardId = feature?.properties?.id as string | undefined;
+      if (!wardId) return {};
+
+      const idx = wardList.findIndex((w) => w.wardId === wardId);
+      const isFocused = idx === focusedIndex;
+
+      if (submitted && results) {
+        const r = results[idx];
+        if (r?.isCorrect) {
+          return {
+            color: '#16a34a',
+            weight: isFocused ? 3 : 1.5,
+            fillColor: '#bbf7d0',
+            fillOpacity: 0.6,
+          };
+        }
+        return {
+          color: '#dc2626',
+          weight: isFocused ? 3 : 1.5,
+          fillColor: '#fecaca',
+          fillOpacity: 0.6,
+        };
+      }
+
+      return {
+        color: isFocused ? '#1a73e8' : '#94a3b8',
+        weight: isFocused ? 3 : 1.2,
+        fillColor: isFocused ? '#bfdbfe' : '#f1f5f9',
+        fillOpacity: isFocused ? 0.5 : 0.3,
+      };
+    },
+    [wardList, focusedIndex, submitted, results],
+  );
 
   if (!wardsGeo) {
     return (
@@ -164,114 +183,65 @@ export default function BlankMapQuiz({ onBack, range }: Props) {
     );
   }
 
-  const styleFunc = (feature?: Feature): L.PathOptions => {
-    const wardId = feature?.properties?.id as string | undefined;
-    if (!wardId) return {};
-
-    const ward = answers[wardId];
-    const isSelected = wardId === selectedWardId;
-
-    if (ward?.isCorrect === true) {
-      return {
-        color: '#16a34a',
-        weight: isSelected ? 3 : 1.5,
-        fillColor: '#bbf7d0',
-        fillOpacity: 0.6,
-      };
-    }
-    if (ward?.isCorrect === false) {
-      return {
-        color: '#dc2626',
-        weight: isSelected ? 3 : 1.5,
-        fillColor: '#fecaca',
-        fillOpacity: 0.6,
-      };
-    }
-    // Unanswered
-    return {
-      color: isSelected ? '#1a73e8' : '#94a3b8',
-      weight: isSelected ? 3 : 1.2,
-      fillColor: isSelected ? '#bfdbfe' : '#f1f5f9',
-      fillOpacity: isSelected ? 0.5 : 0.3,
-    };
-  };
-
-  const onEachFeature = (feature: Feature, layer: L.Layer) => {
-    const wardId = feature.properties?.id as string;
-    const wardName = feature.properties?.name as string;
-    const ward = answers[wardId];
-    const path = layer as L.Path;
-
-    // Show name only if answered
-    if (ward?.isCorrect !== null) {
-      path.bindTooltip(wardName, {
-        permanent: true,
-        direction: 'center',
-        className: 'blank-map__ward-label',
-      });
-    }
-
-    if (!finished && ward?.isCorrect === null) {
-      path.on('mouseover', () => {
-        if (wardId !== selectedWardId) {
-          path.setStyle({ fillColor: '#dbeafe', fillOpacity: 0.4, weight: 2 });
-        }
-      });
-      path.on('mouseout', () => {
-        path.setStyle(styleFunc(feature));
-      });
-    }
-
-    path.on('click', () => {
-      handleWardClick(wardId);
-    });
-  };
-
-  const geoKey = `blank-${answeredCount}-${selectedWardId}-${finished ? 'done' : 'active'}`;
+  const geoKey = `blank-${focusedIndex}-${submitted ? 'done' : 'active'}`;
 
   return (
-    <div className="blank-map">
-      <div className="blank-map__sidebar">
-        <h2 className="blank-map__title">白地図クイズ — {RANGE_LABELS[range]}</h2>
-        <p className="blank-map__progress">
-          {answeredCount} / {totalWards} 回答済み
-          {answeredCount > 0 && ` (${correctCount}問正解)`}
-        </p>
-        <div className="blank-map__progress-bar-wrap">
+    <div className="quiz-session">
+      <div className="quiz-session__left">
+        <div className="quiz-session__header">
+          <h2 className="quiz-session__title">白地図 — {RANGE_LABELS[range]}</h2>
+          <span className="quiz-session__count">
+            {answeredCount}/{totalWards}
+          </span>
+        </div>
+
+        <div className="quiz-session__progress">
           <div
-            className="blank-map__progress-bar"
+            className="quiz-session__progress-bar"
             style={{ width: `${(answeredCount / totalWards) * 100}%` }}
           />
         </div>
 
-        {selectedWardId && !finished && (
-          <div className="blank-map__input-area">
-            <p className="blank-map__input-label">この区/市の名前は？</p>
-            <input
-              ref={inputRef}
-              className="blank-map__input"
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="名前を入力..."
-              autoComplete="off"
-            />
-            <button
-              className="blank-map__submit-btn"
-              onClick={handleSubmitAnswer}
-              disabled={!inputValue.trim()}
-            >
-              回答
-            </button>
-          </div>
+        <div className="quiz-session__questions">
+          {wardList.map((w, i) => (
+            <div key={w.wardId} className="quiz-session__question">
+              <span className="quiz-session__question-num">{i + 1}</span>
+              <input
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
+                className={`quiz-session__input ${
+                  submitted
+                    ? results?.[i]?.isCorrect
+                      ? 'quiz-session__input--correct'
+                      : 'quiz-session__input--incorrect'
+                    : ''
+                }`}
+                type="text"
+                value={answers[i] ?? ''}
+                onChange={(e) => handleInputChange(i, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(e, i)}
+                onFocus={() => setFocusedIndex(i)}
+                placeholder={`${i + 1}`}
+                disabled={submitted}
+                autoComplete="off"
+              />
+              {submitted && <span className="quiz-session__correct-answer">{w.wardName}</span>}
+            </div>
+          ))}
+        </div>
+
+        {!submitted && (
+          <button
+            className="quiz-session__submit-btn"
+            onClick={handleSubmit}
+            disabled={answeredCount === 0}
+          >
+            回答する
+          </button>
         )}
 
-        {!selectedWardId && !finished && (
-          <p className="blank-map__hint">地図上の区/市をクリックして回答してください</p>
-        )}
-
-        {finished && (
+        {submitted && (
           <div className="blank-map__final">
             <div className="blank-map__final-score">
               {Math.round((correctCount / totalWards) * 100)}%
@@ -283,12 +253,7 @@ export default function BlankMapQuiz({ onBack, range }: Props) {
         )}
 
         <div className="blank-map__actions">
-          {!finished && answeredCount > 0 && (
-            <button className="blank-map__finish-btn" onClick={handleFinish}>
-              終了する
-            </button>
-          )}
-          {finished && (
+          {submitted && (
             <button className="blank-map__reset-btn" onClick={handleReset}>
               もう一度
             </button>
@@ -299,21 +264,54 @@ export default function BlankMapQuiz({ onBack, range }: Props) {
         </div>
       </div>
 
-      <div className="blank-map__map-area">
+      <div className="quiz-session__right">
         <MapContainer
           center={[35.6762, 139.6503]}
           zoom={10}
           scrollWheelZoom={true}
           doubleClickZoom={false}
-          className="blank-map__map"
+          className="quiz-session__map"
           style={{ width: '100%', height: '100%' }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
           />
-          <GeoJSON key={geoKey} data={wardsGeo} style={styleFunc} onEachFeature={onEachFeature} />
+          <GeoJSON key={geoKey} data={wardsGeo} style={styleFunc} />
           <FitBounds data={wardsGeo} />
+
+          {/* 番号マーカー */}
+          {wardList.map((w, i) => (
+            <Marker
+              key={`num-${w.wardId}`}
+              position={w.center}
+              icon={L.divIcon({
+                className: `quiz-number-icon${i === focusedIndex ? ' quiz-marker-highlight' : ''}`,
+                html: submitted ? `<span>${w.wardName}</span>` : `<span>${i + 1}</span>`,
+                iconSize: [submitted ? 60 : 22, 22],
+                iconAnchor: [submitted ? 30 : 11, 11],
+              })}
+              eventHandlers={{
+                click: () => {
+                  if (!submitted) {
+                    setFocusedIndex(i);
+                    inputRefs.current[i]?.focus();
+                  }
+                },
+              }}
+            >
+              {submitted && (
+                <Tooltip
+                  permanent
+                  direction="bottom"
+                  offset={[0, 8]}
+                  className="quiz-station-number"
+                >
+                  {results?.[i]?.isCorrect ? '✓' : '✗'}
+                </Tooltip>
+              )}
+            </Marker>
+          ))}
         </MapContainer>
       </div>
     </div>
