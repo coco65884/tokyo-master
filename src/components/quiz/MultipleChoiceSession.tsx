@@ -12,7 +12,15 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { FeatureCollection } from 'geojson';
 import type { QuizQuestion, QuizConfig, QuizChoice, QuizResult, QuizAnswer } from '@/types';
-import { generateLineQuiz, getLineInfo } from '@/utils/quizDataLoader';
+import {
+  generateLineQuiz,
+  generateWardQuiz,
+  generateRiverQuiz,
+  generateGenreQuiz,
+  getLineInfo,
+  getWardCenter,
+  getGenreInfo,
+} from '@/utils/quizDataLoader';
 import { generateChoicesForQuestions } from '@/utils/distractorGenerator';
 import { loadRailLines, loadWards } from '@/utils/dataLoader';
 import ChoiceButton from './ChoiceButton';
@@ -81,8 +89,31 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
         const railGeo = await loadRailLines();
         if (!cancelled) setLineGeo(railGeo);
 
-        // Generate choices for kantan mode
         qs = await generateChoicesForQuestions(qs, { excludeLineKey: config.scopeId });
+      } else if (config.scopeType === 'ward') {
+        qs = await generateWardQuiz(config.scopeId);
+        const center = await getWardCenter(config.scopeId);
+        if (center && !cancelled) {
+          setMapCenter([center.lat, center.lng]);
+          setMapZoom(13);
+        }
+        qs = await generateChoicesForQuestions(qs);
+      } else if (config.scopeType === 'theme') {
+        if (config.scopeId === 'rivers') {
+          qs = generateRiverQuiz();
+          if (!cancelled) {
+            setMapCenter([35.6762, 139.6503]);
+            setMapZoom(11);
+          }
+        } else {
+          qs = generateGenreQuiz(config.scopeId);
+          const info = getGenreInfo(config.scopeId);
+          if (info && !cancelled) {
+            setMapCenter([35.6762, 139.6503]);
+            setMapZoom(11);
+          }
+        }
+        qs = await generateChoicesForQuestions(qs);
       }
 
       if (!cancelled) {
