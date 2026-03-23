@@ -200,7 +200,11 @@
       "operator": "JR",
       "color": "#f15a22",
       "lineIds": [
-        "line-9069258"
+        "line-9069258",
+        "line-9069259",
+        "line-12022275",
+        "line-10021165",
+        "line-18788965"
       ],
       "stations": [
         {
@@ -742,7 +746,8 @@
       "operator": "JR",
       "color": "#00b2e5",
       "lineIds": [
-        "line-5195691"
+        "line-5195691",
+        "line-10257299"
       ],
       "stations": [
         {
@@ -1042,7 +1047,10 @@
       "operator": "JR",
       "color": "#f68b1e",
       "lineIds": [
-        "line-8519860"
+        "line-8519860",
+        "line-9069219",
+        "line-8519859",
+        "line-12200093"
       ],
       "stations": [
         {
@@ -1228,7 +1236,10 @@
       "operator": "JR",
       "color": "#0067c0",
       "lineIds": [
-        "line-11664782"
+        "line-11664782",
+        "line-14303195",
+        "line-9477155",
+        "line-9475339"
       ],
       "stations": [
         {
@@ -1601,7 +1612,10 @@
       "operator": "JR",
       "color": "#e5560d",
       "lineIds": [
-        "line-4673470"
+        "line-4684035",
+        "line-5419188",
+        "line-4673470",
+        "line-4684034"
       ],
       "stations": [
         {
@@ -2297,7 +2311,8 @@
       "operator": "JR",
       "color": "#ffd400",
       "lineIds": [
-        "line-9555849"
+        "line-9555849",
+        "line-14284669"
       ],
       "stations": [
         {
@@ -2651,7 +2666,9 @@
       "operator": "JR",
       "color": "#007b43",
       "lineIds": [
-        "line-1872548"
+        "line-1872548",
+        "line-8506268",
+        "line-14330371"
       ],
       "stations": [
         {
@@ -3561,7 +3578,8 @@
       "operator": "JR",
       "color": "#f68b1e",
       "lineIds": [
-        "line-5430809"
+        "line-5430809",
+        "line-5430810"
       ],
       "stations": [
         {
@@ -3969,7 +3987,8 @@
       "operator": "Metro",
       "color": "#e60012",
       "lineIds": [
-        "line-443282"
+        "line-443282",
+        "line-8015931"
       ],
       "stations": [
         {
@@ -4731,7 +4750,8 @@
       "operator": "Metro",
       "color": "#9b7cb6",
       "lineIds": [
-        "line-12185778"
+        "line-12185778",
+        "line-10025435"
       ],
       "stations": [
         {
@@ -5284,7 +5304,9 @@
       "operator": "Toei",
       "color": "#e85298",
       "lineIds": [
-        "line-3340253"
+        "line-3340253",
+        "line-11561062",
+        "line-8019849"
       ],
       "stations": [
         {
@@ -6161,7 +6183,9 @@
       "operator": "Keio",
       "color": "#dd0077",
       "lineIds": [
-        "line-11271039"
+        "line-11271039",
+        "line-14306814",
+        "line-11270762"
       ],
       "stations": [
         {
@@ -6630,7 +6654,8 @@
       "operator": "Odakyu",
       "color": "#0078c8",
       "lineIds": [
-        "line-9483158"
+        "line-9483158",
+        "line-12463697"
       ],
       "stations": [
         {
@@ -7513,7 +7538,8 @@
       "operator": "Tokyu",
       "color": "#009cd2",
       "lineIds": [
-        "line-14681766"
+        "line-14681766",
+        "line-9340969"
       ],
       "stations": [
         {
@@ -8000,6 +8026,8 @@
       "operator": "Seibu",
       "color": "#00498b",
       "lineIds": [
+        "line-9507191",
+        "line-9506864",
         "line-15434257"
       ],
       "stations": [
@@ -8530,7 +8558,8 @@
       "operator": "Keikyu",
       "color": "#e8334a",
       "lineIds": [
-        "line-9498719"
+        "line-9498719",
+        "line-18755638"
       ],
       "stations": [
         {
@@ -9717,7 +9746,9 @@
       "operator": "Keisei",
       "color": "#003399",
       "lineIds": [
-        "line-3336658"
+        "line-3336658",
+        "line-19931516",
+        "line-3340252"
       ],
       "stations": [
         {
