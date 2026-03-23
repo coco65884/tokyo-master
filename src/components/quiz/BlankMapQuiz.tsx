@@ -13,8 +13,18 @@ interface WardAnswer {
   isCorrect: boolean | null; // null = not answered
 }
 
+/** 白地図クイズの出題範囲 */
+export type BlankMapRange = 'ku' | 'city' | 'all';
+
+const RANGE_LABELS: Record<BlankMapRange, string> = {
+  ku: '23区のみ',
+  city: '東京全域（市含む）',
+  all: '東京都全部（島含む）',
+};
+
 interface Props {
   onBack: () => void;
+  range: BlankMapRange;
 }
 
 /** Fit map to wards GeoJSON bounds */
@@ -30,7 +40,18 @@ function FitBounds({ data }: { data: FeatureCollection }) {
   return null;
 }
 
-export default function BlankMapQuiz({ onBack }: Props) {
+function filterByRange(data: FeatureCollection, range: BlankMapRange): FeatureCollection {
+  if (range === 'all') return data;
+  const filtered = data.features.filter((f) => {
+    const type = f.properties?.type as string;
+    if (range === 'ku') return type === 'ku';
+    // 'city' = 23区 + 市
+    return type === 'ku' || type === 'shi';
+  });
+  return { ...data, features: filtered };
+}
+
+export default function BlankMapQuiz({ onBack, range }: Props) {
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
   const [answers, setAnswers] = useState<Record<string, WardAnswer>>({});
   const [selectedWardId, setSelectedWardId] = useState<string | null>(null);
@@ -39,9 +60,10 @@ export default function BlankMapQuiz({ onBack }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadWards().then((data) => {
+    loadWards().then((rawData) => {
+      const data = filterByRange(rawData, range);
       setWardsGeo(data);
-      // Initialize answers for all wards
+      // Initialize answers for filtered wards
       const init: Record<string, WardAnswer> = {};
       for (const feature of data.features) {
         const id = feature.properties?.id as string;
@@ -50,7 +72,7 @@ export default function BlankMapQuiz({ onBack }: Props) {
       }
       setAnswers(init);
     });
-  }, []);
+  }, [range]);
 
   const totalWards = wardsGeo?.features.length ?? 0;
   const answeredCount = Object.values(answers).filter((a) => a.isCorrect !== null).length;
@@ -210,7 +232,7 @@ export default function BlankMapQuiz({ onBack }: Props) {
   return (
     <div className="blank-map">
       <div className="blank-map__sidebar">
-        <h2 className="blank-map__title">白地図クイズ</h2>
+        <h2 className="blank-map__title">白地図クイズ — {RANGE_LABELS[range]}</h2>
         <p className="blank-map__progress">
           {answeredCount} / {totalWards} 回答済み
           {answeredCount > 0 && ` (${correctCount}問正解)`}

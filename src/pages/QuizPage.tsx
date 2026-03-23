@@ -6,6 +6,7 @@ import MultipleChoiceSession from '@/components/quiz/MultipleChoiceSession';
 import QuizResult from '@/components/quiz/QuizResult';
 import SpeedRunSession from '@/components/quiz/SpeedRunSession';
 import BlankMapQuiz from '@/components/quiz/BlankMapQuiz';
+import type { BlankMapRange } from '@/components/quiz/BlankMapQuiz';
 import { useQuizStore } from '@/stores/quizStore';
 import type { QuizResult as QuizResultType } from '@/types';
 import type { SpeedRunRecord } from '@/stores/quizStore';
@@ -56,7 +57,9 @@ export default function QuizPage() {
     [addSpeedRunRecord],
   );
 
-  const handleStartBlankMap = useCallback(() => {
+  const [blankMapRange, setBlankMapRange] = useState<BlankMapRange>('ku');
+  const handleStartBlankMap = useCallback((range: BlankMapRange) => {
+    setBlankMapRange(range);
     setPhase('blankmap');
   }, []);
 
@@ -105,7 +108,9 @@ export default function QuizPage() {
           />
         )}
 
-        {phase === 'blankmap' && <BlankMapQuiz onBack={handleBackToSelector} />}
+        {phase === 'blankmap' && (
+          <BlankMapQuiz onBack={handleBackToSelector} range={blankMapRange} />
+        )}
       </div>
     </div>
   );

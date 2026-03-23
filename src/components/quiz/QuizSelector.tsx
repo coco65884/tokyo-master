@@ -4,6 +4,7 @@ import { getOperatorLines, getWardList, getGenreList } from '@/utils/quizDataLoa
 import { getDifficultySettings } from '@/utils/difficultySettings';
 import { useQuizStore } from '@/stores/quizStore';
 import DifficultyPicker from './DifficultyPicker';
+import type { BlankMapRange } from './BlankMapQuiz';
 
 type TabType = QuizScopeType | 'speedrun' | 'blankmap';
 
@@ -42,7 +43,7 @@ function loadPreferredDifficulty(): DifficultyLevel {
 interface Props {
   onStart: () => void;
   onStartSpeedRun?: (lineKey: string) => void;
-  onStartBlankMap?: () => void;
+  onStartBlankMap?: (range: BlankMapRange) => void;
 }
 
 interface OperatorData {
@@ -62,6 +63,8 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
   const [selectedWard, setSelectedWard] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('rivers');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(loadPreferredDifficulty);
+  // Blank map state
+  const [blankMapRange, setBlankMapRange] = useState<BlankMapRange>('ku');
   // Speed run state
   const [speedRunOperator, setSpeedRunOperator] = useState<string>('');
   const [speedRunLine, setSpeedRunLine] = useState<string>('');
@@ -311,6 +314,16 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
             <p className="quiz-selector__mode-desc">
               東京都の白地図上で、各区/市の名前を当てるモードです。地図上の区域をクリックして名前を入力してください。
             </p>
+            <label className="quiz-selector__label">出題範囲</label>
+            <select
+              className="quiz-selector__select"
+              value={blankMapRange}
+              onChange={(e) => setBlankMapRange(e.target.value as BlankMapRange)}
+            >
+              <option value="ku">23区のみ</option>
+              <option value="city">東京全域（市含む）</option>
+              <option value="all">東京都全部（島含む）</option>
+            </select>
           </div>
         )}
       </div>
@@ -345,7 +358,10 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
       )}
 
       {tab === 'blankmap' && (
-        <button className="quiz-selector__start-btn" onClick={() => onStartBlankMap?.()}>
+        <button
+          className="quiz-selector__start-btn"
+          onClick={() => onStartBlankMap?.(blankMapRange)}
+        >
           白地図クイズ開始
         </button>
       )}
