@@ -200,15 +200,7 @@
       "operator": "JR",
       "color": "#f15a22",
       "lineIds": [
-        "line-10021119",
-        "line-9069258",
-        "line-9069259",
-        "line-10363876",
-        "line-12022275",
-        "line-10363875",
-        "line-12022274",
-        "line-18788965",
-        "line-10021165"
+        "line-9069258"
       ],
       "stations": [
         {
@@ -750,12 +742,7 @@
       "operator": "JR",
       "color": "#00b2e5",
       "lineIds": [
-        "line-5195691",
-        "line-10257299",
-        "line-5195692",
-        "line-10257298",
-        "line-10358983",
-        "line-10358982"
+        "line-5195691"
       ],
       "stations": [
         {
@@ -1055,13 +1042,7 @@
       "operator": "JR",
       "color": "#f68b1e",
       "lineIds": [
-        "line-8519860",
-        "line-5195693",
-        "line-12200093",
-        "line-5430106",
-        "line-9069219",
-        "line-8519859",
-        "line-12200178"
+        "line-8519860"
       ],
       "stations": [
         {
@@ -1247,13 +1228,7 @@
       "operator": "JR",
       "color": "#0067c0",
       "lineIds": [
-        "line-11664782",
-        "line-9475339",
-        "line-11664583",
-        "line-1832947",
-        "line-1904851",
-        "line-9477155",
-        "line-14303195"
+        "line-11664782"
       ],
       "stations": [
         {
@@ -1626,10 +1601,7 @@
       "operator": "JR",
       "color": "#e5560d",
       "lineIds": [
-        "line-4684035",
-        "line-5419188",
-        "line-4673470",
-        "line-4684034"
+        "line-4673470"
       ],
       "stations": [
         {
@@ -2025,14 +1997,7 @@
       "operator": "JR",
       "color": "#c9252f",
       "lineIds": [
-        "line-9474241",
-        "line-14656632",
-        "line-5326726",
-        "line-14656631",
-        "line-14656663",
-        "line-14656664",
-        "line-10355301",
-        "line-10355300"
+        "line-5326726"
       ],
       "stations": [
         {
@@ -2152,8 +2117,7 @@
       "operator": "JR",
       "color": "#f15a22",
       "lineIds": [
-        "line-9486466",
-        "line-1952540"
+        "line-9486466"
       ],
       "stations": [
         {
@@ -2333,13 +2297,7 @@
       "operator": "JR",
       "color": "#ffd400",
       "lineIds": [
-        "line-19903350",
-        "line-1834403",
-        "line-19903349",
-        "line-9555849",
-        "line-14284531",
-        "line-14284669",
-        "line-19903351"
+        "line-9555849"
       ],
       "stations": [
         {
@@ -2543,13 +2501,7 @@
       "operator": "JR",
       "color": "#7fc342",
       "lineIds": [
-        "line-10256351",
-        "line-18100868",
-        "line-18100869",
-        "line-18100867",
-        "line-10256354",
-        "line-1942948",
-        "line-18100870"
+        "line-10256351"
       ],
       "stations": [
         {
@@ -2699,13 +2651,6 @@
       "operator": "JR",
       "color": "#007b43",
       "lineIds": [
-        "line-8391468",
-        "line-8506268",
-        "line-14330371",
-        "line-10757873",
-        "line-10757872",
-        "line-5376317",
-        "line-14330372",
         "line-1872548"
       ],
       "stations": [
@@ -2976,9 +2921,6 @@
       "operator": "JR",
       "color": "#88bf62",
       "lineIds": [
-        "line-10927699",
-        "line-10927698",
-        "line-10025276",
         "line-10025277"
       ],
       "stations": [
@@ -3305,9 +3247,7 @@
       "operator": "JR",
       "color": "#7fc342",
       "lineIds": [
-        "line-223040",
-        "line-14323630",
-        "line-14323631"
+        "line-223040"
       ],
       "stations": [
         {
@@ -3621,8 +3561,7 @@
       "operator": "JR",
       "color": "#f68b1e",
       "lineIds": [
-        "line-5430809",
-        "line-5430810"
+        "line-5430809"
       ],
       "stations": [
         {
@@ -3778,7 +3717,6 @@
       "operator": "JR",
       "color": "#7fc342",
       "lineIds": [
-        "line-1942949",
         "line-14302812"
       ],
       "stations": [
@@ -3905,7 +3843,6 @@
       "operator": "Metro",
       "color": "#f39700",
       "lineIds": [
-        "line-443281",
         "line-8026074"
       ],
       "stations": [
@@ -4032,10 +3969,7 @@
       "operator": "Metro",
       "color": "#e60012",
       "lineIds": [
-        "line-443282",
-        "line-8015930",
-        "line-8015932",
-        "line-8015931"
+        "line-443282"
       ],
       "stations": [
         {
@@ -4221,7 +4155,6 @@
       "operator": "Metro",
       "color": "#9caeb7",
       "lineIds": [
-        "line-443272",
         "line-8026155"
       ],
       "stations": [
@@ -4372,11 +4305,7 @@
       "operator": "Metro",
       "color": "#00a7db",
       "lineIds": [
-        "line-9812331",
-        "line-10840434",
-        "line-5371620",
-        "line-8026141",
-        "line-9812332"
+        "line-5371620"
       ],
       "stations": [
         {
@@ -4526,7 +4455,6 @@
       "operator": "Metro",
       "color": "#00a650",
       "lineIds": [
-        "line-8026050",
         "line-443284"
       ],
       "stations": [
@@ -4653,12 +4581,7 @@
       "operator": "Metro",
       "color": "#c1a470",
       "lineIds": [
-        "line-10029864",
-        "line-12250870",
-        "line-11359988",
-        "line-12250869",
-        "line-10956059",
-        "line-10029863"
+        "line-10956059"
       ],
       "stations": [
         {
@@ -4808,15 +4731,7 @@
       "operator": "Metro",
       "color": "#9b7cb6",
       "lineIds": [
-        "line-10025435",
-        "line-8026159",
-        "line-12185778",
-        "line-12184335",
-        "line-12184302",
-        "line-10025574",
-        "line-12185878",
-        "line-10025573",
-        "line-12184336"
+        "line-12185778"
       ],
       "stations": [
         {
@@ -5369,10 +5284,7 @@
       "operator": "Toei",
       "color": "#e85298",
       "lineIds": [
-        "line-3302734",
-        "line-3340253",
-        "line-11561062",
-        "line-8019849"
+        "line-3340253"
       ],
       "stations": [
         {
@@ -5576,8 +5488,7 @@
       "operator": "Toei",
       "color": "#0079c2",
       "lineIds": [
-        "line-8019910",
-        "line-443286"
+        "line-8019910"
       ],
       "stations": [
         {
@@ -5763,10 +5674,7 @@
       "operator": "Toei",
       "color": "#6cbb5a",
       "lineIds": [
-        "line-9973139",
-        "line-8019858",
-        "line-443259",
-        "line-9973140"
+        "line-8019858"
       ],
       "stations": [
         {
@@ -5910,7 +5818,6 @@
       "operator": "Toei",
       "color": "#b6007a",
       "lineIds": [
-        "line-3355612",
         "line-8019883"
       ],
       "stations": [
@@ -6254,14 +6161,7 @@
       "operator": "Keio",
       "color": "#dd0077",
       "lineIds": [
-        "line-14306814",
-        "line-11270762",
-        "line-11688292",
-        "line-11688125",
-        "line-14306815",
-        "line-11271039",
-        "line-11271045",
-        "line-11688294"
+        "line-11271039"
       ],
       "stations": [
         {
@@ -6525,10 +6425,7 @@
       "operator": "Keio",
       "color": "#1d2088",
       "lineIds": [
-        "line-11813271",
-        "line-11813272",
-        "line-11602293",
-        "line-11602038"
+        "line-11813271"
       ],
       "stations": [
         {
@@ -6733,16 +6630,7 @@
       "operator": "Odakyu",
       "color": "#0078c8",
       "lineIds": [
-        "line-12463697",
-        "line-9483255",
-        "line-12463785",
-        "line-11273528",
-        "line-12458961",
-        "line-12458960",
-        "line-11273527",
-        "line-9483158",
-        "line-10036863",
-        "line-10036862"
+        "line-9483158"
       ],
       "stations": [
         {
@@ -7114,13 +7002,6 @@
       "operator": "Odakyu",
       "color": "#0078c8",
       "lineIds": [
-        "line-9504673",
-        "line-9504671",
-        "line-19715483",
-        "line-19715482",
-        "line-14489075",
-        "line-9504670",
-        "line-9504674",
         "line-14496200"
       ],
       "stations": [
@@ -7314,10 +7195,7 @@
       "operator": "Tokyu",
       "color": "#da0442",
       "lineIds": [
-        "line-9288982",
-        "line-10032467",
-        "line-1947536",
-        "line-10032466"
+        "line-9288982"
       ],
       "stations": [
         {
@@ -7455,9 +7333,7 @@
       "operator": "Tokyu",
       "color": "#00a040",
       "lineIds": [
-        "line-10025434",
-        "line-404834",
-        "line-9341815"
+        "line-404834"
       ],
       "stations": [
         {
@@ -7637,12 +7513,7 @@
       "operator": "Tokyu",
       "color": "#009cd2",
       "lineIds": [
-        "line-14681766",
-        "line-11700308",
-        "line-9340969",
-        "line-5375680",
-        "line-11700309",
-        "line-14681765"
+        "line-14681766"
       ],
       "stations": [
         {
@@ -7744,7 +7615,6 @@
       "operator": "Tokyu",
       "color": "#f18c43",
       "lineIds": [
-        "line-9341649",
         "line-9341647"
       ],
       "stations": [
@@ -7865,8 +7735,7 @@
       "operator": "Tokyu",
       "color": "#ee86a7",
       "lineIds": [
-        "line-9342008",
-        "line-9342007"
+        "line-9342008"
       ],
       "stations": [
         {
@@ -7974,8 +7843,7 @@
       "operator": "Tokyu",
       "color": "#ae0378",
       "lineIds": [
-        "line-9343886",
-        "line-5375679"
+        "line-9343886"
       ],
       "stations": [
         {
@@ -8029,7 +7897,6 @@
       "operator": "Tokyu",
       "color": "#ffdd00",
       "lineIds": [
-        "line-7215410",
         "line-7215409"
       ],
       "stations": [
@@ -8133,8 +8000,6 @@
       "operator": "Seibu",
       "color": "#00498b",
       "lineIds": [
-        "line-9507191",
-        "line-9506864",
         "line-15434257"
       ],
       "stations": [
@@ -8641,8 +8506,7 @@
       "operator": "Seibu",
       "color": "#00498b",
       "lineIds": [
-        "line-11722741",
-        "line-5486513"
+        "line-11722741"
       ],
       "stations": [
         {
@@ -8666,9 +8530,6 @@
       "operator": "Keikyu",
       "color": "#e8334a",
       "lineIds": [
-        "line-18755638",
-        "line-1994313",
-        "line-18755639",
         "line-9498719"
       ],
       "stations": [
@@ -9230,7 +9091,6 @@
       "operator": "Keikyu",
       "color": "#e8334a",
       "lineIds": [
-        "line-9499867",
         "line-1994314"
       ],
       "stations": [
@@ -9382,12 +9242,7 @@
       "operator": "Tobu",
       "color": "#0f378e",
       "lineIds": [
-        "line-9486548",
-        "line-14309203",
-        "line-11583472",
-        "line-5372771",
-        "line-14309204",
-        "line-9486543"
+        "line-14309204"
       ],
       "stations": [
         {
@@ -9646,7 +9501,6 @@
       "operator": "Tobu",
       "color": "#0f378e",
       "lineIds": [
-        "line-9504540",
         "line-5219659"
       ],
       "stations": [
@@ -9671,8 +9525,7 @@
       "operator": "Tobu",
       "color": "#0f378e",
       "lineIds": [
-        "line-11700879",
-        "line-10443252"
+        "line-11700879"
       ],
       "stations": [
         {
@@ -9732,8 +9585,7 @@
       "operator": "TX",
       "color": "#2e3192",
       "lineIds": [
-        "line-2549404",
-        "line-4589046"
+        "line-2549404"
       ],
       "stations": [
         {
@@ -9865,22 +9717,7 @@
       "operator": "Keisei",
       "color": "#003399",
       "lineIds": [
-        "line-19928461",
-        "line-3336657",
-        "line-3120358",
-        "line-10384057",
-        "line-19931516",
-        "line-19931517",
-        "line-3336654",
-        "line-19931515",
-        "line-3336656",
-        "line-19931523",
-        "line-3336658",
-        "line-19928462",
-        "line-3336655",
-        "line-3340252",
-        "line-9480368",
-        "line-9479857"
+        "line-3336658"
       ],
       "stations": [
         {
@@ -10258,7 +10095,6 @@
       "operator": "Keisei",
       "color": "#003399",
       "lineIds": [
-        "line-3338455",
         "line-9480126"
       ],
       "stations": [
@@ -10307,8 +10143,7 @@
       "operator": "Keisei",
       "color": "#003399",
       "lineIds": [
-        "line-9480180",
-        "line-2060618"
+        "line-9480180"
       ],
       "stations": [
         {
@@ -10380,7 +10215,6 @@
       "operator": "Keisei",
       "color": "#003399",
       "lineIds": [
-        "line-2060696",
         "line-9480229"
       ],
       "stations": [
@@ -10429,8 +10263,7 @@
       "operator": "Keisei",
       "color": "#003399",
       "lineIds": [
-        "line-1927482",
-        "line-9480251"
+        "line-1927482"
       ],
       "stations": [
         {
@@ -10460,7 +10293,6 @@
       "operator": "Keisei",
       "color": "#e8689b",
       "lineIds": [
-        "line-11502414",
         "line-11501094"
       ],
       "stations": [
