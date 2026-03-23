@@ -460,6 +460,36 @@ export default function QuizSession({ config, onComplete }: Props) {
     });
   }, [riversGeo, config.scopeType]);
 
+  // 区クイズ: フォーカス中の川・道路名
+  const focusedFeatureName = useMemo(() => {
+    if (focusedQuestionIndex === null || config.scopeType !== 'ward') return null;
+    const q = questions[focusedQuestionIndex];
+    if (!q) return null;
+    if (q.category === 'rivers' || q.category === 'roads') {
+      return q.targetName.kanji;
+    }
+    return null;
+  }, [focusedQuestionIndex, questions, config.scopeType]);
+
+  // フォーカス中の川・道路のGeoJSONフィルタ
+  const focusedRiverGeo = useMemo(() => {
+    if (!focusedFeatureName || !riversGeo) return null;
+    const q = questions[focusedQuestionIndex!];
+    if (q?.category !== 'rivers') return null;
+    const filtered = riversGeo.features.filter((f) => f.properties?.name === focusedFeatureName);
+    if (filtered.length === 0) return null;
+    return { ...riversGeo, features: filtered } as FeatureCollection;
+  }, [focusedFeatureName, riversGeo, questions, focusedQuestionIndex]);
+
+  const focusedRoadGeo = useMemo(() => {
+    if (!focusedFeatureName || !roadsGeo) return null;
+    const q = questions[focusedQuestionIndex!];
+    if (q?.category !== 'roads') return null;
+    const filtered = roadsGeo.features.filter((f) => f.properties?.name === focusedFeatureName);
+    if (filtered.length === 0) return null;
+    return { ...roadsGeo, features: filtered } as FeatureCollection;
+  }, [focusedFeatureName, roadsGeo, questions, focusedQuestionIndex]);
+
   // 区クイズ用: カテゴリ別にグループ化された問題
   const wardCategoryGroups = useMemo(() => {
     if (config.scopeType !== 'ward') return null;
@@ -778,6 +808,26 @@ export default function QuizSession({ config, onComplete }: Props) {
               key={`quiz-ward-roads-${config.scopeId}`}
               data={roadsGeo}
               style={() => ({ color: '#fb923c', weight: 2, opacity: 0.15, lineCap: 'round' })}
+              interactive={false}
+            />
+          )}
+
+          {/* 区クイズ: フォーカス中の川をハイライト */}
+          {focusedRiverGeo && (
+            <GeoJSON
+              key={`ward-river-highlight-${focusedFeatureName}`}
+              data={focusedRiverGeo}
+              style={() => ({ color: '#38bdf8', weight: 4, opacity: 0.9, lineCap: 'round' })}
+              interactive={false}
+            />
+          )}
+
+          {/* 区クイズ: フォーカス中の道路をハイライト */}
+          {focusedRoadGeo && (
+            <GeoJSON
+              key={`ward-road-highlight-${focusedFeatureName}`}
+              data={focusedRoadGeo}
+              style={() => ({ color: '#fb923c', weight: 4, opacity: 0.9, lineCap: 'round' })}
               interactive={false}
             />
           )}
