@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """
-rail_lines.geojson の連続性を改善する。
+rail_lines.geojson の連続性改善と不要セグメント除去。
 
-既存のセグメントはすべてそのまま保持し、
-隣接セグメント間のギャップをセグメント端点同士の直線で補完する。
-
-- セグメントの削除は行わない
-- 連続性チェック: 隣接セグメントの端点間距離を計測
-- セグメント-to-セグメント接続: 4つの端点組み合わせから最短を選択
-- 閾値以下のギャップに直線接続セグメントを挿入
+1. 2座標の直線セグメント（駅間を直線で結ぶアーティファクト）を除去
+   - 500m以上の2座標セグメントは実際の線路ジオメトリではなく
+     データ加工時の残留物のため除去
+2. 隣接セグメント間のギャップをセグメント端点同士の直線で補完
 """
 
 import json
@@ -79,12 +76,58 @@ def fill_gaps(segments: list[list]) -> list[list]:
     return result
 
 
+def remove_straight_line_artifacts(segments: list[list]) -> list[list]:
+    """
+    2座標の直線セグメント（500m以上）を除去する。
+    これらはデータ加工時に生じた駅間直線接続のアーティファクトで、
+    実際の線路ジオメトリではない。
+    """
+    kept = []
+    for seg in segments:
+        if len(seg) == 2:
+            d = coord_dist(seg[0], seg[1])
+            if d >= GAP_FILL_THRESHOLD_M:
+                continue  # 長い直線 → 除去
+        kept.append(seg)
+    return kept
+
+
 def main() -> None:
     geojson_path = os.path.join(DATA_DIR, "geojson", "rail_lines.geojson")
 
     with open(geojson_path, encoding="utf-8") as f:
         geo = json.load(f)
 
+    # Phase 1: 2座標直線アーティファクトを除去
+    removed_total = 0
+    for feat in geo["features"]:
+        geom = feat["geometry"]
+        name = feat["properties"]["name"]
+
+        if geom["type"] != "MultiLineString":
+            continue
+
+        original_segs = geom["coordinates"]
+        cleaned = remove_straight_line_artifacts(original_segs)
+        removed = len(original_segs) - len(cleaned)
+
+        if removed > 0:
+            removed_total += removed
+            print(f"  {name}: {removed} straight-line artifacts removed")
+            if len(cleaned) == 0:
+                # 全除去されたら最長セグメントを残す
+                longest = max(original_segs, key=lambda s: len(s))
+                cleaned = [longest]
+                removed_total -= 1
+            if len(cleaned) == 1:
+                geom["type"] = "LineString"
+                geom["coordinates"] = cleaned[0]
+            else:
+                geom["coordinates"] = cleaned
+
+    print(f"\nRemoved {removed_total} straight-line artifacts")
+
+    # Phase 2: ギャップ補完
     filled_count = 0
     total_fills = 0
 
@@ -105,7 +148,7 @@ def main() -> None:
             print(f"  {name}: {added} gaps filled")
             geom["coordinates"] = new_segs
 
-    print(f"\nFilled {total_fills} gaps in {filled_count} features")
+    print(f"Filled {total_fills} gaps in {filled_count} features")
 
     # 保存
     with open(geojson_path, "w", encoding="utf-8") as f:
