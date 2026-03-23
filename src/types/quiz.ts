@@ -34,10 +34,14 @@ export interface DifficultySettings {
   answerMode: AnswerMode;
   choiceCount: number;
   showHints: boolean;
+  /** ヒントとして最初の1文字を表示する */
+  showFirstChar: boolean;
   showMapNumbers: boolean;
   showSuffix: boolean;
   revealOnCorrect: boolean;
   questionOrder: 'sequential' | 'shuffled';
+  /** 1問あたりの制限時間（秒）。0の場合は制限なし */
+  timeLimitPerQuestion: number;
 }
 
 /** クイズの設定 */
