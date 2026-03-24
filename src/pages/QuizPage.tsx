@@ -7,6 +7,7 @@ import QuizResult from '@/components/quiz/QuizResult';
 import SpeedRunSession from '@/components/quiz/SpeedRunSession';
 import BlankMapQuiz from '@/components/quiz/BlankMapQuiz';
 import type { BlankMapRange } from '@/components/quiz/BlankMapQuiz';
+import type { DifficultyLevel } from '@/types';
 import { useQuizStore } from '@/stores/quizStore';
 import type { QuizResult as QuizResultType } from '@/types';
 import type { SpeedRunRecord } from '@/stores/quizStore';
@@ -58,8 +59,10 @@ export default function QuizPage() {
   );
 
   const [blankMapRange, setBlankMapRange] = useState<BlankMapRange>('ku');
-  const handleStartBlankMap = useCallback((range: BlankMapRange) => {
+  const [blankMapDifficulty, setBlankMapDifficulty] = useState<DifficultyLevel>('futsuu');
+  const handleStartBlankMap = useCallback((range: BlankMapRange, difficulty: DifficultyLevel) => {
     setBlankMapRange(range);
+    setBlankMapDifficulty(difficulty);
     setPhase('blankmap');
   }, []);
 
@@ -109,7 +112,11 @@ export default function QuizPage() {
         )}
 
         {phase === 'blankmap' && (
-          <BlankMapQuiz onBack={handleBackToSelector} range={blankMapRange} />
+          <BlankMapQuiz
+            onBack={handleBackToSelector}
+            range={blankMapRange}
+            difficulty={blankMapDifficulty}
+          />
         )}
       </div>
     </div>
