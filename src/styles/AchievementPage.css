@@ -202,6 +202,21 @@
   color: var(--color-text-secondary);
 }
 
+/* Difficulty rank badge (銅/銀/金) */
+.achievement-card__rank {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fff;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+}
+
 /* Check mark for achieved */
 .achievement-card__check {
   position: absolute;
@@ -262,6 +277,32 @@
 
 .share-card__body {
   padding: 1rem;
+}
+
+.share-card__body--with-map {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.share-card__body-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.share-card__mini-map {
+  width: 120px;
+  flex-shrink: 0;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+}
+
+.share-card__mini-map svg {
+  width: 100%;
+  height: auto;
 }
 
 .share-card__description {
