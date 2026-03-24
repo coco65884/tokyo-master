@@ -43,7 +43,7 @@ function loadPreferredDifficulty(): DifficultyLevel {
 interface Props {
   onStart: () => void;
   onStartSpeedRun?: (lineKey: string) => void;
-  onStartBlankMap?: (range: BlankMapRange, difficulty: DifficultyLevel) => void;
+  onStartBlankMap?: (range: BlankMapRange, difficulty: DifficultyLevel, quickMode: boolean) => void;
 }
 
 interface OperatorData {
@@ -370,7 +370,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
       {tab === 'blankmap' && (
         <button
           className="quiz-selector__start-btn"
-          onClick={() => onStartBlankMap?.(blankMapRange, difficulty)}
+          onClick={() => onStartBlankMap?.(blankMapRange, difficulty, quickMode)}
         >
           白地図クイズ開始
         </button>

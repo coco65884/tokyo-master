@@ -28,6 +28,8 @@ interface Props {
   onBack: () => void;
   range: BlankMapRange;
   difficulty: DifficultyLevel;
+  quickMode?: boolean;
+  onComplete?: (result: import('@/types').QuizResult) => void;
 }
 
 function FitBounds({ data }: { data: FeatureCollection }) {
@@ -39,6 +41,15 @@ function FitBounds({ data }: { data: FeatureCollection }) {
       map.fitBounds(bounds, { padding: [20, 20] });
     }
   }, [data, map]);
+  return null;
+}
+
+/** 指定座標にパン+ズームするヘルパー */
+function MapPanTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], zoom ?? map.getZoom(), { animate: true });
+  }, [lat, lng, zoom, map]);
   return null;
 }
 
@@ -76,7 +87,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
+export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onComplete }: Props) {
   const diffSettings = useMemo(() => getDifficultySettings(difficulty), [difficulty]);
 
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
@@ -103,35 +114,20 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
     loadWards().then((rawData) => {
       const data = filterByRange(rawData, range);
       setWardsGeo(data);
-      const entries: WardEntry[] = data.features.map((f) => ({
+      let entries: WardEntry[] = data.features.map((f) => ({
         wardId: f.properties?.id as string,
         wardName: f.properties?.name as string,
         center: getCentroid(f),
       }));
+      // 簡易モード: ランダム10問に制限
+      if (quickMode && entries.length > 10) {
+        entries = shuffle(entries).slice(0, 10);
+      }
       setWardList(entries);
       setAnswers(new Array(entries.length).fill(''));
       setMcAnswers(new Array(entries.length).fill(null));
     });
-  }, [range]);
-
-  // むずかしいモードタイマー
-  useEffect(() => {
-    if (!wardList.length || submitted || difficulty !== 'muzukashii') return;
-    const totalTime = diffSettings.timeLimitPerQuestion * wardList.length;
-    if (totalTime <= 0) return;
-    timerEndRef.current = Date.now() + totalTime * 1000;
-    timerRef.current = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
-      setTimerTick(remaining);
-      if (remaining <= 0) {
-        clearInterval(timerRef.current!);
-        setSubmitted(true);
-      }
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [wardList.length, submitted, difficulty, diffSettings.timeLimitPerQuestion]);
+  }, [range, quickMode]);
 
   const timeLeft = timerTick;
 
@@ -171,20 +167,75 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
     [answers],
   );
 
-  const handleSubmit = useCallback(() => {
-    setSubmitted(true);
-    if (timerRef.current) clearInterval(timerRef.current);
-  }, []);
+  const buildResult = useCallback(
+    (overrideMcAnswers?: (boolean | null)[]) => {
+      const mc = overrideMcAnswers ?? mcAnswers;
+      const answerList = wardList.map((w, i) => {
+        const userAnswer =
+          difficulty === 'kantan' ? (mc[i] === true ? w.wardName : '') : answers[i];
+        const isCorrect =
+          difficulty === 'kantan' ? mc[i] === true : matchesNameString(answers[i], w.wardName);
+        return {
+          questionId: w.wardId,
+          userAnswer,
+          correctAnswer: w.wardName,
+          isCorrect,
+        };
+      });
+      const correct = answerList.filter((a) => a.isCorrect).length;
+      return {
+        quizConfigId: `blankmap-${range}`,
+        scopeType: 'ward' as const,
+        scopeId: `blankmap-${range}`,
+        difficulty,
+        totalQuestions: wardList.length,
+        correctAnswers: correct,
+        accuracy: wardList.length > 0 ? correct / wardList.length : 0,
+        completedAt: new Date().toISOString(),
+        answers: answerList,
+      };
+    },
+    [wardList, answers, mcAnswers, difficulty, range],
+  );
 
-  const handleReset = useCallback(() => {
-    setAnswers(new Array(wardList.length).fill(''));
-    setMcAnswers(new Array(wardList.length).fill(null));
-    setMcCurrentIndex(0);
-    setMcLocked(false);
-    setMcChoiceStates({});
-    setSubmitted(false);
-    setFocusedIndex(null);
-  }, [wardList.length]);
+  // むずかしいモードタイマー
+  useEffect(() => {
+    if (!wardList.length || submitted || difficulty !== 'muzukashii') return;
+    const totalTime = diffSettings.timeLimitPerQuestion * wardList.length;
+    if (totalTime <= 0) return;
+    timerEndRef.current = Date.now() + totalTime * 1000;
+    timerRef.current = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
+      setTimerTick(remaining);
+      if (remaining <= 0) {
+        clearInterval(timerRef.current!);
+        if (onComplete) {
+          onComplete(buildResult());
+        } else {
+          setSubmitted(true);
+        }
+      }
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [
+    wardList.length,
+    submitted,
+    difficulty,
+    diffSettings.timeLimitPerQuestion,
+    onComplete,
+    buildResult,
+  ]);
+
+  const handleSubmit = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (onComplete) {
+      onComplete(buildResult());
+    } else {
+      setSubmitted(true);
+    }
+  }, [onComplete, buildResult]);
 
   // テキスト入力の結果
   const results = useMemo(() => {
@@ -194,11 +245,6 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
       isCorrect: matchesNameString(answers[i], w.wardName),
     }));
   }, [submitted, wardList, answers, difficulty]);
-
-  const correctCount =
-    difficulty === 'kantan'
-      ? mcAnswers.filter((a) => a === true).length
-      : (results?.filter((r) => r.isCorrect).length ?? 0);
 
   // かんたんモード: 選択肢生成
   const mcChoices = useMemo(() => {
@@ -228,15 +274,17 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
       }
       setMcChoiceStates(newStates as Record<string, 'correct' | 'incorrect' | 'default'>);
 
-      setMcAnswers((prev) => {
-        const next = [...prev];
-        next[mcCurrentIndex] = isCorrect;
-        return next;
-      });
+      const updatedMcAnswers = [...mcAnswers];
+      updatedMcAnswers[mcCurrentIndex] = isCorrect;
+      setMcAnswers(updatedMcAnswers);
 
       setTimeout(() => {
         if (mcCurrentIndex + 1 >= wardList.length) {
-          setSubmitted(true);
+          if (onComplete) {
+            onComplete(buildResult(updatedMcAnswers));
+          } else {
+            setSubmitted(true);
+          }
         } else {
           setMcCurrentIndex((prev) => prev + 1);
         }
@@ -244,7 +292,7 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
         setMcChoiceStates({});
       }, 800);
     },
-    [mcLocked, mcCurrentIndex, wardList],
+    [mcLocked, mcCurrentIndex, wardList, onComplete, buildResult, mcAnswers],
   );
 
   // 地図スタイル
@@ -303,7 +351,14 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
           >
             <TileLayer url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png" />
             <GeoJSON key={geoKey} data={wardsGeo} style={styleFunc} />
-            <FitBounds data={wardsGeo} />
+            {!submitted && wardList[mcCurrentIndex] && (
+              <MapPanTo
+                lat={wardList[mcCurrentIndex].center[0]}
+                lng={wardList[mcCurrentIndex].center[1]}
+                zoom={13}
+              />
+            )}
+            {submitted && <FitBounds data={wardsGeo} />}
             {wardList.map((w, i) => (
               <Marker
                 key={`num-${w.wardId}`}
@@ -361,23 +416,6 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
                 })}
               </div>
             </>
-          )}
-          {submitted && (
-            <div className="blank-map__final">
-              <div className="blank-map__final-score">
-                {Math.round((correctCount / totalWards) * 100)}%
-              </div>
-              <p className="blank-map__final-detail">
-                {correctCount} / {totalWards} 正解
-              </p>
-            </div>
-          )}
-          {submitted && (
-            <div className="blank-map__actions">
-              <button className="blank-map__reset-btn" onClick={handleReset}>
-                もう一度
-              </button>
-            </div>
           )}
         </div>
       </div>
@@ -438,22 +476,7 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
             回答する
           </button>
         )}
-        {submitted && (
-          <div className="blank-map__final">
-            <div className="blank-map__final-score">
-              {Math.round((correctCount / totalWards) * 100)}%
-            </div>
-            <p className="blank-map__final-detail">
-              {correctCount} / {totalWards} 正解
-            </p>
-          </div>
-        )}
         <div className="blank-map__actions">
-          {submitted && (
-            <button className="blank-map__reset-btn" onClick={handleReset}>
-              もう一度
-            </button>
-          )}
           <button className="blank-map__back-btn" onClick={onBack}>
             戻る
           </button>
