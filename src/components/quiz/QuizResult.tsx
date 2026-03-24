@@ -28,8 +28,14 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
   const [lineInfo, setLineInfo] = useState<LineIndexEntry | null>(null);
   const [lineGeo, setLineGeo] = useState<FeatureCollection | null>(null);
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
-  const [mapCenter, setMapCenter] = useState<[number, number]>([35.6762, 139.6503]);
-  const [mapZoom, setMapZoom] = useState(12);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(
+    result.scopeId.startsWith('blankmap-') || result.scopeType === 'theme'
+      ? [35.6762, 139.6503]
+      : [35.6762, 139.6503],
+  );
+  const [mapZoom, setMapZoom] = useState(
+    result.scopeId.startsWith('blankmap-') ? 10 : result.scopeType === 'theme' ? 11 : 12,
+  );
 
   const accuracyPercent = Math.round(result.accuracy * 100);
 
@@ -57,7 +63,7 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
         }
       });
       loadRailLines().then(setLineGeo);
-    } else if (result.scopeType === 'ward') {
+    } else if (result.scopeType === 'ward' && !result.scopeId.startsWith('blankmap-')) {
       getWardCenter(result.scopeId).then((c: WardCenter | undefined) => {
         if (c) {
           setMapCenter([c.lat, c.lng]);
@@ -92,6 +98,18 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
     if (accuracyPercent >= 50) return 'quiz-result__score--good';
     return 'quiz-result__score--needs-work';
   };
+
+  const isBlankMap = result.scopeId.startsWith('blankmap-');
+
+  // 白地図クイズ: wardId → 回答のマップ
+  const blankMapAnswerMap = useMemo(() => {
+    if (!isBlankMap) return new Map();
+    const map = new Map<string, (typeof result.answers)[0]>();
+    for (const a of result.answers) {
+      map.set(a.questionId, a);
+    }
+    return map;
+  }, [isBlankMap, result]);
 
   const baseAchievementId = getAchievementId(result.scopeType, result.scopeId);
   const diffAchievementId = result.difficulty
@@ -229,17 +247,47 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
               url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
             />
 
-            {/* 区境界 */}
+            {/* 区境界: 白地図クイズの場合は正誤で色分け */}
             {wardsGeo && (
               <GeoJSON
-                key="result-wards"
+                key={`result-wards-${isBlankMap}`}
                 data={wardsGeo}
-                style={{
-                  color: '#94a3b8',
-                  weight: 1,
-                  fillColor: 'transparent',
-                  fillOpacity: 0,
+                style={(feature) => {
+                  if (!isBlankMap) {
+                    return {
+                      color: '#94a3b8',
+                      weight: 1,
+                      fillColor: 'transparent',
+                      fillOpacity: 0,
+                    };
+                  }
+                  const wardId = feature?.properties?.id as string;
+                  const answer = blankMapAnswerMap.get(wardId);
+                  if (!answer) {
+                    return { color: '#94a3b8', weight: 1, fillColor: '#f1f5f9', fillOpacity: 0.3 };
+                  }
+                  return {
+                    color: answer.isCorrect ? '#16a34a' : '#dc2626',
+                    weight: 1.5,
+                    fillColor: answer.isCorrect ? '#bbf7d0' : '#fecaca',
+                    fillOpacity: 0.6,
+                  };
                 }}
+                onEachFeature={
+                  isBlankMap
+                    ? (feature, layer) => {
+                        const wardId = feature?.properties?.id as string;
+                        const answer = blankMapAnswerMap.get(wardId);
+                        if (answer) {
+                          (layer as L.Path).bindTooltip(answer.correctAnswer, {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'blank-map__ward-label',
+                          });
+                        }
+                      }
+                    : undefined
+                }
               />
             )}
 
