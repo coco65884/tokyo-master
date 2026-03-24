@@ -21,8 +21,8 @@ OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
 CHAIN_TOLERANCE_M = 50
 GAP_FILL_MAX_M = 100
-REQUEST_DELAY = 2
-BATCH_SIZE = 20
+REQUEST_DELAY = 5
+BATCH_SIZE = 15
 
 
 def haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
