@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -296,11 +296,35 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
             const isCurrent = idx === currentIndex;
             if (!isAnswered && !isCurrent) return null;
             return (
-              <Marker key={q.id} position={[q.lat, q.lng]} icon={stationIcon}>
-                <Tooltip direction="top" offset={[0, -8]} className="quiz-station-number" permanent>
-                  {idx + 1}
-                </Tooltip>
-              </Marker>
+              <React.Fragment key={q.id}>
+                <Marker position={[q.lat, q.lng]} icon={stationIcon}>
+                  <Tooltip
+                    direction="top"
+                    offset={[0, -8]}
+                    className="quiz-station-number"
+                    permanent
+                  >
+                    {idx + 1}
+                  </Tooltip>
+                </Marker>
+                {/* 複数キャンパス: 追加キャンパスにもマーカー表示 */}
+                {q.extraLocations?.map((loc, j) => (
+                  <Marker
+                    key={`extra-${q.id}-${j}`}
+                    position={[loc.lat, loc.lng]}
+                    icon={stationIcon}
+                  >
+                    <Tooltip
+                      direction="top"
+                      offset={[0, -8]}
+                      className="quiz-station-number"
+                      permanent
+                    >
+                      {idx + 1}
+                    </Tooltip>
+                  </Marker>
+                ))}
+              </React.Fragment>
             );
           })}
 
