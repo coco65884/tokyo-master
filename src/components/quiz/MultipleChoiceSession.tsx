@@ -41,6 +41,19 @@ function MapPanTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number 
   return null;
 }
 
+/** GeoJSONの中心にフィットするヘルパー */
+function MapFitGeoJSON({ data }: { data: FeatureCollection }) {
+  const map = useMap();
+  useEffect(() => {
+    const layer = L.geoJSON(data);
+    const bounds = layer.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
+    }
+  }, [data, map]);
+  return null;
+}
+
 export default function MultipleChoiceSession({ config, onComplete }: Props) {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -276,16 +289,20 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
             <GeoJSON data={filteredLineGeo} style={{ color: lineColor, weight: 3, opacity: 0.8 }} />
           )}
 
-          {/* Station markers for all questions */}
-          {questions.map((q, idx) =>
-            q.lat != null && q.lng != null ? (
+          {/* Station markers: 出題中 + 回答済みのみ表示 */}
+          {questions.map((q, idx) => {
+            if (q.lat == null || q.lng == null) return null;
+            const isAnswered = idx < answers.length;
+            const isCurrent = idx === currentIndex;
+            if (!isAnswered && !isCurrent) return null;
+            return (
               <Marker key={q.id} position={[q.lat, q.lng]} icon={stationIcon}>
                 <Tooltip direction="top" offset={[0, -8]} className="quiz-station-number" permanent>
                   {idx + 1}
                 </Tooltip>
               </Marker>
-            ) : null,
-          )}
+            );
+          })}
 
           {/* 川GeoJSON（テーマ/区クイズ用）: 全体薄く表示 */}
           {riversGeo && (
@@ -311,17 +328,20 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
               if (filtered.length === 0) return null;
               const data = { ...riversGeo, features: filtered } as FeatureCollection;
               return (
-                <GeoJSON
-                  key={`mc-river-hl-${currentIndex}`}
-                  data={data}
-                  style={() => ({
-                    color: '#38bdf8',
-                    weight: 5,
-                    opacity: 0.9,
-                    lineCap: 'round' as const,
-                  })}
-                  interactive={false}
-                />
+                <>
+                  <GeoJSON
+                    key={`mc-river-hl-${currentIndex}`}
+                    data={data}
+                    style={() => ({
+                      color: '#38bdf8',
+                      weight: 5,
+                      opacity: 0.9,
+                      lineCap: 'round' as const,
+                    })}
+                    interactive={false}
+                  />
+                  <MapFitGeoJSON data={data} />
+                </>
               );
             })()}
 
@@ -349,17 +369,20 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
               if (filtered.length === 0) return null;
               const data = { ...roadsGeo, features: filtered } as FeatureCollection;
               return (
-                <GeoJSON
-                  key={`mc-road-hl-${currentIndex}`}
-                  data={data}
-                  style={() => ({
-                    color: '#fb923c',
-                    weight: 5,
-                    opacity: 0.9,
-                    lineCap: 'round' as const,
-                  })}
-                  interactive={false}
-                />
+                <>
+                  <GeoJSON
+                    key={`mc-road-hl-${currentIndex}`}
+                    data={data}
+                    style={() => ({
+                      color: '#fb923c',
+                      weight: 5,
+                      opacity: 0.9,
+                      lineCap: 'round' as const,
+                    })}
+                    interactive={false}
+                  />
+                  <MapFitGeoJSON data={data} />
+                </>
               );
             })()}
 
@@ -390,7 +413,7 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
                   }}
                 />
               ))}
-              <MapPanTo lat={currentQuestion.lat} lng={currentQuestion.lng} />
+              <MapPanTo lat={currentQuestion.lat} lng={currentQuestion.lng} zoom={15} />
             </>
           )}
 
