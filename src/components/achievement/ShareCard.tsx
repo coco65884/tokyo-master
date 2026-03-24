@@ -5,9 +5,9 @@ import type { FeatureCollection } from 'geojson';
 
 type DifficultyTab = 'kantan' | 'futsuu' | 'muzukashii';
 const DIFF_TABS: { key: DifficultyTab; label: string; color: string }[] = [
-  { key: 'kantan', label: '銅', color: '#cd7f32' },
-  { key: 'futsuu', label: '銀', color: '#a8a8a8' },
-  { key: 'muzukashii', label: '金', color: '#ffd700' },
+  { key: 'kantan', label: 'かんたん', color: '#cd7f32' },
+  { key: 'futsuu', label: 'ふつう', color: '#a8a8a8' },
+  { key: 'muzukashii', label: 'むずかしい', color: '#ffd700' },
 ];
 
 interface Props {
