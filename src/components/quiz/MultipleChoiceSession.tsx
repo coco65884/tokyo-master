@@ -276,16 +276,20 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
             <GeoJSON data={filteredLineGeo} style={{ color: lineColor, weight: 3, opacity: 0.8 }} />
           )}
 
-          {/* Station markers for all questions */}
-          {questions.map((q, idx) =>
-            q.lat != null && q.lng != null ? (
+          {/* Station markers: 出題中 + 回答済みのみ表示 */}
+          {questions.map((q, idx) => {
+            if (q.lat == null || q.lng == null) return null;
+            const isAnswered = idx < answers.length;
+            const isCurrent = idx === currentIndex;
+            if (!isAnswered && !isCurrent) return null;
+            return (
               <Marker key={q.id} position={[q.lat, q.lng]} icon={stationIcon}>
                 <Tooltip direction="top" offset={[0, -8]} className="quiz-station-number" permanent>
                   {idx + 1}
                 </Tooltip>
               </Marker>
-            ) : null,
-          )}
+            );
+          })}
 
           {/* 川GeoJSON（テーマ/区クイズ用）: 全体薄く表示 */}
           {riversGeo && (
