@@ -295,6 +295,11 @@ export default function QuizSession({ config, onComplete }: Props) {
       }
 
       if (!cancelled) {
+        // 簡易モード: ランダム10問に絞る
+        if (config.quickMode && qs.length > 10) {
+          const shuffled = [...qs].sort(() => Math.random() - 0.5);
+          qs = shuffled.slice(0, 10);
+        }
         setQuestions(qs);
         setAnswers(new Array(qs.length).fill(''));
         setLoading(false);

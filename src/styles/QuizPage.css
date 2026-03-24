@@ -101,6 +101,22 @@
   border-radius: 8px;
 }
 
+.quiz-selector__quick-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.quiz-selector__quick-toggle input {
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+}
+
 /* ===== Difficulty Picker ===== */
 .difficulty-picker {
   display: flex;
