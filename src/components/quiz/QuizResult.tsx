@@ -9,8 +9,10 @@ import { getAchievementId } from '@/data/achievements';
 import { getLineInfo, getWardCenter } from '@/utils/quizDataLoader';
 import { loadRailLines, loadWards } from '@/utils/dataLoader';
 import { Link } from 'react-router-dom';
+import type { AchievementDefinition } from '@/types';
 import type { LineIndexEntry } from '@/types';
 import type { WardCenter } from '@/utils/dataLoader';
+import ShareCard from '@/components/achievement/ShareCard';
 
 interface Props {
   result: QuizResultType;
@@ -95,15 +97,31 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
   const diffAchievementId = result.difficulty
     ? `${baseAchievementId}:${result.difficulty}`
     : baseAchievementId;
-  const userAchievement = useAchievementStore((s) => s.achievements[diffAchievementId]);
+  const allAchievements = useAchievementStore((s) => s.achievements);
+  const userAchievement = allAchievements[diffAchievementId];
   const justAchieved = result.accuracy === 1 && userAchievement?.attempts === 1;
 
-  const DIFF_LABELS: Record<string, { label: string; color: string }> = {
-    kantan: { label: 'かんたん', color: '#cd7f32' },
-    futsuu: { label: 'ふつう', color: '#a8a8a8' },
-    muzukashii: { label: 'むずかしい', color: '#ffd700' },
-  };
-  const diffInfo = result.difficulty ? DIFF_LABELS[result.difficulty] : null;
+  // アチーブメント達成時のShareCardポップアップ（初回達成時は自動表示）
+  const [showShareCard, setShowShareCard] = useState(justAchieved);
+
+  // アチーブメント定義を構築（ShareCard用）
+  const achievementDef = useMemo((): AchievementDefinition | null => {
+    if (result.accuracy !== 1) return null;
+    const title = lineInfo
+      ? `${lineInfo.name}マスター`
+      : config?.scopeType === 'ward'
+        ? `${result.scopeId}マスター`
+        : 'マスター';
+    return {
+      id: baseAchievementId,
+      title,
+      description: `全問正解`,
+      scopeType: result.scopeType,
+      scopeId: result.scopeId,
+      color: lineInfo?.color ?? '#6366f1',
+      icon: lineInfo?.abbr ?? '★',
+    };
+  }, [result, lineInfo, config, baseAchievementId]);
 
   return (
     <div className="quiz-result">
@@ -114,17 +132,27 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
         </div>
       </div>
 
-      {result.accuracy === 1 && (
-        <div className="quiz-result__achievement-notice">
-          {diffInfo && (
-            <span className="quiz-result__achievement-rank" style={{ background: diffInfo.color }}>
-              {diffInfo.label}
-            </span>
-          )}
-          {justAchieved
-            ? ' アチーブメント達成！おめでとうございます！ 🎉'
-            : ' アチーブメント達成済み ✓'}
-        </div>
+      {result.accuracy === 1 && achievementDef && (
+        <button
+          className="quiz-result__achievement-notice quiz-result__achievement-notice--clickable"
+          onClick={() => setShowShareCard(true)}
+          type="button"
+        >
+          🎉 アチーブメント達成！タップしてシェア →
+        </button>
+      )}
+
+      {/* アチーブメント共有ポップアップ */}
+      {showShareCard && achievementDef && (
+        <ShareCard
+          definition={achievementDef}
+          achievementsByDifficulty={{
+            kantan: allAchievements[`${baseAchievementId}:kantan`],
+            futsuu: allAchievements[`${baseAchievementId}:futsuu`],
+            muzukashii: allAchievements[`${baseAchievementId}:muzukashii`],
+          }}
+          onClose={() => setShowShareCard(false)}
+        />
       )}
 
       {/* タブ切り替え */}

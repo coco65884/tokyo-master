@@ -552,6 +552,8 @@
 }
 
 .quiz-result__achievement-notice {
+  display: block;
+  width: 100%;
   text-align: center;
   padding: 0.75rem 1rem;
   margin-bottom: 1.5rem;
@@ -561,6 +563,18 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--color-achievement);
+}
+
+.quiz-result__achievement-notice--clickable {
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.quiz-result__achievement-notice--clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
 }
 
 .quiz-result__title {
