@@ -8,6 +8,7 @@ import {
   generateLineAchievements,
   generateWardAchievements,
   generateRiverAchievement,
+  generateGenreAchievements,
 } from '@/data/achievements';
 import type { AchievementDefinition } from '@/types';
 import '@/styles/AchievementPage.css';
@@ -33,8 +34,9 @@ export default function AchievementPage() {
       const lineAch = generateLineAchievements(lines);
       const wardAch = generateWardAchievements();
       const riverAch = generateRiverAchievement();
+      const genreAch = generateGenreAchievements();
 
-      setDefinitions([...lineAch, ...wardAch, riverAch]);
+      setDefinitions([...lineAch, ...wardAch, riverAch, ...genreAch]);
       setLoading(false);
     }
 
@@ -103,7 +105,11 @@ export default function AchievementPage() {
           <AchievementCard
             key={def.id}
             definition={def}
-            userAchievement={achievements[def.id]}
+            achievementsByDifficulty={{
+              kantan: achievements[`${def.id}:kantan`],
+              futsuu: achievements[`${def.id}:futsuu`],
+              muzukashii: achievements[`${def.id}:muzukashii`],
+            }}
             onClick={() => setSelectedDef(def)}
           />
         ))}
@@ -117,7 +123,11 @@ export default function AchievementPage() {
       {selectedDef && (
         <ShareCard
           definition={selectedDef}
-          userAchievement={achievements[selectedDef.id]}
+          achievementsByDifficulty={{
+            kantan: achievements[`${selectedDef.id}:kantan`],
+            futsuu: achievements[`${selectedDef.id}:futsuu`],
+            muzukashii: achievements[`${selectedDef.id}:muzukashii`],
+          }}
           onClose={() => setSelectedDef(null)}
         />
       )}

@@ -45,7 +45,7 @@ const RIVER_COLOR = '#0ea5e9';
 
 /**
  * 路線データから路線アチーブメント定義を生成する。
- * line_index.json は fetch 経由のためラインアチーブメントは非同期で取得する。
+ * グリッド表示用の代表定義（difficultyなし）
  */
 export function generateLineAchievements(lines: LineIndexEntry[]): AchievementDefinition[] {
   return lines.map((line) => ({

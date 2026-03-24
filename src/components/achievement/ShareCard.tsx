@@ -1,21 +1,103 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import type { AchievementDefinition, UserAchievement } from '@/types';
+import type { FeatureCollection } from 'geojson';
+
+type DifficultyTab = 'kantan' | 'futsuu' | 'muzukashii';
+const DIFF_TABS: { key: DifficultyTab; label: string; color: string }[] = [
+  { key: 'kantan', label: 'かんたん', color: '#cd7f32' },
+  { key: 'futsuu', label: 'ふつう', color: '#a8a8a8' },
+  { key: 'muzukashii', label: 'むずかしい', color: '#ffd700' },
+];
 
 interface Props {
   definition: AchievementDefinition;
-  userAchievement?: UserAchievement;
+  /** 難易度別の達成状況 */
+  achievementsByDifficulty?: Record<string, UserAchievement | undefined>;
   onClose: () => void;
 }
 
-export default function ShareCard({ definition, userAchievement, onClose }: Props) {
+export default function ShareCard({ definition, achievementsByDifficulty, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
+  const [diffTab, setDiffTab] = useState<DifficultyTab>('futsuu');
 
+  const userAchievement = achievementsByDifficulty?.[diffTab];
   const achieved = userAchievement?.achieved ?? false;
   const bestAccuracy = userAchievement?.bestAccuracy ?? 0;
   const achievedAt = userAchievement?.achievedAt;
   const attempts = userAchievement?.attempts ?? 0;
+  const isLine = definition.scopeType === 'line';
+
+  // 路線アチーブメント用: 簡易地図SVGデータ
+  const [miniMapSvg, setMiniMapSvg] = useState<string>('');
+  useEffect(() => {
+    if (!isLine) return;
+    Promise.all([
+      fetch('/data/geojson/rail_lines.geojson').then((r) => r.json()),
+      fetch('/data/line_index.json').then((r) => r.json()),
+    ])
+      .then(
+        ([railGeo, lineIndex]: [
+          FeatureCollection,
+          { lines: Array<{ key: string; lineIds: string[]; color: string }> },
+        ]) => {
+          const line = lineIndex.lines.find((l) => l.key === definition.scopeId);
+          if (!line) return;
+          const lineIds = new Set(line.lineIds);
+
+          // Build SVG paths
+          const SVG_W = 120;
+          const SVG_H = 100;
+          const LAT_MIN = 35.5;
+          const LAT_MAX = 35.85;
+          const LNG_MIN = 139.4;
+          const LNG_MAX = 139.95;
+
+          const toSvg = (lng: number, lat: number): [number, number] => [
+            ((lng - LNG_MIN) / (LNG_MAX - LNG_MIN)) * SVG_W,
+            ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * SVG_H,
+          ];
+
+          // All lines (gray) + target line (color)
+          let allPaths = '';
+          let targetPaths = '';
+
+          for (const feat of railGeo.features) {
+            const fid = (feat.properties as Record<string, string>)?.id;
+            const geom = feat.geometry;
+            const segs: number[][][] =
+              geom.type === 'LineString'
+                ? [geom.coordinates as number[][]]
+                : geom.type === 'MultiLineString'
+                  ? (geom.coordinates as number[][][])
+                  : [];
+
+            for (const seg of segs) {
+              const points = seg
+                .filter(
+                  (c) => c[0] >= LNG_MIN && c[0] <= LNG_MAX && c[1] >= LAT_MIN && c[1] <= LAT_MAX,
+                )
+                .map((c) => toSvg(c[0], c[1]));
+              if (points.length < 2) continue;
+              const d = points
+                .map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0].toFixed(1)},${p[1].toFixed(1)}`)
+                .join('');
+              if (lineIds.has(fid ?? '')) {
+                targetPaths += `<path d="${d}" stroke="${definition.color}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+              } else {
+                allPaths += `<path d="${d}" stroke="#d1d5db" stroke-width="0.8" fill="none" opacity="0.5"/>`;
+              }
+            }
+          }
+
+          setMiniMapSvg(
+            `<svg viewBox="0 0 ${SVG_W} ${SVG_H}" xmlns="http://www.w3.org/2000/svg">${allPaths}${targetPaths}</svg>`,
+          );
+        },
+      )
+      .catch(() => {});
+  }, [isLine, definition.scopeId, definition.color]);
 
   const formatDate = (iso: string): string => {
     const d = new Date(iso);
@@ -71,25 +153,54 @@ export default function ShareCard({ definition, userAchievement, onClose }: Prop
             <span className="share-card__icon">{definition.icon}</span>
             <span className="share-card__title">{definition.title}</span>
           </div>
-          <div className="share-card__body">
-            <p className="share-card__description">{definition.description}</p>
-            <div className="share-card__stats">
-              <div className="share-card__stat">
-                <span className="share-card__stat-label">正答率</span>
-                <span className="share-card__stat-value">{Math.round(bestAccuracy * 100)}%</span>
-              </div>
-              <div className="share-card__stat">
-                <span className="share-card__stat-label">挑戦回数</span>
-                <span className="share-card__stat-value">{attempts}回</span>
-              </div>
-              {achieved && achievedAt && (
+          {/* 難易度タブ */}
+          <div className="share-card__diff-tabs">
+            {DIFF_TABS.map((tab) => {
+              const tabAch = achievementsByDifficulty?.[tab.key];
+              const isActive = diffTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  className={`share-card__diff-tab ${isActive ? 'share-card__diff-tab--active' : ''}`}
+                  style={{
+                    borderBottomColor: isActive ? tab.color : 'transparent',
+                    color: isActive ? tab.color : undefined,
+                  }}
+                  onClick={() => setDiffTab(tab.key)}
+                >
+                  {tab.label}
+                  {tabAch?.achieved && ' ✓'}
+                </button>
+              );
+            })}
+          </div>
+          <div className={`share-card__body ${miniMapSvg ? 'share-card__body--with-map' : ''}`}>
+            <div className="share-card__body-left">
+              <p className="share-card__description">{definition.description}</p>
+              <div className="share-card__stats">
                 <div className="share-card__stat">
-                  <span className="share-card__stat-label">達成日</span>
-                  <span className="share-card__stat-value">{formatDate(achievedAt)}</span>
+                  <span className="share-card__stat-label">正答率</span>
+                  <span className="share-card__stat-value">{Math.round(bestAccuracy * 100)}%</span>
                 </div>
-              )}
+                <div className="share-card__stat">
+                  <span className="share-card__stat-label">挑戦回数</span>
+                  <span className="share-card__stat-value">{attempts}回</span>
+                </div>
+                {achieved && achievedAt && (
+                  <div className="share-card__stat">
+                    <span className="share-card__stat-label">達成日</span>
+                    <span className="share-card__stat-value">{formatDate(achievedAt)}</span>
+                  </div>
+                )}
+              </div>
+              {achieved && <div className="share-card__achieved-badge">ACHIEVED</div>}
             </div>
-            {achieved && <div className="share-card__achieved-badge">ACHIEVED</div>}
+            {miniMapSvg && (
+              <div
+                className="share-card__mini-map"
+                dangerouslySetInnerHTML={{ __html: miniMapSvg }}
+              />
+            )}
           </div>
           <div className="share-card__footer">Generated by Tokyo Master</div>
         </div>

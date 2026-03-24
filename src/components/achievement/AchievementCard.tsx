@@ -1,15 +1,29 @@
 import type { AchievementDefinition, UserAchievement } from '@/types';
 
+const RANK_COLORS: Record<string, { bg: string; label: string }> = {
+  kantan: { bg: 'linear-gradient(135deg, #cd7f32, #e8a860)', label: '銅' },
+  futsuu: { bg: 'linear-gradient(135deg, #a8a8a8, #d4d4d4)', label: '銀' },
+  muzukashii: { bg: 'linear-gradient(135deg, #ffd700, #ffed4a)', label: '金' },
+};
+
 interface Props {
   definition: AchievementDefinition;
-  userAchievement?: UserAchievement;
+  /** 難易度別の達成状況 (kantan/futsuu/muzukashii) */
+  achievementsByDifficulty?: Record<string, UserAchievement | undefined>;
   onClick: () => void;
 }
 
-export default function AchievementCard({ definition, userAchievement, onClick }: Props) {
-  const achieved = userAchievement?.achieved ?? false;
-  const bestAccuracy = userAchievement?.bestAccuracy ?? 0;
-  const hasAttempt = (userAchievement?.attempts ?? 0) > 0;
+export default function AchievementCard({ definition, achievementsByDifficulty, onClick }: Props) {
+  // 最高達成難易度を判定
+  const highestRank = (['muzukashii', 'futsuu', 'kantan'] as const).find(
+    (d) => achievementsByDifficulty?.[d]?.achieved,
+  );
+  const hasAttempt = Object.values(achievementsByDifficulty ?? {}).some((a) => a && a.attempts > 0);
+  const bestAccuracy = Math.max(
+    ...Object.values(achievementsByDifficulty ?? {}).map((a) => a?.bestAccuracy ?? 0),
+    0,
+  );
+  const achieved = !!highestRank;
 
   return (
     <button
@@ -17,6 +31,16 @@ export default function AchievementCard({ definition, userAchievement, onClick }
       onClick={onClick}
       type="button"
     >
+      {/* 最高達成ランクバッジ */}
+      {highestRank && (
+        <span
+          className="achievement-card__rank"
+          style={{ background: RANK_COLORS[highestRank].bg }}
+        >
+          {RANK_COLORS[highestRank].label}
+        </span>
+      )}
+
       <div
         className="achievement-card__badge"
         style={{

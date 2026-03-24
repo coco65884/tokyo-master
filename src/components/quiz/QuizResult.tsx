@@ -33,7 +33,8 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
   useEffect(() => {
     if (hasUpdatedRef.current) return;
     hasUpdatedRef.current = true;
-    const achievementId = getAchievementId(result.scopeType, result.scopeId);
+    const baseId = getAchievementId(result.scopeType, result.scopeId);
+    const achievementId = result.difficulty ? `${baseId}:${result.difficulty}` : baseId;
     updateAchievement(achievementId, result.accuracy);
   }, [result, updateAchievement]);
 
