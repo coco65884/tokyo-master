@@ -48,7 +48,7 @@ function MapFitGeoJSON({ data }: { data: FeatureCollection }) {
     const layer = L.geoJSON(data);
     const bounds = layer.getBounds();
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: true });
     }
   }, [data, map]);
   return null;
@@ -413,7 +413,7 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
                   }}
                 />
               ))}
-              <MapPanTo lat={currentQuestion.lat} lng={currentQuestion.lng} />
+              <MapPanTo lat={currentQuestion.lat} lng={currentQuestion.lng} zoom={15} />
             </>
           )}
 
