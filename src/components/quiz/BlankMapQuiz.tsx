@@ -5,8 +5,9 @@ import type { FeatureCollection, Feature } from 'geojson';
 import 'leaflet/dist/leaflet.css';
 import { loadWards } from '@/utils/dataLoader';
 import { matchesNameString } from '@/utils/nameMatch';
-import type { DifficultyLevel } from '@/types';
+import type { DifficultyLevel, QuizChoice } from '@/types';
 import { getDifficultySettings } from '@/utils/difficultySettings';
+import ChoiceButton from './ChoiceButton';
 
 interface WardEntry {
   wardId: string;
@@ -336,16 +337,28 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
                 <span className="mc-session__prompt-num">{mcCurrentIndex + 1}番の区/市は？</span>
               </div>
               <div className="mc-session__choices">
-                {choices.map((name) => (
-                  <button
-                    key={name}
-                    className={`mc-session__choice-btn ${mcChoiceStates[name] === 'correct' ? 'mc-session__choice-btn--correct' : ''} ${mcChoiceStates[name] === 'incorrect' ? 'mc-session__choice-btn--incorrect' : ''}`}
-                    onClick={() => handleMcChoice(name)}
-                    disabled={mcLocked}
-                  >
-                    {name}
-                  </button>
-                ))}
+                {choices.map((name) => {
+                  const choice: QuizChoice = {
+                    id: name,
+                    label: name,
+                    isCorrect: name === currentWard.wardName,
+                  };
+                  const state =
+                    mcChoiceStates[name] === 'correct'
+                      ? 'correct'
+                      : mcChoiceStates[name] === 'incorrect'
+                        ? 'wrong'
+                        : 'default';
+                  return (
+                    <ChoiceButton
+                      key={name}
+                      choice={choice}
+                      state={state}
+                      disabled={mcLocked}
+                      onClick={() => handleMcChoice(name)}
+                    />
+                  );
+                })}
               </div>
             </>
           )}
@@ -359,16 +372,13 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
               </p>
             </div>
           )}
-          <div className="blank-map__actions">
-            {submitted && (
+          {submitted && (
+            <div className="blank-map__actions">
               <button className="blank-map__reset-btn" onClick={handleReset}>
                 もう一度
               </button>
-            )}
-            <button className="blank-map__back-btn" onClick={onBack}>
-              戻る
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
