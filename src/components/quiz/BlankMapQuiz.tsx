@@ -372,16 +372,13 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
               </p>
             </div>
           )}
-          <div className="blank-map__actions">
-            {submitted && (
+          {submitted && (
+            <div className="blank-map__actions">
               <button className="blank-map__reset-btn" onClick={handleReset}>
                 もう一度
               </button>
-            )}
-            <button className="blank-map__back-btn" onClick={onBack}>
-              戻る
-            </button>
-          </div>
+            </div>
+          )}
         </div>
       </div>
     );
