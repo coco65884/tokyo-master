@@ -44,6 +44,15 @@ function FitBounds({ data }: { data: FeatureCollection }) {
   return null;
 }
 
+/** 指定座標にパン+ズームするヘルパー */
+function MapPanTo({ lat, lng, zoom }: { lat: number; lng: number; zoom?: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], zoom ?? map.getZoom(), { animate: true });
+  }, [lat, lng, zoom, map]);
+  return null;
+}
+
 function filterByRange(data: FeatureCollection, range: BlankMapRange): FeatureCollection {
   if (range === 'all') return data;
   const filtered = data.features.filter((f) => {
@@ -345,7 +354,14 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
           >
             <TileLayer url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png" />
             <GeoJSON key={geoKey} data={wardsGeo} style={styleFunc} />
-            <FitBounds data={wardsGeo} />
+            {!submitted && wardList[mcCurrentIndex] && (
+              <MapPanTo
+                lat={wardList[mcCurrentIndex].center[0]}
+                lng={wardList[mcCurrentIndex].center[1]}
+                zoom={13}
+              />
+            )}
+            {submitted && <FitBounds data={wardsGeo} />}
             {wardList.map((w, i) => (
               <Marker
                 key={`num-${w.wardId}`}
