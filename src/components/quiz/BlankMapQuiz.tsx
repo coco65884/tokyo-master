@@ -28,6 +28,8 @@ interface Props {
   onBack: () => void;
   range: BlankMapRange;
   difficulty: DifficultyLevel;
+  quickMode?: boolean;
+  onComplete?: (result: import('@/types').QuizResult) => void;
 }
 
 function FitBounds({ data }: { data: FeatureCollection }) {
@@ -76,7 +78,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
+export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onComplete }: Props) {
   const diffSettings = useMemo(() => getDifficultySettings(difficulty), [difficulty]);
 
   const [wardsGeo, setWardsGeo] = useState<FeatureCollection | null>(null);
@@ -103,16 +105,20 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
     loadWards().then((rawData) => {
       const data = filterByRange(rawData, range);
       setWardsGeo(data);
-      const entries: WardEntry[] = data.features.map((f) => ({
+      let entries: WardEntry[] = data.features.map((f) => ({
         wardId: f.properties?.id as string,
         wardName: f.properties?.name as string,
         center: getCentroid(f),
       }));
+      // 簡易モード: ランダム10問に制限
+      if (quickMode && entries.length > 10) {
+        entries = shuffle(entries).slice(0, 10);
+      }
       setWardList(entries);
       setAnswers(new Array(entries.length).fill(''));
       setMcAnswers(new Array(entries.length).fill(null));
     });
-  }, [range]);
+  }, [range, quickMode]);
 
   // むずかしいモードタイマー
   useEffect(() => {
@@ -171,10 +177,43 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
     [answers],
   );
 
+  const buildResult = useCallback(() => {
+    const answerList = wardList.map((w, i) => {
+      const userAnswer =
+        difficulty === 'kantan' ? (mcAnswers[i] === true ? w.wardName : '') : answers[i];
+      const isCorrect =
+        difficulty === 'kantan' ? mcAnswers[i] === true : matchesNameString(answers[i], w.wardName);
+      return {
+        questionId: w.wardId,
+        userAnswer,
+        correctAnswer: w.wardName,
+        isCorrect,
+      };
+    });
+    const correctCount = answerList.filter((a) => a.isCorrect).length;
+    return {
+      quizConfigId: `blankmap-${range}`,
+      scopeType: 'ward' as const,
+      scopeId: `blankmap-${range}`,
+      difficulty,
+      totalQuestions: wardList.length,
+      correctAnswers: correctCount,
+      accuracy: wardList.length > 0 ? correctCount / wardList.length : 0,
+      completedAt: new Date().toISOString(),
+      answers: answerList,
+    };
+  }, [wardList, answers, mcAnswers, difficulty, range]);
+
   const handleSubmit = useCallback(() => {
     setSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
-  }, []);
+    if (onComplete) {
+      // 少し遅延して結果を確認してから遷移
+      setTimeout(() => {
+        onComplete(buildResult());
+      }, 1500);
+    }
+  }, [onComplete, buildResult]);
 
   const handleReset = useCallback(() => {
     setAnswers(new Array(wardList.length).fill(''));
@@ -237,6 +276,9 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
       setTimeout(() => {
         if (mcCurrentIndex + 1 >= wardList.length) {
           setSubmitted(true);
+          if (onComplete) {
+            setTimeout(() => onComplete(buildResult()), 1000);
+          }
         } else {
           setMcCurrentIndex((prev) => prev + 1);
         }
@@ -244,7 +286,7 @@ export default function BlankMapQuiz({ onBack, range, difficulty }: Props) {
         setMcChoiceStates({});
       }, 800);
     },
-    [mcLocked, mcCurrentIndex, wardList],
+    [mcLocked, mcCurrentIndex, wardList, onComplete, buildResult],
   );
 
   // 地図スタイル

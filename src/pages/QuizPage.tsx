@@ -38,8 +38,13 @@ export default function QuizPage() {
   );
 
   const handleRetry = useCallback(() => {
-    setPhase('active');
-  }, []);
+    // 白地図クイズの結果から戻る場合はblankmapフェーズに
+    if (lastResult?.quizConfigId?.startsWith('blankmap-')) {
+      setPhase('blankmap');
+    } else {
+      setPhase('active');
+    }
+  }, [lastResult]);
 
   const handleBackToSelector = useCallback(() => {
     setLastResult(null);
@@ -60,11 +65,25 @@ export default function QuizPage() {
 
   const [blankMapRange, setBlankMapRange] = useState<BlankMapRange>('ku');
   const [blankMapDifficulty, setBlankMapDifficulty] = useState<DifficultyLevel>('futsuu');
-  const handleStartBlankMap = useCallback((range: BlankMapRange, difficulty: DifficultyLevel) => {
-    setBlankMapRange(range);
-    setBlankMapDifficulty(difficulty);
-    setPhase('blankmap');
-  }, []);
+  const [blankMapQuickMode, setBlankMapQuickMode] = useState(false);
+  const handleStartBlankMap = useCallback(
+    (range: BlankMapRange, difficulty: DifficultyLevel, quick: boolean) => {
+      setBlankMapRange(range);
+      setBlankMapDifficulty(difficulty);
+      setBlankMapQuickMode(quick);
+      setPhase('blankmap');
+    },
+    [],
+  );
+
+  const handleBlankMapComplete = useCallback(
+    (result: QuizResultType) => {
+      setLastResult(result);
+      addResult(result);
+      setPhase('result');
+    },
+    [addResult],
+  );
 
   const isKantanMode = config?.difficulty === 'kantan';
 
@@ -116,6 +135,8 @@ export default function QuizPage() {
             onBack={handleBackToSelector}
             range={blankMapRange}
             difficulty={blankMapDifficulty}
+            quickMode={blankMapQuickMode}
+            onComplete={handleBlankMapComplete}
           />
         )}
       </div>
