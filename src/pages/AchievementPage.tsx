@@ -8,6 +8,7 @@ import {
   generateLineAchievements,
   generateWardAchievements,
   generateRiverAchievement,
+  generateGenreAchievements,
 } from '@/data/achievements';
 import type { AchievementDefinition } from '@/types';
 import '@/styles/AchievementPage.css';
@@ -33,8 +34,9 @@ export default function AchievementPage() {
       const lineAch = generateLineAchievements(lines);
       const wardAch = generateWardAchievements();
       const riverAch = generateRiverAchievement();
+      const genreAch = generateGenreAchievements();
 
-      setDefinitions([...lineAch, ...wardAch, riverAch]);
+      setDefinitions([...lineAch, ...wardAch, ...riverAch, ...genreAch]);
       setLoading(false);
     }
 

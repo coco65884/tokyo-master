@@ -1,4 +1,5 @@
 import type { AchievementDefinition } from '@/types';
+import type { DifficultyLevel } from '@/types';
 import type { LineIndexEntry } from '@/types';
 import wardsData from '@/data/wards.json';
 import riversData from '@/data/rivers.json';
@@ -43,20 +44,52 @@ const WARD_COLOR = '#6366f1';
 /** 河川テーマカラー */
 const RIVER_COLOR = '#0ea5e9';
 
+/** 難易度ラベル */
+const DIFFICULTY_LABELS: Record<DifficultyLevel, string> = {
+  kantan: 'かんたん',
+  futsuu: 'ふつう',
+  muzukashii: 'むずかしい',
+};
+
+const DIFFICULTIES: DifficultyLevel[] = ['kantan', 'futsuu', 'muzukashii'];
+
+/**
+ * 1つのベース定義から3難易度分のアチーブメントを生成する
+ */
+function expandByDifficulty(
+  base: Omit<AchievementDefinition, 'id' | 'difficulty' | 'title' | 'description'> & {
+    baseId: string;
+    baseName: string;
+    baseDesc: string;
+  },
+): AchievementDefinition[] {
+  return DIFFICULTIES.map((diff) => ({
+    id: `${base.baseId}:${diff}`,
+    title: `${base.baseName}マスター（${DIFFICULTY_LABELS[diff]}）`,
+    description: `${base.baseDesc}（${DIFFICULTY_LABELS[diff]}）`,
+    scopeType: base.scopeType,
+    scopeId: base.scopeId,
+    color: base.color,
+    icon: base.icon,
+    difficulty: diff,
+  }));
+}
+
 /**
  * 路線データから路線アチーブメント定義を生成する。
- * line_index.json は fetch 経由のためラインアチーブメントは非同期で取得する。
  */
 export function generateLineAchievements(lines: LineIndexEntry[]): AchievementDefinition[] {
-  return lines.map((line) => ({
-    id: `line:${line.key}`,
-    title: `${line.name}マスター`,
-    description: `${line.name}の全駅を正解する`,
-    scopeType: 'line' as const,
-    scopeId: line.key,
-    color: line.color,
-    icon: line.abbr || line.name.charAt(0),
-  }));
+  return lines.flatMap((line) =>
+    expandByDifficulty({
+      baseId: `line:${line.key}`,
+      baseName: line.name,
+      baseDesc: `${line.name}の全駅を正解する`,
+      scopeType: 'line',
+      scopeId: line.key,
+      color: line.color,
+      icon: line.abbr || line.name.charAt(0),
+    }),
+  );
 }
 
 /**
@@ -64,46 +97,50 @@ export function generateLineAchievements(lines: LineIndexEntry[]): AchievementDe
  */
 export function generateWardAchievements(): AchievementDefinition[] {
   const wards = wardsData as WardMeta[];
-  return wards.map((ward) => ({
-    id: `ward:${ward.id}`,
-    title: `${ward.name.kanji}マスター`,
-    description: `${ward.name.kanji}の全問を正解する`,
-    scopeType: 'ward' as const,
-    scopeId: ward.id,
-    color: WARD_COLOR,
-    icon: ward.name.kanji.replace(/[区市町村]$/, '').charAt(0),
-  }));
+  return wards.flatMap((ward) =>
+    expandByDifficulty({
+      baseId: `ward:${ward.id}`,
+      baseName: ward.name.kanji,
+      baseDesc: `${ward.name.kanji}の全問を正解する`,
+      scopeType: 'ward',
+      scopeId: ward.id,
+      color: WARD_COLOR,
+      icon: ward.name.kanji.replace(/[区市町村]$/, '').charAt(0),
+    }),
+  );
 }
 
 /**
  * 河川テーマアチーブメント定義を生成する（同期）
  */
-export function generateRiverAchievement(): AchievementDefinition {
+export function generateRiverAchievement(): AchievementDefinition[] {
   const rivers = riversData as RiverMeta[];
-  return {
-    id: 'theme:rivers',
-    title: '東京の川マスター',
-    description: `東京の河川（${rivers.length}本）を全て正解する`,
-    scopeType: 'theme' as const,
+  return expandByDifficulty({
+    baseId: 'theme:rivers',
+    baseName: '東京の川',
+    baseDesc: `東京の河川（${rivers.length}本）を全て正解する`,
+    scopeType: 'theme',
     scopeId: 'rivers',
     color: RIVER_COLOR,
     icon: '川',
-  };
+  });
 }
 
 /**
  * ジャンルPOIテーマアチーブメント定義を生成する（同期）
  */
 export function generateGenreAchievements(): AchievementDefinition[] {
-  return Object.entries(typedGenrePois).map(([key, entry]) => ({
-    id: getAchievementId('theme', key),
-    title: `${entry.label}マスター`,
-    description: `${entry.label}（${entry.pois.length}問）を全て正解する`,
-    scopeType: 'theme' as const,
-    scopeId: key,
-    color: GENRE_COLORS[key] ?? '#6b7280',
-    icon: entry.icon,
-  }));
+  return Object.entries(typedGenrePois).flatMap(([key, entry]) =>
+    expandByDifficulty({
+      baseId: getAchievementId('theme', key),
+      baseName: entry.label,
+      baseDesc: `${entry.label}（${entry.pois.length}問）を全て正解する`,
+      scopeType: 'theme',
+      scopeId: key,
+      color: GENRE_COLORS[key] ?? '#6b7280',
+      icon: entry.icon,
+    }),
+  );
 }
 
 /**
@@ -114,10 +151,10 @@ export async function loadAllAchievements(
 ): Promise<AchievementDefinition[]> {
   const lineAchievements = generateLineAchievements(lines);
   const wardAchievements = generateWardAchievements();
-  const riverAchievement = generateRiverAchievement();
+  const riverAchievements = generateRiverAchievement();
   const genreAchievements = generateGenreAchievements();
 
-  return [...lineAchievements, ...wardAchievements, riverAchievement, ...genreAchievements];
+  return [...lineAchievements, ...wardAchievements, ...riverAchievements, ...genreAchievements];
 }
 
 /**
