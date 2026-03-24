@@ -8,6 +8,7 @@ import { useAchievementStore } from '@/stores/achievementStore';
 import { getAchievementId } from '@/data/achievements';
 import { getLineInfo, getWardCenter } from '@/utils/quizDataLoader';
 import { loadRailLines, loadWards } from '@/utils/dataLoader';
+import { Link } from 'react-router-dom';
 import type { LineIndexEntry } from '@/types';
 import type { WardCenter } from '@/utils/dataLoader';
 
@@ -90,9 +91,19 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
     return 'quiz-result__score--needs-work';
   };
 
-  const achievementId = getAchievementId(result.scopeType, result.scopeId);
-  const userAchievement = useAchievementStore((s) => s.achievements[achievementId]);
+  const baseAchievementId = getAchievementId(result.scopeType, result.scopeId);
+  const diffAchievementId = result.difficulty
+    ? `${baseAchievementId}:${result.difficulty}`
+    : baseAchievementId;
+  const userAchievement = useAchievementStore((s) => s.achievements[diffAchievementId]);
   const justAchieved = result.accuracy === 1 && userAchievement?.attempts === 1;
+
+  const DIFF_LABELS: Record<string, { label: string; color: string }> = {
+    kantan: { label: 'かんたん', color: '#cd7f32' },
+    futsuu: { label: 'ふつう', color: '#a8a8a8' },
+    muzukashii: { label: 'むずかしい', color: '#ffd700' },
+  };
+  const diffInfo = result.difficulty ? DIFF_LABELS[result.difficulty] : null;
 
   return (
     <div className="quiz-result">
@@ -105,9 +116,14 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
 
       {result.accuracy === 1 && (
         <div className="quiz-result__achievement-notice">
+          {diffInfo && (
+            <span className="quiz-result__achievement-rank" style={{ background: diffInfo.color }}>
+              {diffInfo.label}
+            </span>
+          )}
           {justAchieved
-            ? 'アチーブメント達成！おめでとうございます！'
-            : 'アチーブメント達成済み \u2713'}
+            ? ' アチーブメント達成！おめでとうございます！ 🎉'
+            : ' アチーブメント達成済み ✓'}
         </div>
       )}
 
@@ -283,6 +299,9 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
         <button className="quiz-result__back-btn" onClick={onBackToSelector}>
           クイズ選択に戻る
         </button>
+        <Link to="/" className="quiz-result__home-btn">
+          ホームへ戻る
+        </Link>
       </div>
     </div>
   );
