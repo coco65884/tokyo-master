@@ -63,6 +63,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
   const [selectedWard, setSelectedWard] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('rivers');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(loadPreferredDifficulty);
+  const [quickMode, setQuickMode] = useState(false);
   // Blank map state
   const [blankMapRange, setBlankMapRange] = useState<BlankMapRange>('ku');
   // Speed run state
@@ -121,6 +122,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
       difficulty,
       answerMode: settings.answerMode,
       showHints: settings.showHints,
+      quickMode,
     });
     onStart();
   };
@@ -332,6 +334,14 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
       {(tab === 'line' || tab === 'ward' || tab === 'theme') && (
         <div className="quiz-selector__settings">
           <DifficultyPicker value={difficulty} onChange={handleDifficultyChange} />
+          <label className="quiz-selector__quick-toggle">
+            <input
+              type="checkbox"
+              checked={quickMode}
+              onChange={(e) => setQuickMode(e.target.checked)}
+            />
+            <span>簡易モード（ランダム10問）</span>
+          </label>
         </div>
       )}
 

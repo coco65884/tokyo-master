@@ -49,6 +49,8 @@ export interface QuizConfig {
   scopeType: QuizScopeType;
   scopeId: string;
   difficulty: DifficultyLevel;
+  /** 簡易モード: trueの場合ランダム10問出題 */
+  quickMode?: boolean;
   /** @deprecated difficulty から導出される。後方互換性のため残す */
   answerMode?: AnswerMode;
   /** @deprecated difficulty から導出される。後方互換性のため残す */
