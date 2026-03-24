@@ -275,6 +275,35 @@
   font-weight: 700;
 }
 
+/* Difficulty tabs in ShareCard */
+.share-card__diff-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.share-card__diff-tab {
+  flex: 1;
+  padding: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.share-card__diff-tab:hover {
+  color: var(--color-text);
+}
+
+.share-card__diff-tab--active {
+  font-weight: 800;
+}
+
 .share-card__body {
   padding: 1rem;
 }

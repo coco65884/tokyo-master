@@ -3,16 +3,26 @@ import html2canvas from 'html2canvas';
 import type { AchievementDefinition, UserAchievement } from '@/types';
 import type { FeatureCollection } from 'geojson';
 
+type DifficultyTab = 'kantan' | 'futsuu' | 'muzukashii';
+const DIFF_TABS: { key: DifficultyTab; label: string; color: string }[] = [
+  { key: 'kantan', label: '銅', color: '#cd7f32' },
+  { key: 'futsuu', label: '銀', color: '#a8a8a8' },
+  { key: 'muzukashii', label: '金', color: '#ffd700' },
+];
+
 interface Props {
   definition: AchievementDefinition;
-  userAchievement?: UserAchievement;
+  /** 難易度別の達成状況 */
+  achievementsByDifficulty?: Record<string, UserAchievement | undefined>;
   onClose: () => void;
 }
 
-export default function ShareCard({ definition, userAchievement, onClose }: Props) {
+export default function ShareCard({ definition, achievementsByDifficulty, onClose }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
+  const [diffTab, setDiffTab] = useState<DifficultyTab>('futsuu');
 
+  const userAchievement = achievementsByDifficulty?.[diffTab];
   const achieved = userAchievement?.achieved ?? false;
   const bestAccuracy = userAchievement?.bestAccuracy ?? 0;
   const achievedAt = userAchievement?.achievedAt;
@@ -142,6 +152,27 @@ export default function ShareCard({ definition, userAchievement, onClose }: Prop
           <div className="share-card__header" style={{ backgroundColor: definition.color }}>
             <span className="share-card__icon">{definition.icon}</span>
             <span className="share-card__title">{definition.title}</span>
+          </div>
+          {/* 難易度タブ */}
+          <div className="share-card__diff-tabs">
+            {DIFF_TABS.map((tab) => {
+              const tabAch = achievementsByDifficulty?.[tab.key];
+              const isActive = diffTab === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  className={`share-card__diff-tab ${isActive ? 'share-card__diff-tab--active' : ''}`}
+                  style={{
+                    borderBottomColor: isActive ? tab.color : 'transparent',
+                    color: isActive ? tab.color : undefined,
+                  }}
+                  onClick={() => setDiffTab(tab.key)}
+                >
+                  {tab.label}
+                  {tabAch?.achieved && ' ✓'}
+                </button>
+              );
+            })}
           </div>
           <div className={`share-card__body ${miniMapSvg ? 'share-card__body--with-map' : ''}`}>
             <div className="share-card__body-left">
