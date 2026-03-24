@@ -186,32 +186,36 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
     [answers],
   );
 
-  const buildResult = useCallback(() => {
-    const answerList = wardList.map((w, i) => {
-      const userAnswer =
-        difficulty === 'kantan' ? (mcAnswers[i] === true ? w.wardName : '') : answers[i];
-      const isCorrect =
-        difficulty === 'kantan' ? mcAnswers[i] === true : matchesNameString(answers[i], w.wardName);
+  const buildResult = useCallback(
+    (overrideMcAnswers?: (boolean | null)[]) => {
+      const mc = overrideMcAnswers ?? mcAnswers;
+      const answerList = wardList.map((w, i) => {
+        const userAnswer =
+          difficulty === 'kantan' ? (mc[i] === true ? w.wardName : '') : answers[i];
+        const isCorrect =
+          difficulty === 'kantan' ? mc[i] === true : matchesNameString(answers[i], w.wardName);
+        return {
+          questionId: w.wardId,
+          userAnswer,
+          correctAnswer: w.wardName,
+          isCorrect,
+        };
+      });
+      const correct = answerList.filter((a) => a.isCorrect).length;
       return {
-        questionId: w.wardId,
-        userAnswer,
-        correctAnswer: w.wardName,
-        isCorrect,
+        quizConfigId: `blankmap-${range}`,
+        scopeType: 'ward' as const,
+        scopeId: `blankmap-${range}`,
+        difficulty,
+        totalQuestions: wardList.length,
+        correctAnswers: correct,
+        accuracy: wardList.length > 0 ? correct / wardList.length : 0,
+        completedAt: new Date().toISOString(),
+        answers: answerList,
       };
-    });
-    const correctCount = answerList.filter((a) => a.isCorrect).length;
-    return {
-      quizConfigId: `blankmap-${range}`,
-      scopeType: 'ward' as const,
-      scopeId: `blankmap-${range}`,
-      difficulty,
-      totalQuestions: wardList.length,
-      correctAnswers: correctCount,
-      accuracy: wardList.length > 0 ? correctCount / wardList.length : 0,
-      completedAt: new Date().toISOString(),
-      answers: answerList,
-    };
-  }, [wardList, answers, mcAnswers, difficulty, range]);
+    },
+    [wardList, answers, mcAnswers, difficulty, range],
+  );
 
   const handleSubmit = useCallback(() => {
     setSubmitted(true);
@@ -276,17 +280,15 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
       }
       setMcChoiceStates(newStates as Record<string, 'correct' | 'incorrect' | 'default'>);
 
-      setMcAnswers((prev) => {
-        const next = [...prev];
-        next[mcCurrentIndex] = isCorrect;
-        return next;
-      });
+      const updatedMcAnswers = [...mcAnswers];
+      updatedMcAnswers[mcCurrentIndex] = isCorrect;
+      setMcAnswers(updatedMcAnswers);
 
       setTimeout(() => {
         if (mcCurrentIndex + 1 >= wardList.length) {
           setSubmitted(true);
           if (onComplete) {
-            setTimeout(() => onComplete(buildResult()), 1000);
+            setTimeout(() => onComplete(buildResult(updatedMcAnswers)), 1000);
           }
         } else {
           setMcCurrentIndex((prev) => prev + 1);
@@ -295,7 +297,7 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
         setMcChoiceStates({});
       }, 800);
     },
-    [mcLocked, mcCurrentIndex, wardList, onComplete, buildResult],
+    [mcLocked, mcCurrentIndex, wardList, onComplete, buildResult, mcAnswers],
   );
 
   // 地図スタイル
@@ -419,23 +421,6 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
                 })}
               </div>
             </>
-          )}
-          {submitted && (
-            <div className="blank-map__final">
-              <div className="blank-map__final-score">
-                {Math.round((correctCount / totalWards) * 100)}%
-              </div>
-              <p className="blank-map__final-detail">
-                {correctCount} / {totalWards} 正解
-              </p>
-            </div>
-          )}
-          {submitted && (
-            <div className="blank-map__actions">
-              <button className="blank-map__reset-btn" onClick={handleReset}>
-                もう一度
-              </button>
-            </div>
           )}
         </div>
       </div>
