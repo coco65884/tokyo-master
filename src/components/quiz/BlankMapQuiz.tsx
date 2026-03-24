@@ -129,25 +129,6 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
     });
   }, [range, quickMode]);
 
-  // むずかしいモードタイマー
-  useEffect(() => {
-    if (!wardList.length || submitted || difficulty !== 'muzukashii') return;
-    const totalTime = diffSettings.timeLimitPerQuestion * wardList.length;
-    if (totalTime <= 0) return;
-    timerEndRef.current = Date.now() + totalTime * 1000;
-    timerRef.current = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
-      setTimerTick(remaining);
-      if (remaining <= 0) {
-        clearInterval(timerRef.current!);
-        setSubmitted(true);
-      }
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [wardList.length, submitted, difficulty, diffSettings.timeLimitPerQuestion]);
-
   const timeLeft = timerTick;
 
   const totalWards = wardList.length;
@@ -217,14 +198,42 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
     [wardList, answers, mcAnswers, difficulty, range],
   );
 
+  // むずかしいモードタイマー
+  useEffect(() => {
+    if (!wardList.length || submitted || difficulty !== 'muzukashii') return;
+    const totalTime = diffSettings.timeLimitPerQuestion * wardList.length;
+    if (totalTime <= 0) return;
+    timerEndRef.current = Date.now() + totalTime * 1000;
+    timerRef.current = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((timerEndRef.current - Date.now()) / 1000));
+      setTimerTick(remaining);
+      if (remaining <= 0) {
+        clearInterval(timerRef.current!);
+        if (onComplete) {
+          onComplete(buildResult());
+        } else {
+          setSubmitted(true);
+        }
+      }
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [
+    wardList.length,
+    submitted,
+    difficulty,
+    diffSettings.timeLimitPerQuestion,
+    onComplete,
+    buildResult,
+  ]);
+
   const handleSubmit = useCallback(() => {
-    setSubmitted(true);
     if (timerRef.current) clearInterval(timerRef.current);
     if (onComplete) {
-      // 少し遅延して結果を確認してから遷移
-      setTimeout(() => {
-        onComplete(buildResult());
-      }, 1500);
+      onComplete(buildResult());
+    } else {
+      setSubmitted(true);
     }
   }, [onComplete, buildResult]);
 
@@ -271,9 +280,10 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
 
       setTimeout(() => {
         if (mcCurrentIndex + 1 >= wardList.length) {
-          setSubmitted(true);
           if (onComplete) {
-            setTimeout(() => onComplete(buildResult(updatedMcAnswers)), 1000);
+            onComplete(buildResult(updatedMcAnswers));
+          } else {
+            setSubmitted(true);
           }
         } else {
           setMcCurrentIndex((prev) => prev + 1);
