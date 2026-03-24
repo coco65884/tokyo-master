@@ -7499,7 +7499,6 @@
       "operator": "Tokyu",
       "color": "#009cd2",
       "lineIds": [
-        "line-14681766",
         "line-9340969"
       ],
       "stations": [
@@ -10973,6 +10972,36 @@
           "name": "寄居",
           "lat": 36.1175817,
           "lng": 139.194248
+        }
+      ]
+    },
+    {
+      "key": "Tokyu::東急新横浜線",
+      "name": "東急新横浜線",
+      "abbr": "",
+      "operator": "Tokyu",
+      "color": "#0a6abf",
+      "lineIds": [
+        "line-14681766"
+      ],
+      "stations": [
+        {
+          "id": "station-shin-yoko-hiyoshi",
+          "name": "日吉",
+          "lat": 35.55346,
+          "lng": 139.64694
+        },
+        {
+          "id": "station-shin-tsunashima",
+          "name": "新綱島",
+          "lat": 35.53592,
+          "lng": 139.63601
+        },
+        {
+          "id": "station-shin-yokohama",
+          "name": "新横浜",
+          "lat": 35.50881,
+          "lng": 139.61727
         }
       ]
     }
