@@ -228,16 +228,6 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
     }
   }, [onComplete, buildResult]);
 
-  const handleReset = useCallback(() => {
-    setAnswers(new Array(wardList.length).fill(''));
-    setMcAnswers(new Array(wardList.length).fill(null));
-    setMcCurrentIndex(0);
-    setMcLocked(false);
-    setMcChoiceStates({});
-    setSubmitted(false);
-    setFocusedIndex(null);
-  }, [wardList.length]);
-
   // テキスト入力の結果
   const results = useMemo(() => {
     if (!submitted || difficulty === 'kantan') return null;
@@ -246,11 +236,6 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
       isCorrect: matchesNameString(answers[i], w.wardName),
     }));
   }, [submitted, wardList, answers, difficulty]);
-
-  const correctCount =
-    difficulty === 'kantan'
-      ? mcAnswers.filter((a) => a === true).length
-      : (results?.filter((r) => r.isCorrect).length ?? 0);
 
   // かんたんモード: 選択肢生成
   const mcChoices = useMemo(() => {
@@ -481,22 +466,7 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
             回答する
           </button>
         )}
-        {submitted && (
-          <div className="blank-map__final">
-            <div className="blank-map__final-score">
-              {Math.round((correctCount / totalWards) * 100)}%
-            </div>
-            <p className="blank-map__final-detail">
-              {correctCount} / {totalWards} 正解
-            </p>
-          </div>
-        )}
         <div className="blank-map__actions">
-          {submitted && (
-            <button className="blank-map__reset-btn" onClick={handleReset}>
-              もう一度
-            </button>
-          )}
           <button className="blank-map__back-btn" onClick={onBack}>
             戻る
           </button>
