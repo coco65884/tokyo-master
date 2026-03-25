@@ -202,8 +202,14 @@ def extract_ordered_segments_per_relation(result: dict) -> dict[int, list[list]]
     return per_rel
 
 
-def chain_ordered(segments: list[list], max_gap_m: float = 5000) -> list[list]:
-    """セグメントを与えられた順序でチェーン化。大きなギャップでは分割する。"""
+def chain_ordered(
+    segments: list[list], connect_tolerance_m: float = 100
+) -> list[list]:
+    """セグメントを与えられた順序でチェーン化。
+
+    connect_tolerance_m 以内のギャップのみ接続し、
+    それを超えるギャップでは新しいチェーンに分割する（直線補間しない）。
+    """
     if not segments:
         return []
 
@@ -215,23 +221,18 @@ def chain_ordered(segments: list[list], max_gap_m: float = 5000) -> list[list]:
 
         d_fwd = coord_dist(chain[-1], seg[0])
         d_rev = coord_dist(chain[-1], seg[-1])
+        best_d = min(d_fwd, d_rev)
 
-        if min(d_fwd, d_rev) > max_gap_m:
+        if best_d > connect_tolerance_m:
+            # ギャップが大きい → 直線補間せず分割
             chains.append(chain)
-            chain = list(seg)
+            chain = list(seg if d_fwd <= d_rev else reversed(seg))
             continue
 
         if d_fwd <= d_rev:
-            if d_fwd < 100:
-                chain.extend(seg[1:])
-            else:
-                chain.extend(seg)
+            chain.extend(seg[1:])
         else:
-            rev = list(reversed(seg))
-            if d_rev < 100:
-                chain.extend(rev[1:])
-            else:
-                chain.extend(rev)
+            chain.extend(list(reversed(seg))[1:])
 
     chains.append(chain)
     return chains
@@ -385,6 +386,29 @@ def extend_to_terminals(
     return extended
 
 
+def split_at_jumps(coords: list, max_gap_m: float = 300) -> list[list]:
+    """座標列をギャップ (> max_gap_m) で分割し、直線補間を除去する。"""
+    if len(coords) < 2:
+        return [coords] if coords else []
+
+    segments = []
+    current = [coords[0]]
+
+    for i in range(1, len(coords)):
+        d = coord_dist(coords[i - 1], coords[i])
+        if d > max_gap_m:
+            if len(current) >= 2:
+                segments.append(current)
+            current = [coords[i]]
+        else:
+            current.append(coords[i])
+
+    if len(current) >= 2:
+        segments.append(current)
+
+    return segments
+
+
 def count_gaps(feat: dict, min_gap_m: float = 1000) -> int:
     """featureのジオメトリにおけるギャップ数をカウント。"""
     geom = feat["geometry"]
@@ -415,10 +439,18 @@ def get_coord_count(feat: dict) -> int:
 
 
 def update_geometry(feat: dict, chains: list[list]) -> None:
-    if len(chains) == 1:
-        feat["geometry"] = {"type": "LineString", "coordinates": chains[0]}
+    """featureのジオメトリを更新。直線ジャンプ (>300m) は自動分割する。"""
+    # 全チェーンをジャンプで分割
+    clean: list[list] = []
+    for chain in chains:
+        clean.extend(split_at_jumps(chain, max_gap_m=300))
+
+    if len(clean) == 1:
+        feat["geometry"] = {"type": "LineString", "coordinates": clean[0]}
+    elif len(clean) > 1:
+        feat["geometry"] = {"type": "MultiLineString", "coordinates": clean}
     else:
-        feat["geometry"] = {"type": "MultiLineString", "coordinates": chains}
+        pass  # データなし — 変更しない
 
 
 # ── Fix 1: 京成本線 普通 ──────────────────────────────────────
@@ -449,9 +481,9 @@ def fix_keisei_local(geo: dict) -> bool:
             new_coords.extend(seg)
 
     # 普通は「京成津田沼→京成上野」方向なので express（成田空港→京成上野）をそのまま使用
-    # 方向は表示時に問題にならないのでそのまま
-    local["geometry"] = {"type": "LineString", "coordinates": new_coords}
-    print(f"  Updated: {local_coords} -> {len(new_coords)} coords (from express feature)")
+    update_geometry(local, [new_coords])
+    new_total = get_coord_count(local)
+    print(f"  Updated: {local_coords} -> {new_total} coords (from express feature)")
     return True
 
 
@@ -527,7 +559,7 @@ def fix_utsunomiya(geo: dict) -> bool:
             segments = per_rel[9282836]
             filtered = filter_segments_near_stations(segments, stations, 3000)
             print(f"  Got {len(segments)} -> filtered {len(filtered)} ordered segments")
-            chains = chain_ordered(filtered, max_gap_m=5000)
+            chains = chain_ordered(filtered)
             total = sum(len(c) for c in chains)
             print(f"  Ordered chains: {len(chains)}, {total} coords")
             path = find_best_route(chains, stations, expected_dist, existing_segs)
@@ -555,7 +587,7 @@ def fix_utsunomiya(geo: dict) -> bool:
             segments = per_rel[5652901]
             filtered = filter_segments_near_stations(segments, stations, 3000)
             print(f"  Got {len(segments)} -> filtered {len(filtered)} ordered segments")
-            chains = chain_ordered(filtered, max_gap_m=5000)
+            chains = chain_ordered(filtered)
             total = sum(len(c) for c in chains)
             print(f"  Ordered chains: {len(chains)}, {total} coords")
             path = find_best_route(chains, stations, expected_dist, existing_segs)
@@ -711,7 +743,7 @@ def fix_seibu_ikebukuro(geo: dict) -> bool:
             for rel_id, segments in per_rel.items():
                 filtered = filter_segments_near_stations(segments, stations, 1500)
                 print(f"    Rel {rel_id}: {len(segments)} -> {len(filtered)} segments")
-                chains = chain_ordered(filtered, max_gap_m=5000)
+                chains = chain_ordered(filtered)
                 total = sum(len(c) for c in chains)
                 print(f"    Ordered chains: {len(chains)}, {total} coords")
                 path = find_best_route(chains, stations, expected_dist, existing_segs)
@@ -817,18 +849,11 @@ def fix_tokyu_shinyokohama(geo: dict) -> bool:
             if len(good_segs) == 0:
                 print(f"  {name}: all segments removed, keeping original")
                 continue
-            elif len(good_segs) == 1:
-                feat["geometry"] = {
-                    "type": "LineString",
-                    "coordinates": good_segs[0],
-                }
             else:
-                feat["geometry"] = {
-                    "type": "MultiLineString",
-                    "coordinates": good_segs,
-                }
+                update_geometry(feat, good_segs)
             updated = True
-            print(f"  {name}: {len(segs)} -> {len(good_segs)} segments")
+            new_total = get_coord_count(feat)
+            print(f"  {name}: {len(segs)} segs -> {new_total} coords")
 
     # API再取得
     print("  Fetching fresh geometry from Overpass...")
