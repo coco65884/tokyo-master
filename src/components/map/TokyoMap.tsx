@@ -13,8 +13,8 @@ const TOKYO_DEFAULT_BOUNDS: LatLngBoundsExpression = [
 ];
 
 const EXTENDED_BOUNDS: LatLngBoundsExpression = [
-  [34.5, 138.0],
-  [36.5, 140.5],
+  [34.0, 137.5],
+  [37.0, 141.0],
 ];
 
 function MapClickHandler() {
@@ -79,7 +79,7 @@ function DistanceCursorManager() {
   return null;
 }
 
-/** 路線選択時にmaxBoundsを拡張 */
+/** 路線選択時にmaxBoundsとminZoomを拡張 */
 function DynamicBounds() {
   const map = useMap();
   const layers = useMapStore((s) => s.layers);
@@ -89,10 +89,13 @@ function DynamicBounds() {
   );
 
   useEffect(() => {
-    const bounds = hasActiveRail
-      ? L.latLngBounds(EXTENDED_BOUNDS as L.LatLngBoundsLiteral)
-      : L.latLngBounds(TOKYO_DEFAULT_BOUNDS as L.LatLngBoundsLiteral);
-    map.setMaxBounds(bounds);
+    if (hasActiveRail) {
+      map.setMaxBounds(L.latLngBounds(EXTENDED_BOUNDS as L.LatLngBoundsLiteral));
+      map.setMinZoom(7);
+    } else {
+      map.setMaxBounds(L.latLngBounds(TOKYO_DEFAULT_BOUNDS as L.LatLngBoundsLiteral));
+      map.setMinZoom(9);
+    }
   }, [hasActiveRail, map]);
 
   return null;

@@ -219,10 +219,19 @@ export default function QuizSession({ config, onComplete }: Props) {
           setLineIds(info.lineIds);
           setLineAbbr(info.abbr);
           if (info.stations.length > 0) {
-            const midIdx = Math.floor(info.stations.length / 2);
-            const mid = info.stations[midIdx];
-            setMapCenter([mid.lat, mid.lng]);
-            setMapZoom(12);
+            // 全駅が見えるよう中心とズームを計算
+            const lats = info.stations.map((s) => s.lat);
+            const lngs = info.stations.map((s) => s.lng);
+            setMapCenter([(Math.min(...lats) + Math.max(...lats)) / 2, (Math.min(...lngs) + Math.max(...lngs)) / 2]);
+            // 駅の広がりに応じてズームレベルを調整
+            const latSpan = Math.max(...lats) - Math.min(...lats);
+            const lngSpan = Math.max(...lngs) - Math.min(...lngs);
+            const span = Math.max(latSpan, lngSpan);
+            if (span > 1.5) setMapZoom(8);
+            else if (span > 0.8) setMapZoom(9);
+            else if (span > 0.4) setMapZoom(10);
+            else if (span > 0.15) setMapZoom(11);
+            else setMapZoom(12);
           }
         }
         // GeoJSON路線パスを読み込み
