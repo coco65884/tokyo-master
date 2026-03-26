@@ -736,4 +736,15 @@
     padding-top: 0.5rem;
     border-top: 1px solid var(--color-border);
   }
+
+  /* Credit(attribution)をタブバーの上に固定 */
+  .map-main .leaflet-control-attribution {
+    position: fixed !important;
+    bottom: 50px !important;
+    right: 0 !important;
+    left: auto !important;
+    z-index: 999;
+    font-size: 9px;
+    background: rgba(255, 255, 255, 0.7) !important;
+  }
 }

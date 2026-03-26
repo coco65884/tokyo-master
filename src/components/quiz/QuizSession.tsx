@@ -156,7 +156,21 @@ function MapPanToFocused({
       const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
     } else {
-      map.setView([q.lat, q.lng], 14, { animate: true });
+      // モバイルでキーボード表示時: 地図の見える領域の中心にパン
+      const mapContainer = map.getContainer();
+      const mapH = mapContainer.clientHeight;
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile && mapH > 0) {
+        // 地図コンテナの上半分(キーボードで隠れない領域)の中心にターゲットを表示
+        const visibleRatio = 0.35; // 地図の上部35%が見える想定
+        const offsetY = mapH * (0.5 - visibleRatio / 2);
+        const target = map.latLngToContainerPoint([q.lat, q.lng]);
+        const shifted = L.point(target.x, target.y + offsetY);
+        const newLatLng = map.containerPointToLatLng(shifted);
+        map.setView(newLatLng, 14, { animate: true });
+      } else {
+        map.setView([q.lat, q.lng], 14, { animate: true });
+      }
     }
   }, [focusedIndex, questions, map]);
 
@@ -215,6 +229,13 @@ export default function QuizSession({ config, onComplete }: Props) {
       } else {
         setHighlightedGroup(null);
       }
+      // 入力欄を一番上にスクロール
+      requestAnimationFrame(() => {
+        const el = inputRefs.current[index];
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
     },
     [questions],
   );

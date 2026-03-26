@@ -1417,52 +1417,73 @@
 
   /* Quiz result compact for mobile */
   .quiz-result {
-    margin: 0.5rem auto;
-    padding: 0 1rem;
+    margin: 0 auto;
+    padding: 0.5rem 1rem;
+    padding-top: calc(0.5rem + var(--safe-top));
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 60px - var(--safe-top));
+    height: calc(100vh - 50px);
+    overflow: hidden;
   }
 
   .quiz-result__title {
-    font-size: 1.1rem;
+    font-size: 1rem;
+    margin-bottom: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .quiz-result__achievement-notice {
+    padding: 0.4rem 0.6rem;
     margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
   }
 
   .quiz-result__score {
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
+    padding: 0.4rem;
+    margin-bottom: 0.4rem;
+    flex-shrink: 0;
   }
 
   .quiz-result__score-number {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+
+  .quiz-result__score-detail {
+    font-size: 0.85rem;
+  }
+
+  .quiz-result__tabs {
+    flex-shrink: 0;
   }
 
   .quiz-result__map-container {
     flex: 1;
-    min-height: 0;
+    min-height: 120px;
+    max-height: 35vh;
   }
 
   .quiz-result__map {
     height: 100%;
-    min-height: 200px;
   }
 
   .quiz-result__answers {
-    margin-top: 0.5rem;
+    margin-top: 0.4rem;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
   }
 
   .quiz-result__answer-list {
-    max-height: 35vh;
+    max-height: 100%;
+    overflow-y: auto;
   }
 
   .quiz-result__actions {
-    gap: 0.5rem;
-    margin-top: auto;
-    padding-top: 0.5rem;
-    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    gap: 0.4rem;
+    flex-shrink: 0;
+    padding-top: 0.4rem;
+    padding-bottom: calc(0.25rem + var(--safe-bottom));
   }
 
   /* Session - reduce bottom padding for choices */
@@ -1478,6 +1499,23 @@
 
   .mc-session__question-area {
     padding: 0.5rem 0.75rem;
+  }
+
+  /* クイズ地図のズームボタンを左上に小さく */
+  .quiz-session__map .leaflet-control-zoom,
+  .mc-session__map .leaflet-control-zoom,
+  .quiz-result__map .leaflet-control-zoom {
+    margin-top: 6px;
+    margin-left: 6px;
+  }
+
+  .quiz-session__map .leaflet-control-zoom a,
+  .mc-session__map .leaflet-control-zoom a,
+  .quiz-result__map .leaflet-control-zoom a {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 14px;
   }
 
   /* Speed run mobile */
