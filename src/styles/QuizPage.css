@@ -1491,26 +1491,40 @@
     padding-bottom: 0.25rem;
   }
 
-  /* Multiple choice: map larger, question area compact */
+  /* Multiple choice: question area at bottom */
+  .mc-session {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
   .mc-session__map-area {
     flex: 1;
-    min-height: 50vh;
+    min-height: 0;
   }
 
   .mc-session__question-area {
     padding: 0.5rem 0.75rem;
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    flex-shrink: 0;
   }
 
   /* クイズ地図のズームボタンを左上に小さく */
+  .quiz-session__map .leaflet-top.leaflet-left,
+  .mc-session .leaflet-top.leaflet-left,
+  .quiz-result__map .leaflet-top.leaflet-left {
+    top: 0 !important;
+    left: 0 !important;
+  }
+
   .quiz-session__map .leaflet-control-zoom,
-  .mc-session__map .leaflet-control-zoom,
+  .mc-session .leaflet-control-zoom,
   .quiz-result__map .leaflet-control-zoom {
-    margin-top: 6px;
-    margin-left: 6px;
+    margin: 6px !important;
   }
 
   .quiz-session__map .leaflet-control-zoom a,
-  .mc-session__map .leaflet-control-zoom a,
+  .mc-session .leaflet-control-zoom a,
   .quiz-result__map .leaflet-control-zoom a {
     width: 28px;
     height: 28px;
@@ -1527,11 +1541,7 @@
     padding: 0 1rem;
   }
 
-  /* Multiple choice session mobile */
-  .mc-session__map-area {
-    min-height: 200px;
-    flex: 0 0 40vh;
-  }
+  /* Multiple choice session mobile - override handled above */
 
   .mc-session__question-area {
     padding: 0.75rem 1rem;

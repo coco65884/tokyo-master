@@ -156,18 +156,18 @@ function MapPanToFocused({
       const bounds = L.latLngBounds(points);
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14, animate: true });
     } else {
-      // モバイルでキーボード表示時: 地図の見える領域の中心にパン
-      const mapContainer = map.getContainer();
-      const mapH = mapContainer.clientHeight;
+      // モバイル: キーボード表示で画面が上スクロールされるため、
+      // 地図コンテナの下部(70%位置)にターゲットを配置すると
+      // キーボード表示後に見える領域の中央に来る
       const isMobile = window.innerWidth <= 768;
+      const mapH = map.getContainer().clientHeight;
       if (isMobile && mapH > 0) {
-        // 地図コンテナの上半分(キーボードで隠れない領域)の中心にターゲットを表示
-        const visibleRatio = 0.35; // 地図の上部35%が見える想定
-        const offsetY = mapH * (0.5 - visibleRatio / 2);
-        const target = map.latLngToContainerPoint([q.lat, q.lng]);
-        const shifted = L.point(target.x, target.y + offsetY);
-        const newLatLng = map.containerPointToLatLng(shifted);
-        map.setView(newLatLng, 14, { animate: true });
+        const targetY = mapH * 0.7; // 下部70%の位置
+        const centerY = mapH * 0.5;
+        const offsetY = targetY - centerY; // 正の値=下にずらす
+        const center = map.latLngToContainerPoint([q.lat, q.lng]);
+        const shifted = map.containerPointToLatLng(L.point(center.x, center.y - offsetY));
+        map.setView(shifted, 14, { animate: true });
       } else {
         map.setView([q.lat, q.lng], 14, { animate: true });
       }
