@@ -129,8 +129,28 @@ export default function ShareCard({
   const handleDownload = useCallback(async () => {
     const canvas = await generateImage();
     if (!canvas) return;
+
+    const filename = `tokyo-master-${definition.id.replace(/[:/]/g, '-')}.png`;
+
+    // Web Share API が使えるならそちらを使う（iOS で写真に保存可能）
+    if (navigator.share && navigator.canShare) {
+      try {
+        const blob = await new Promise<Blob>((resolve) =>
+          canvas.toBlob((b) => resolve(b!), 'image/png'),
+        );
+        const file = new File([blob], filename, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file] });
+          return;
+        }
+      } catch {
+        // ユーザーがキャンセルした場合等 — フォールバック
+      }
+    }
+
+    // フォールバック: 通常のダウンロード
     const link = document.createElement('a');
-    link.download = `tokyo-master-${definition.id.replace(/[:/]/g, '-')}.png`;
+    link.download = filename;
     link.href = canvas.toDataURL('image/png');
     link.click();
   }, [generateImage, definition.id]);
