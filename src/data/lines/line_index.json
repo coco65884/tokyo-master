@@ -961,7 +961,6 @@
       "operator": "JR",
       "color": "#f68b1e",
       "lineIds": [
-        "line-8519860",
         "line-12200093"
       ],
       "stations": [
@@ -10769,7 +10768,6 @@
         "abbr": "JT",
         "color": "#f68b1e",
         "lineIds": [
-          "line-8519860",
           "line-5195693",
           "line-12200093",
           "line-5430106",

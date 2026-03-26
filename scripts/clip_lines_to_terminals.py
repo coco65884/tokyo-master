@@ -65,7 +65,16 @@ def clip_segment(
     last_matched = dist_last < STATION_MATCH_THRESHOLD_M
 
     if not first_matched and not last_matched:
-        return coords  # マッチしないのでそのまま返す
+        # 端駅にマッチしないが、始発〜終点の地理範囲内なら保持
+        seg_lats = [c[1] for c in coords]
+        seg_lngs = [c[0] for c in coords]
+        lat_lo = min(first_station["lat"], last_station["lat"]) - 0.05
+        lat_hi = max(first_station["lat"], last_station["lat"]) + 0.05
+        lng_lo = min(first_station["lng"], last_station["lng"]) - 0.05
+        lng_hi = max(first_station["lng"], last_station["lng"]) + 0.05
+        if max(seg_lats) >= lat_lo and min(seg_lats) <= lat_hi and max(seg_lngs) >= lng_lo and min(seg_lngs) <= lng_hi:
+            return coords  # 範囲内 → 保持
+        return None  # 範囲外 → 除去
 
     lo = 0
     hi = len(coords) - 1
@@ -74,24 +83,27 @@ def clip_segment(
         lo = min(idx_first, idx_last)
         hi = max(idx_first, idx_last)
     elif first_matched:
-        # 始発駅のみマッチ → 始発駅側をクリップ
-        # idx_firstがセグメントの始点側か終点側かで判断
-        if idx_first < len(coords) // 2:
+        # 始発駅のみマッチ: もう一方の端駅に近い側を残す
+        d_start = haversine_m(coords[0][1], coords[0][0], last_station["lat"], last_station["lng"])
+        d_end = haversine_m(coords[-1][1], coords[-1][0], last_station["lat"], last_station["lng"])
+        if d_start < d_end:
+            hi = idx_first  # セグメント始点側が終点駅に近い → 始発駅で切る
+        else:
             lo = idx_first
-        else:
-            hi = idx_first
     else:
-        # 終点駅のみマッチ
-        if idx_last < len(coords) // 2:
-            lo = idx_last
+        # 終点駅のみマッチ: もう一方の端駅に近い側を残す
+        d_start = haversine_m(coords[0][1], coords[0][0], first_station["lat"], first_station["lng"])
+        d_end = haversine_m(coords[-1][1], coords[-1][0], first_station["lat"], first_station["lng"])
+        if d_start < d_end:
+            hi = idx_last  # セグメント始点側が始発駅に近い → 終点駅で切る
         else:
-            hi = idx_last
+            lo = idx_last
 
     if lo == 0 and hi == len(coords) - 1:
         return coords  # クリップ不要
 
     clipped = coords[lo : hi + 1]
-    return clipped if len(clipped) >= 2 else coords
+    return clipped if len(clipped) >= 2 else None
 
 
 def main() -> None:
@@ -129,14 +141,15 @@ def main() -> None:
         if geom["type"] == "LineString":
             original_len = len(geom["coordinates"])
             clipped = clip_segment(geom["coordinates"], first_st, last_st)
-            if clipped and len(clipped) < original_len:
+            if clipped is None:
+                # 全体が範囲外 → 空にはできないのでスキップ
+                total_removed_coords += original_len
+                clipped_count += 1
+                geom["coordinates"] = geom["coordinates"][:2]  # 最小化
+            elif len(clipped) < original_len:
                 removed = original_len - len(clipped)
                 total_removed_coords += removed
                 clipped_count += 1
-                print(
-                    f"  {feat['properties']['name']}: {original_len} -> {len(clipped)} coords "
-                    f"(-{removed}, terminals: {first_st['name']}~{last_st['name']})"
-                )
                 geom["coordinates"] = clipped
 
         elif geom["type"] == "MultiLineString":
@@ -144,20 +157,20 @@ def main() -> None:
             for seg in geom["coordinates"]:
                 original_len = len(seg)
                 clipped = clip_segment(seg, first_st, last_st)
-                if clipped:
-                    if len(clipped) < original_len:
-                        removed = original_len - len(clipped)
-                        total_removed_coords += removed
-                        clipped_count += 1
-                        print(
-                            f"  {feat['properties']['name']}: segment {original_len} -> {len(clipped)} coords "
-                            f"(-{removed}, terminals: {first_st['name']}~{last_st['name']})"
-                        )
-                    new_segments.append(clipped)
-                else:
-                    new_segments.append(seg)
+                if clipped is None:
+                    # 端駅にマッチしない → 範囲外セグメントとして除去
+                    total_removed_coords += original_len
+                    clipped_count += 1
+                    continue
+                if len(clipped) < original_len:
+                    removed = original_len - len(clipped)
+                    total_removed_coords += removed
+                    clipped_count += 1
+                new_segments.append(clipped)
 
-            if len(new_segments) == 1:
+            if not new_segments:
+                continue  # 全セグメント除去 → feature そのまま保持
+            elif len(new_segments) == 1:
                 geom["type"] = "LineString"
                 geom["coordinates"] = new_segments[0]
             else:
