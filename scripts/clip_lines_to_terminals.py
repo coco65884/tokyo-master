@@ -15,8 +15,8 @@ import shutil
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "data")
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "data")
 
-# 終端駅範囲のパディング（度）。約5km
-PADDING_DEG = 0.05
+# 終端駅範囲のパディング（度）。約1km
+PADDING_DEG = 0.01
 
 
 def clip_coords_to_range(
