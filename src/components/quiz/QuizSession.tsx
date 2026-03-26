@@ -97,6 +97,27 @@ function GroupFitBounds({
 }
 
 /**
+ * 路線クイズ初期表示時に全駅が表示されるよう地図をフィットさせる。
+ */
+function LineFitBounds({ questions }: { questions: Array<{ lat?: number; lng?: number }> }) {
+  const map = useMap();
+  const fitted = useRef(false);
+
+  useEffect(() => {
+    if (fitted.current || questions.length < 2) return;
+    const points = questions
+      .filter((q) => q.lat && q.lng)
+      .map((q) => [q.lat, q.lng] as L.LatLngTuple);
+    if (points.length >= 2) {
+      map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 13 });
+      fitted.current = true;
+    }
+  }, [questions, map]);
+
+  return null;
+}
+
+/**
  * 地図上のクリックでハイライトを解除するコンポーネント
  */
 function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
@@ -699,6 +720,9 @@ export default function QuizSession({ config, onComplete }: Props) {
 
           {/* グループハイライト時に地図をフィット */}
           <GroupFitBounds highlightedGroup={highlightedGroup} questions={questions} />
+
+          {/* 路線クイズ: 初回表示時に全駅をフィット */}
+          {config.scopeType === 'line' && <LineFitBounds questions={questions} />}
 
           {/* 入力フォーカス時に対応座標へパン */}
           <MapPanToFocused focusedIndex={focusedQuestionIndex} questions={questions} />

@@ -547,7 +547,7 @@
 /* ===== Quiz Result ===== */
 .quiz-result {
   max-width: 600px;
-  margin: 2rem auto;
+  margin: 1rem auto;
   padding: 0 1.5rem;
 }
 
@@ -1411,7 +1411,57 @@
 
   .quiz-selector {
     padding: 0 1rem;
-    margin: 1rem auto;
+    margin: 0.5rem auto;
+  }
+
+  /* Quiz result compact for mobile */
+  .quiz-result {
+    margin: 0.5rem auto;
+    padding: 0 1rem;
+  }
+
+  .quiz-result__title {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .quiz-result__score {
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .quiz-result__score-number {
+    font-size: 2.2rem;
+  }
+
+  .quiz-result__map-container {
+    max-height: 200px;
+  }
+
+  .quiz-result__map {
+    height: 180px;
+  }
+
+  .quiz-result__answers {
+    margin-top: 0.5rem;
+  }
+
+  .quiz-result__answer-list {
+    max-height: 30vh;
+  }
+
+  .quiz-result__actions {
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  /* Session - reduce bottom padding for choices */
+  .quiz-session__left {
+    padding-bottom: 0.25rem;
+  }
+
+  .mc-session__question-area {
+    padding: 0.5rem 0.75rem;
   }
 
   /* Speed run mobile */

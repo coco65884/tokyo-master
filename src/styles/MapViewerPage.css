@@ -551,15 +551,15 @@
     align-items: center;
     justify-content: center;
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: 12px;
+    left: 12px;
     z-index: 1001;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: #fff;
     color: #334155;
-    font-size: 1.2rem;
+    font-size: 1.4rem;
     font-weight: 700;
     text-decoration: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -571,9 +571,17 @@
     background: #f1f5f9;
   }
 
-  /* ズームコントロールを戻るボタンの下に移動 */
+  /* ズームコントロールを戻るボタンの下に移動し大きくする */
   .leaflet-top.leaflet-left .leaflet-control-zoom {
-    margin-top: 52px;
+    margin-top: 60px;
+    margin-left: 12px;
+  }
+
+  .leaflet-top.leaflet-left .leaflet-control-zoom a {
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 20px;
   }
 }
 

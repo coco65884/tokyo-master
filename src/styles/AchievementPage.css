@@ -5,6 +5,12 @@
   margin: 0 auto;
 }
 
+/* Share modal: hide Leaflet zoom controls that leak through */
+.share-overlay .leaflet-control-zoom,
+.share-modal .leaflet-control-zoom {
+  display: none !important;
+}
+
 .achievement-header {
   margin-bottom: 1rem;
 }
