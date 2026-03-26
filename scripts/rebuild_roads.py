@@ -168,7 +168,9 @@ def cluster_segments(
 # ── セグメント連結 ────────────────────────────────────────
 
 
-def chain_segments(segments: list[list]) -> list[list]:
+def chain_segments(
+    segments: list[list], threshold_m: float = CONNECT_THRESHOLD_M
+) -> list[list]:
     """端点が近いセグメントをグリーディに連結。"""
     if not segments:
         return []
@@ -186,7 +188,7 @@ def chain_segments(segments: list[list]) -> list[list]:
         while changed:
             changed = False
             best_idx = -1
-            best_dist = CONNECT_THRESHOLD_M
+            best_dist = threshold_m
             best_end = ""
             best_side = ""
 
@@ -397,10 +399,107 @@ def _is_connected_to_any(
     return False
 
 
+def _road_bbox(chains: list[list], padding_deg: float = 0.01) -> str:
+    """チェーンリストからOverpass用bbox文字列を生成。"""
+    all_pts = [pt for c in chains for pt in c]
+    lats = [p[1] for p in all_pts]
+    lngs = [p[0] for p in all_pts]
+    return (
+        f"{min(lats) - padding_deg},{min(lngs) - padding_deg},"
+        f"{max(lats) + padding_deg},{max(lngs) + padding_deg}"
+    )
+
+
+def fill_gaps_with_ref(
+    name: str,
+    chains: list[list],
+    dominant_ref: str,
+) -> list[list]:
+    """refベースでギャップを補完する（反復接続拡張方式）。
+
+    既存チェーンの端点から出発し、refが一致するwayを50m以内で
+    反復的に接続していく。これにより:
+    - 並行する別方向の道路を誤って取り込まない
+    - 同refの別道路（バイパスなど）を取り込まない
+    - 既存チェーン間のギャップのみを埋める
+    """
+    if not dominant_ref or len(chains) <= 1:
+        return chains
+
+    ref_escaped = re.escape(dominant_ref)
+    bbox = _road_bbox(chains, padding_deg=0.02)
+
+    print(f"    Fetching ref={dominant_ref} in road bbox...")
+    try:
+        result = query_overpass(
+            f"""
+        [out:json][timeout:300];
+        way["highway"]["ref"~"(^|;| ){ref_escaped}($|;| )"]({bbox});
+        out geom tags;
+        """
+        )
+    except Exception as e:
+        print(f"    Error: {e}")
+        return chains
+
+    # ref-way を抽出（幹線のみ）
+    ref_segs: list[list] = []
+    for elem in result.get("elements", []):
+        if elem["type"] != "way":
+            continue
+        tags = elem.get("tags", {})
+        if tags.get("highway", "") not in BACKBONE_TYPES:
+            continue
+
+        geom = elem.get("geometry", [])
+        coords = [
+            [round(pt["lon"], 5), round(pt["lat"], 5)]
+            for pt in geom
+            if "lon" in pt and "lat" in pt
+        ]
+        if len(coords) >= 2:
+            ref_segs.append(coords)
+
+    if not ref_segs:
+        return chains
+
+    print(f"    Got {len(ref_segs)} ref-matching backbone ways")
+
+    # 反復接続拡張: 既存チェーン端点から50m以内のref-wayを順次追加
+    kept_coords: list[list] = list(chains)
+    remaining = list(ref_segs)
+    expansion_threshold = CONNECT_THRESHOLD_M  # 50m
+
+    added = True
+    while added:
+        added = False
+        still_remaining = []
+        for seg in remaining:
+            if _is_connected_to_any(seg, kept_coords, expansion_threshold):
+                kept_coords.append(seg)
+                added = True
+            else:
+                still_remaining.append(seg)
+        remaining = still_remaining
+
+    added_count = len(kept_coords) - len(chains)
+    if added_count == 0:
+        print(f"    No connected ref-ways found")
+        return chains
+
+    print(f"    Added {added_count} ref-ways by iterative expansion")
+
+    # 再連結（ref-way はギャップが広めなため 100m で接続）+ 孤立除去
+    new_chains = chain_segments(kept_coords, threshold_m=100)
+    new_chains = remove_isolated_fragments(new_chains)
+    return new_chains
+
+
 def main() -> None:
     print("=== 主要道路GeoJSON再構築 ===\n")
 
-    # バッチでOverpass取得
+    # ── Pass 1: 名前ベースで取得 ──
+    print("── Pass 1: Fetch by name ──")
     all_roads: dict[str, list[dict]] = {}
     for i in range(0, len(MAJOR_ROADS), BATCH_SIZE):
         batch = MAJOR_ROADS[i : i + BATCH_SIZE]
@@ -410,10 +509,13 @@ def main() -> None:
         if i + BATCH_SIZE < len(MAJOR_ROADS):
             time.sleep(REQUEST_DELAY)
 
-    print(f"\nFetched {sum(len(v) for v in all_roads.values())} ways for {len(all_roads)} roads\n")
+    print(
+        f"\nFetched {sum(len(v) for v in all_roads.values())} ways "
+        f"for {len(all_roads)} roads\n"
+    )
 
-    # 道路ごとにフィルタリング → feature構築
-    features = []
+    # Pass 1 フィルタリング
+    road_results: list[dict] = []  # {name, chains, ref, ways_count, ...}
     for name in MAJOR_ROADS:
         ways = all_roads.get(name, [])
         if not ways:
@@ -429,11 +531,52 @@ def main() -> None:
             print(f"  {name}: {total_ways} ways -> 0 kept")
             continue
 
-        # セグメント連結 + 孤立フラグメント除去
         chains = chain_segments(kept_coords)
-        before_count = len(chains)
         chains = remove_isolated_fragments(chains)
-        total_length_km = sum(seg_length_m(c) for c in chains) / 1000
+
+        road_results.append(
+            {
+                "name": name,
+                "chains": chains,
+                "ref": dominant_ref,
+                "total_ways": total_ways,
+                "backbone_count": backbone_count,
+            }
+        )
+
+        total_km = sum(seg_length_m(c) for c in chains) / 1000
+        print(
+            f"  {name}: {total_ways} ways -> {len(chains)} chains, "
+            f"{total_km:.1f}km"
+            + (f" [ref={dominant_ref}]" if dominant_ref else "")
+        )
+
+    # ── Pass 2: ref ベースでギャップ補完 ──
+    print("\n── Pass 2: Fill gaps by ref ──")
+    roads_with_gaps = [
+        r for r in road_results if len(r["chains"]) >= 3 and r["ref"]
+    ]
+    print(f"{len(roads_with_gaps)} roads have gaps to fill\n")
+
+    for r in roads_with_gaps:
+        name = r["name"]
+        old_count = len(r["chains"])
+        print(f"  {name} (ref={r['ref']}, {old_count} chains):")
+
+        time.sleep(REQUEST_DELAY)
+        new_chains = fill_gaps_with_ref(name, r["chains"], r["ref"])
+        r["chains"] = new_chains
+
+        new_km = sum(seg_length_m(c) for c in new_chains) / 1000
+        print(f"    -> {len(new_chains)} chains, {new_km:.1f}km")
+
+    # ── feature 構築 ──
+    print("\n── Building features ──")
+    features = []
+    for r in road_results:
+        name = r["name"]
+        chains = r["chains"]
+        dominant_ref = r["ref"]
 
         props: dict = {"id": f"road-{name}", "name": name}
         if dominant_ref:
@@ -448,12 +591,8 @@ def main() -> None:
             {"type": "Feature", "properties": props, "geometry": geometry}
         )
 
-        print(
-            f"  {name}: {total_ways} ways (backbone:{backbone_count}) "
-            f"-> {len(kept_coords)} kept -> {len(chains)} chains, "
-            f"{total_length_km:.1f}km"
-            + (f" [ref={dominant_ref}]" if dominant_ref else "")
-        )
+        total_km = sum(seg_length_m(c) for c in chains) / 1000
+        print(f"  {name}: {len(chains)} chains, {total_km:.1f}km")
 
     # 保存
     geo = {"type": "FeatureCollection", "features": features}
