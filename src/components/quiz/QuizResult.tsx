@@ -169,6 +169,7 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
             futsuu: allAchievements[`${baseAchievementId}:futsuu`],
             muzukashii: allAchievements[`${baseAchievementId}:muzukashii`],
           }}
+          initialDifficulty={(result.difficulty as 'kantan' | 'futsuu' | 'muzukashii') ?? 'futsuu'}
           onClose={() => setShowShareCard(false)}
         />
       )}

@@ -14,13 +14,20 @@ interface Props {
   definition: AchievementDefinition;
   /** 難易度別の達成状況 */
   achievementsByDifficulty?: Record<string, UserAchievement | undefined>;
+  /** 初期表示する難易度タブ */
+  initialDifficulty?: DifficultyTab;
   onClose: () => void;
 }
 
-export default function ShareCard({ definition, achievementsByDifficulty, onClose }: Props) {
+export default function ShareCard({
+  definition,
+  achievementsByDifficulty,
+  initialDifficulty,
+  onClose,
+}: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [generating, setGenerating] = useState(false);
-  const [diffTab, setDiffTab] = useState<DifficultyTab>('futsuu');
+  const [diffTab, setDiffTab] = useState<DifficultyTab>(initialDifficulty ?? 'futsuu');
 
   const userAchievement = achievementsByDifficulty?.[diffTab];
   const achieved = userAchievement?.achieved ?? false;

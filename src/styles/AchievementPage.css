@@ -1,9 +1,16 @@
 /* ===== Achievement Page Layout ===== */
 .achievement-page {
   padding: 1.5rem;
-  padding-top: calc(1.5rem + var(--safe-top));
+  padding-top: max(1.5rem, calc(1rem + var(--safe-top)));
   max-width: 1200px;
   margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .achievement-page {
+    padding: 1rem 0.75rem;
+    padding-top: max(2.5rem, calc(0.5rem + var(--safe-top)));
+  }
 }
 
 /* Share modal: hide Leaflet zoom controls that leak through */

@@ -229,11 +229,11 @@ export default function QuizSession({ config, onComplete }: Props) {
       } else {
         setHighlightedGroup(null);
       }
-      // 入力欄を一番上にスクロール
+      // 入力欄を入力領域の中心にスクロール
       requestAnimationFrame(() => {
         const el = inputRefs.current[index];
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       });
     },
