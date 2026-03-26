@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-各路線のGeoJSONジオメトリを始発駅〜終点駅の範囲にクリップする。
+各路線のGeoJSONジオメトリを始発駅〜終点駅の地理範囲にクリップする。
 
-処理:
-1. line_index.json から各路線の始発駅・終点駅の座標を取得
-2. rail_lines.geojson の各featureについて、対応路線の端駅位置でクリップ
-3. 端駅より外側に伸びているセグメントを除去
+方式: 始発駅・終点駅の緯度経度範囲 + パディングを計算し、
+範囲外の座標を除去する。セグメント単位の複雑なクリップではなく、
+座標単位で範囲チェックすることで終端駅付近のジオメトリを確実に保持する。
 """
 
 import json
@@ -16,94 +15,29 @@ import shutil
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "src", "data")
 PUBLIC_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "public", "data")
 
-# 端駅から最近接点までの許容距離(m)。これ以上離れていたらマッチしないと判断
-STATION_MATCH_THRESHOLD_M = 2000
+# 終端駅範囲のパディング（度）。約5km
+PADDING_DEG = 0.05
 
 
-def haversine_m(lat1: float, lng1: float, lat2: float, lng2: float) -> float:
-    R = 6371000
-    dlat = math.radians(lat2 - lat1)
-    dlng = math.radians(lng2 - lng1)
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
-    )
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+def clip_coords_to_range(
+    coords: list, lat_lo: float, lat_hi: float, lng_lo: float, lng_hi: float
+) -> list[list]:
+    """座標列を範囲内に限定。範囲外の座標で分割し、2座標以上の部分のみ返す。"""
+    segments = []
+    current = []
 
-
-def find_nearest_idx(coords: list, lat: float, lng: float) -> tuple[int, float]:
-    """座標列の中で指定点に最も近い座標のインデックスと距離を返す"""
-    best_idx = 0
-    best_dist = float("inf")
-    for i, c in enumerate(coords):
-        d = haversine_m(c[1], c[0], lat, lng)
-        if d < best_dist:
-            best_dist = d
-            best_idx = i
-    return best_idx, best_dist
-
-
-def clip_segment(
-    coords: list, first_station: dict, last_station: dict
-) -> list | None:
-    """
-    LineString座標列を始発駅〜終点駅の範囲にクリップ。
-    始発駅・終点駅のいずれかに十分近い座標がなければNone（クリップ不要またはマッチしない）。
-    """
-    if len(coords) < 2:
-        return coords
-
-    idx_first, dist_first = find_nearest_idx(
-        coords, first_station["lat"], first_station["lng"]
-    )
-    idx_last, dist_last = find_nearest_idx(
-        coords, last_station["lat"], last_station["lng"]
-    )
-
-    # どちらの端駅もマッチしない → このセグメントは路線の範囲外か短すぎる
-    first_matched = dist_first < STATION_MATCH_THRESHOLD_M
-    last_matched = dist_last < STATION_MATCH_THRESHOLD_M
-
-    if not first_matched and not last_matched:
-        # 端駅にマッチしないが、始発〜終点の地理範囲内なら保持
-        seg_lats = [c[1] for c in coords]
-        seg_lngs = [c[0] for c in coords]
-        lat_lo = min(first_station["lat"], last_station["lat"]) - 0.05
-        lat_hi = max(first_station["lat"], last_station["lat"]) + 0.05
-        lng_lo = min(first_station["lng"], last_station["lng"]) - 0.05
-        lng_hi = max(first_station["lng"], last_station["lng"]) + 0.05
-        if max(seg_lats) >= lat_lo and min(seg_lats) <= lat_hi and max(seg_lngs) >= lng_lo and min(seg_lngs) <= lng_hi:
-            return coords  # 範囲内 → 保持
-        return None  # 範囲外 → 除去
-
-    lo = 0
-    hi = len(coords) - 1
-
-    if first_matched and last_matched:
-        lo = min(idx_first, idx_last)
-        hi = max(idx_first, idx_last)
-    elif first_matched:
-        # 始発駅のみマッチ: もう一方の端駅に近い側を残す
-        d_start = haversine_m(coords[0][1], coords[0][0], last_station["lat"], last_station["lng"])
-        d_end = haversine_m(coords[-1][1], coords[-1][0], last_station["lat"], last_station["lng"])
-        if d_start < d_end:
-            hi = idx_first  # セグメント始点側が終点駅に近い → 始発駅で切る
+    for c in coords:
+        if lat_lo <= c[1] <= lat_hi and lng_lo <= c[0] <= lng_hi:
+            current.append(c)
         else:
-            lo = idx_first
-    else:
-        # 終点駅のみマッチ: もう一方の端駅に近い側を残す
-        d_start = haversine_m(coords[0][1], coords[0][0], first_station["lat"], first_station["lng"])
-        d_end = haversine_m(coords[-1][1], coords[-1][0], first_station["lat"], first_station["lng"])
-        if d_start < d_end:
-            hi = idx_last  # セグメント始点側が始発駅に近い → 終点駅で切る
-        else:
-            lo = idx_last
+            if len(current) >= 2:
+                segments.append(current)
+            current = []
 
-    if lo == 0 and hi == len(coords) - 1:
-        return coords  # クリップ不要
+    if len(current) >= 2:
+        segments.append(current)
 
-    clipped = coords[lo : hi + 1]
-    return clipped if len(clipped) >= 2 else None
+    return segments
 
 
 def main() -> None:
@@ -115,70 +49,77 @@ def main() -> None:
     with open(geojson_path, encoding="utf-8") as f:
         geo = json.load(f)
 
-    feat_by_id = {f["properties"]["id"]: f for f in geo["features"]}
+    # lineId → (lat_lo, lat_hi, lng_lo, lng_hi) の範囲マッピング
+    # 複数路線が同じ lineId を参照する場合、全駅を包含する範囲を使う
+    lid_ranges: dict[str, tuple[float, float, float, float]] = {}
 
-    # lineId → (first_station, last_station) のマッピングを構築
-    lid_to_terminals: dict[str, tuple[dict, dict]] = {}
     for line in index["lines"]:
         stations = line.get("stations", [])
         if len(stations) < 2:
             continue
+
+        lats = [s["lat"] for s in stations]
+        lngs = [s["lng"] for s in stations]
+        lat_lo = min(lats) - PADDING_DEG
+        lat_hi = max(lats) + PADDING_DEG
+        lng_lo = min(lngs) - PADDING_DEG
+        lng_hi = max(lngs) + PADDING_DEG
+
         for lid in line.get("lineIds", []):
-            lid_to_terminals[lid] = (stations[0], stations[-1])
+            if lid in lid_ranges:
+                # 既存範囲と統合（広いほうを採用）
+                old = lid_ranges[lid]
+                lid_ranges[lid] = (
+                    min(old[0], lat_lo),
+                    max(old[1], lat_hi),
+                    min(old[2], lng_lo),
+                    max(old[3], lng_hi),
+                )
+            else:
+                lid_ranges[lid] = (lat_lo, lat_hi, lng_lo, lng_hi)
 
     clipped_count = 0
-    total_removed_coords = 0
+    removed_coords = 0
 
     for feat in geo["features"]:
         fid = feat["properties"]["id"]
-        terminals = lid_to_terminals.get(fid)
-        if not terminals:
+        if fid not in lid_ranges:
             continue
 
-        first_st, last_st = terminals
+        lat_lo, lat_hi, lng_lo, lng_hi = lid_ranges[fid]
         geom = feat["geometry"]
 
+        # 全座標を収集
         if geom["type"] == "LineString":
-            original_len = len(geom["coordinates"])
-            clipped = clip_segment(geom["coordinates"], first_st, last_st)
-            if clipped is None:
-                # 全体が範囲外 → 空にはできないのでスキップ
-                total_removed_coords += original_len
-                clipped_count += 1
-                geom["coordinates"] = geom["coordinates"][:2]  # 最小化
-            elif len(clipped) < original_len:
-                removed = original_len - len(clipped)
-                total_removed_coords += removed
-                clipped_count += 1
-                geom["coordinates"] = clipped
-
+            all_segs = [geom["coordinates"]]
         elif geom["type"] == "MultiLineString":
-            new_segments = []
-            for seg in geom["coordinates"]:
-                original_len = len(seg)
-                clipped = clip_segment(seg, first_st, last_st)
-                if clipped is None:
-                    # 端駅にマッチしない → 範囲外セグメントとして除去
-                    total_removed_coords += original_len
-                    clipped_count += 1
-                    continue
-                if len(clipped) < original_len:
-                    removed = original_len - len(clipped)
-                    total_removed_coords += removed
-                    clipped_count += 1
-                new_segments.append(clipped)
+            all_segs = geom["coordinates"]
+        else:
+            continue
 
-            if not new_segments:
-                continue  # 全セグメント除去 → feature そのまま保持
-            elif len(new_segments) == 1:
+        # 範囲外座標を除去
+        original_count = sum(len(s) for s in all_segs)
+        new_segs = []
+        for seg in all_segs:
+            clipped = clip_coords_to_range(seg, lat_lo, lat_hi, lng_lo, lng_hi)
+            new_segs.extend(clipped)
+
+        new_count = sum(len(s) for s in new_segs)
+
+        if new_count < original_count and new_segs:
+            removed = original_count - new_count
+            removed_coords += removed
+            clipped_count += 1
+
+            if len(new_segs) == 1:
                 geom["type"] = "LineString"
-                geom["coordinates"] = new_segments[0]
+                geom["coordinates"] = new_segs[0]
             else:
-                geom["coordinates"] = new_segments
+                geom["type"] = "MultiLineString"
+                geom["coordinates"] = new_segs
 
-    print(f"\nClipped {clipped_count} segments, removed {total_removed_coords} coordinates total")
+    print(f"Clipped {clipped_count} features, removed {removed_coords} coordinates")
 
-    # 保存
     with open(geojson_path, "w", encoding="utf-8") as f:
         json.dump(geo, f, ensure_ascii=False, separators=(",", ":"))
     print(f"Saved: {geojson_path}")
