@@ -222,7 +222,10 @@ export default function QuizSession({ config, onComplete }: Props) {
             // 全駅が見えるよう中心とズームを計算
             const lats = info.stations.map((s) => s.lat);
             const lngs = info.stations.map((s) => s.lng);
-            setMapCenter([(Math.min(...lats) + Math.max(...lats)) / 2, (Math.min(...lngs) + Math.max(...lngs)) / 2]);
+            setMapCenter([
+              (Math.min(...lats) + Math.max(...lats)) / 2,
+              (Math.min(...lngs) + Math.max(...lngs)) / 2,
+            ]);
             // 駅の広がりに応じてズームレベルを調整
             const latSpan = Math.max(...lats) - Math.min(...lats);
             const lngSpan = Math.max(...lngs) - Math.min(...lngs);
