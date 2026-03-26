@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#1a73e8"/>
-  <text x="256" y="200" text-anchor="middle" font-size="120" font-weight="800" fill="white" font-family="sans-serif">TM</text>
-  <text x="256" y="340" text-anchor="middle" font-size="60" font-weight="600" fill="rgba(255,255,255,0.9)" font-family="sans-serif">東京</text>
-  <text x="256" y="420" text-anchor="middle" font-size="50" font-weight="600" fill="rgba(255,255,255,0.7)" font-family="sans-serif">MASTER</text>
+  <rect width="512" height="512" rx="96" fill="#16a34a"/>
+  <text x="256" y="158" text-anchor="middle" font-size="140" font-weight="800" fill="white" font-family="system-ui,sans-serif" letter-spacing="6">TM</text>
+  <path d="M 487,331 L 487,331 L 487,331 L 487,331 L 475,292 L 475,292 L 475,291 L 475,291 L 475,291 L 475,291 L 475,291 L 475,291 L 467,285 L 467,285 L 466,284 L 466,284 L 441,276 L 441,276 L 441,276 L 61,236 L 61,236 L 58,236 L 58,236 L 58,236 L 58,236 L 37,244 L 37,244 L 30,247 L 30,247 L 26,251 L 26,251 L 26,251 L 26,251 L 26,251 L 26,251 L 26,251 L 26,251 L 25,254 L 25,254 L 25,254 L 25,254 L 25,256 L 25,256 L 25,256 L 27,263 L 27,263 L 45,298 L 45,298 L 48,304 L 48,304 L 63,320 L 64,321 L 65,322 L 66,322 L 165,374 L 273,424 L 274,424 L 274,424 L 276,424 L 276,424 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 458,434 L 487,331 L 487,331 L 487,331 Z" fill="white" fill-opacity="0.85"/>
 </svg>
