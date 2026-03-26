@@ -86,7 +86,8 @@ def main():
   <rect width="512" height="512" rx="96" fill="#16a34a"/>
   <text x="256" y="148" text-anchor="middle" font-size="130" font-weight="800"
         fill="white" font-family="system-ui,sans-serif" letter-spacing="6">TM</text>
-  <path d="{all_ward_path}" fill="white" fill-opacity="0.9" stroke="none"/>
+  <path d="{all_ward_path}" fill="white" fill-opacity="0.9"
+        stroke="white" stroke-width="4" stroke-linejoin="round" stroke-opacity="0.9"/>
 </svg>'''
 
     svg_path = os.path.join(PUBLIC_DIR, "favicon.svg")
