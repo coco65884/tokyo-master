@@ -1,6 +1,7 @@
 /* ===== Achievement Page Layout ===== */
 .achievement-page {
   padding: 1.5rem;
+  padding-top: calc(1.5rem + var(--safe-top));
   max-width: 1200px;
   margin: 0 auto;
 }

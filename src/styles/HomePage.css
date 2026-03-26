@@ -5,6 +5,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
+  padding-top: calc(2rem + var(--safe-top));
   gap: 3rem;
 }
 
