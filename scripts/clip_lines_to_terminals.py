@@ -58,6 +58,12 @@ def main() -> None:
         if len(stations) < 2:
             continue
 
+        # ループ路線（始発と終着が1km以内）はクリップをスキップ
+        first, last = stations[0], stations[-1]
+        d = haversine_m(first["lat"], first["lng"], last["lat"], last["lng"])
+        if d < 1000:
+            continue
+
         lats = [s["lat"] for s in stations]
         lngs = [s["lng"] for s in stations]
         lat_lo = min(lats) - PADDING_DEG

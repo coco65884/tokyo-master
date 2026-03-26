@@ -97,10 +97,16 @@
 
 @media (max-width: 600px) {
   .home-page {
-    padding: 1rem;
+    padding: 1.5rem 1rem;
+    padding-top: calc(1rem + var(--safe-top));
+    padding-bottom: calc(1rem + var(--safe-bottom));
     gap: 1.5rem;
-    min-height: calc(100% - var(--safe-top) - var(--safe-bottom));
-    justify-content: center;
+    min-height: 100%;
+    justify-content: space-between;
+  }
+
+  .home-header {
+    flex-shrink: 0;
   }
 
   .home-title {
@@ -114,6 +120,8 @@
   .home-nav {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+    flex: 1;
+    align-content: center;
   }
 
   .home-card {
@@ -122,14 +130,19 @@
   }
 
   .home-card__icon {
-    font-size: 2rem;
+    font-size: 1.8rem;
   }
 
   .home-card__title {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
 
   .home-card__desc {
     font-size: 0.8rem;
+  }
+
+  .home-settings-link {
+    flex-shrink: 0;
+    text-align: center;
   }
 }
