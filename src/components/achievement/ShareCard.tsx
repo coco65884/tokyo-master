@@ -155,21 +155,43 @@ export default function ShareCard({
     link.click();
   }, [generateImage, definition.id]);
 
-  const handleShareX = useCallback(() => {
-    const text = achieved
-      ? `${definition.title}を達成しました！（正答率 ${Math.round(bestAccuracy * 100)}%）`
-      : `${definition.title}に挑戦中！（ベスト ${Math.round(bestAccuracy * 100)}%）`;
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text + '\n#TokyoMaster')}`;
+  const diffLabel = { kantan: 'かんたん', futsuu: 'ふつう', muzukashii: 'むずかしい' }[diffTab];
+
+  const shareText = useCallback(() => {
+    const name = definition.title.replace(/マスター$/, '');
+    if (achieved) {
+      return `${name}（${diffLabel}）を達成しました！正答率 ${Math.round(bestAccuracy * 100)}%・${attempts}回目の挑戦\n#TokyoMaster`;
+    }
+    return `${name}（${diffLabel}）に挑戦中！ベスト ${Math.round(bestAccuracy * 100)}%\n#TokyoMaster`;
+  }, [achieved, definition.title, diffLabel, bestAccuracy, attempts]);
+
+  const handleShareX = useCallback(async () => {
+    // 画像付きシェアを試みる（Web Share API）
+    if (navigator.share && navigator.canShare) {
+      try {
+        const canvas = await generateImage();
+        if (canvas) {
+          const blob = await new Promise<Blob>((resolve) =>
+            canvas.toBlob((b) => resolve(b!), 'image/png'),
+          );
+          const file = new File([blob], 'achievement.png', { type: 'image/png' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ text: shareText(), files: [file] });
+            return;
+          }
+        }
+      } catch {
+        // キャンセル or 非対応 — テキストのみにフォールバック
+      }
+    }
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText())}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  }, [achieved, definition.title, bestAccuracy]);
+  }, [shareText, generateImage]);
 
   const handleShareLINE = useCallback(() => {
-    const text = achieved
-      ? `${definition.title}を達成しました！（正答率 ${Math.round(bestAccuracy * 100)}%）`
-      : `${definition.title}に挑戦中！（ベスト ${Math.round(bestAccuracy * 100)}%）`;
-    const url = `https://social-plugins.line.me/lineit/share?text=${encodeURIComponent(text)}`;
+    const url = `https://social-plugins.line.me/lineit/share?text=${encodeURIComponent(shareText())}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  }, [achieved, definition.title, bestAccuracy]);
+  }, [shareText]);
 
   return (
     <div className="share-overlay" onClick={onClose}>

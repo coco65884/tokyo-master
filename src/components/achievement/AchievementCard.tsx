@@ -1,9 +1,9 @@
 import type { AchievementDefinition, UserAchievement } from '@/types';
 
-const RANK_COLORS: Record<string, { bg: string; label: string }> = {
-  kantan: { bg: 'linear-gradient(135deg, #cd7f32, #e8a860)', label: '銅' },
-  futsuu: { bg: 'linear-gradient(135deg, #a8a8a8, #d4d4d4)', label: '銀' },
-  muzukashii: { bg: 'linear-gradient(135deg, #ffd700, #ffed4a)', label: '金' },
+const RANK_COLORS: Record<string, { bg: string; border: string; label: string }> = {
+  kantan: { bg: 'linear-gradient(135deg, #cd7f32, #e8a860)', border: '#cd7f32', label: '銅' },
+  futsuu: { bg: 'linear-gradient(135deg, #a8a8a8, #d4d4d4)', border: '#a8a8a8', label: '銀' },
+  muzukashii: { bg: 'linear-gradient(135deg, #ffd700, #ffed4a)', border: '#ffd700', label: '金' },
 };
 
 interface Props {
@@ -45,7 +45,12 @@ export default function AchievementCard({ definition, achievementsByDifficulty, 
         className="achievement-card__badge"
         style={{
           backgroundColor: achieved ? definition.color : undefined,
-          borderColor: achieved ? definition.color : undefined,
+          borderColor:
+            achieved && highestRank
+              ? RANK_COLORS[highestRank].border
+              : achieved
+                ? definition.color
+                : undefined,
         }}
       >
         <span className="achievement-card__icon">{definition.icon}</span>

@@ -18,7 +18,7 @@ export const useAchievementStore = create<AchievementState>()(
         set((state) => {
           const existing = state.achievements[achievementId];
           const isNewBest = !existing || accuracy > existing.bestAccuracy;
-          const achieved = accuracy === 100;
+          const achieved = accuracy >= 1;
 
           return {
             achievements: {
