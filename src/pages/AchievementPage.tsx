@@ -7,6 +7,7 @@ import { loadLineIndex } from '@/utils/dataLoader';
 import {
   generateLineAchievements,
   generateWardAchievements,
+  generateBlankMapAchievements,
   generateRiverAchievement,
   generateGenreAchievements,
 } from '@/data/achievements';
@@ -33,10 +34,11 @@ export default function AchievementPage() {
 
       const lineAch = generateLineAchievements(lines);
       const wardAch = generateWardAchievements();
+      const blankMapAch = generateBlankMapAchievements();
       const riverAch = generateRiverAchievement();
       const genreAch = generateGenreAchievements();
 
-      setDefinitions([...lineAch, ...wardAch, riverAch, ...genreAch]);
+      setDefinitions([...lineAch, ...wardAch, ...blankMapAch, riverAch, ...genreAch]);
       setLoading(false);
     }
 

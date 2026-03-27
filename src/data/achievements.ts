@@ -106,6 +106,44 @@ export function generateGenreAchievements(): AchievementDefinition[] {
   }));
 }
 
+/** 白地図クイズカラー */
+const BLANKMAP_COLOR = '#0d9488';
+
+/**
+ * 白地図クイズアチーブメント定義を生成する
+ */
+export function generateBlankMapAchievements(): AchievementDefinition[] {
+  return [
+    {
+      id: getAchievementId('ward', 'blankmap-ku'),
+      title: '白地図マスター（23区）',
+      description: '白地図クイズで23区を全て正解する',
+      scopeType: 'ward' as const,
+      scopeId: 'blankmap-ku',
+      color: BLANKMAP_COLOR,
+      icon: '🗾',
+    },
+    {
+      id: getAchievementId('ward', 'blankmap-city'),
+      title: '白地図マスター（市含む）',
+      description: '白地図クイズで東京全域（市含む）を全て正解する',
+      scopeType: 'ward' as const,
+      scopeId: 'blankmap-city',
+      color: BLANKMAP_COLOR,
+      icon: '🗾',
+    },
+    {
+      id: getAchievementId('ward', 'blankmap-all'),
+      title: '白地図マスター（全域）',
+      description: '白地図クイズで東京都全部（島含む）を全て正解する',
+      scopeType: 'ward' as const,
+      scopeId: 'blankmap-all',
+      color: BLANKMAP_COLOR,
+      icon: '🗾',
+    },
+  ];
+}
+
 /**
  * 全アチーブメント定義を取得する（路線データは非同期）
  */
@@ -114,10 +152,17 @@ export async function loadAllAchievements(
 ): Promise<AchievementDefinition[]> {
   const lineAchievements = generateLineAchievements(lines);
   const wardAchievements = generateWardAchievements();
+  const blankMapAchievements = generateBlankMapAchievements();
   const riverAchievement = generateRiverAchievement();
   const genreAchievements = generateGenreAchievements();
 
-  return [...lineAchievements, ...wardAchievements, riverAchievement, ...genreAchievements];
+  return [
+    ...lineAchievements,
+    ...wardAchievements,
+    ...blankMapAchievements,
+    riverAchievement,
+    ...genreAchievements,
+  ];
 }
 
 /**
