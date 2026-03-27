@@ -187,7 +187,7 @@ function PrefBorderLayer({ data }: { data: FeatureCollection }) {
 }
 
 // ======= Focus area: polygon + bbox for fast rejection =======
-interface FocusArea {
+export interface FocusArea {
   /** 粗フィルタ用のbbox */
   minLat: number;
   maxLat: number;
@@ -506,7 +506,10 @@ function clipLineToFocusArea(coords: number[][], area: FocusArea): number[][][] 
 }
 
 /** FeatureCollectionをポリゴンでクリッピング */
-function clipGeoJSONToFocusArea(data: FeatureCollection, area: FocusArea): FeatureCollection {
+export function clipGeoJSONToFocusArea(
+  data: FeatureCollection,
+  area: FocusArea,
+): FeatureCollection {
   const clippedFeatures: Feature[] = [];
   for (const feat of data.features) {
     const geom = feat.geometry;
@@ -727,7 +730,7 @@ function DistanceOverlay() {
 }
 
 // ======= Helpers =======
-function extractFocusArea(wardsGeo: FeatureCollection, wardId: string): FocusArea | null {
+export function extractFocusArea(wardsGeo: FeatureCollection, wardId: string): FocusArea | null {
   const feat = wardsGeo.features.find((f) => f.properties?.id === wardId);
   if (!feat) return null;
 

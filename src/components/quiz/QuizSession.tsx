@@ -34,6 +34,7 @@ import {
   loadLineIndex,
 } from '@/utils/dataLoader';
 import riversData from '@/data/rivers.json';
+import { extractFocusArea, clipGeoJSONToFocusArea } from '@/components/map/MapLayers';
 
 interface Props {
   config: QuizConfig;
@@ -496,16 +497,22 @@ export default function QuizSession({ config, onComplete }: Props) {
         features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
       } as FeatureCollection;
     }
-    // Ward quiz: filter by wardRailLineIds
+    // Ward quiz: filter by wardRailLineIds + clip to ward polygon
     if (config.scopeType === 'ward' && wardRailLineIds.length > 0) {
       const idSet = new Set(wardRailLineIds);
-      return {
+      const filtered = {
         ...lineGeo,
         features: lineGeo.features.filter((f) => idSet.has(f.properties?.id)),
       } as FeatureCollection;
+      // 区ポリゴンでクリップ
+      if (wardsGeo && config.scopeId) {
+        const area = extractFocusArea(wardsGeo, config.scopeId);
+        if (area) return clipGeoJSONToFocusArea(filtered, area);
+      }
+      return filtered;
     }
     return null;
-  }, [lineGeo, lineIds, wardRailLineIds, config.scopeType]);
+  }, [lineGeo, lineIds, wardRailLineIds, config.scopeType, wardsGeo, config.scopeId]);
 
   // 区クイズの場合、対象区をハイライトするためにGeoJSONを分離
   const wardHighlightGeo = useMemo(() => {

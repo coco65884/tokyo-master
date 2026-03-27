@@ -31,6 +31,7 @@ import {
   loadLineIndex,
 } from '@/utils/dataLoader';
 import ChoiceButton from './ChoiceButton';
+import { extractFocusArea, clipGeoJSONToFocusArea } from '@/components/map/MapLayers';
 
 interface Props {
   config: QuizConfig;
@@ -250,15 +251,20 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
     onComplete(result);
   }, [isFinished, answers, questions, config, onComplete]);
 
-  // GeoJSON line filter
+  // GeoJSON line filter (+ ward quiz: clip to ward polygon)
   const filteredLineGeo = useMemo(() => {
     if (!lineGeo || lineIds.length === 0) return null;
     const idSet = new Set(lineIds);
-    return {
-      type: 'FeatureCollection' as const,
+    const filtered: FeatureCollection = {
+      type: 'FeatureCollection',
       features: lineGeo.features.filter((f) => f.properties?.id && idSet.has(f.properties.id)),
     };
-  }, [lineGeo, lineIds]);
+    if (config.scopeType === 'ward' && wardsGeo && config.scopeId) {
+      const area = extractFocusArea(wardsGeo, config.scopeId);
+      if (area) return clipGeoJSONToFocusArea(filtered, area);
+    }
+    return filtered;
+  }, [lineGeo, lineIds, config.scopeType, config.scopeId, wardsGeo]);
 
   // Station marker icon
   const stationIcon = useMemo(
