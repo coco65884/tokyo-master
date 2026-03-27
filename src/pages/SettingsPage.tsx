@@ -132,6 +132,11 @@ export default function SettingsPage() {
             <p className="settings-section__label">データソース</p>
             <p className="settings-section__value">OpenStreetMap</p>
           </div>
+          <div className="settings-section__item">
+            <Link to="/privacy" className="settings-section__label settings-link">
+              プライバシーポリシー
+            </Link>
+          </div>
         </section>
       </div>
     </div>

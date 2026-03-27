@@ -119,6 +119,40 @@
   transform: translateX(22px);
 }
 
+/* Link style */
+.settings-link {
+  color: #1a73e8;
+  text-decoration: none;
+}
+
+.settings-link:hover {
+  text-decoration: underline;
+}
+
+/* Privacy policy */
+.privacy-text {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.privacy-text--meta {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.privacy-list {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  padding-left: 1.2rem;
+  margin: 0.5rem 0 0;
+}
+
+.privacy-list li + li {
+  margin-top: 0.5rem;
+}
+
 /* Time input */
 .settings-time-input {
   font-size: 0.9rem;
