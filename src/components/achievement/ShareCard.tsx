@@ -165,23 +165,10 @@ export default function ShareCard({
     return `${name}（${diffLabel}）に挑戦中！ベスト ${Math.round(bestAccuracy * 100)}%\n#TokyoMaster`;
   }, [achieved, definition.title, diffLabel, bestAccuracy, attempts]);
 
-  const handleShareX = useCallback(async () => {
-    // 画像をクリップボードにコピーしてからX投稿画面を開く
-    try {
-      const canvas = await generateImage();
-      if (canvas) {
-        const blob = await new Promise<Blob>((resolve) =>
-          canvas.toBlob((b) => resolve(b!), 'image/png'),
-        );
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      }
-    } catch {
-      // クリップボードコピー失敗 — そのまま進む
-    }
-    const text = shareText() + '\n（画像を貼り付けてください）';
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  const handleShareX = useCallback(() => {
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText())}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-  }, [shareText, generateImage]);
+  }, [shareText]);
 
   const handleShareLINE = useCallback(() => {
     const url = `https://social-plugins.line.me/lineit/share?text=${encodeURIComponent(shareText())}`;
