@@ -63,7 +63,7 @@ export default function QuizSelector({ onStart, onStartSpeedRun, onStartBlankMap
   const [selectedWard, setSelectedWard] = useState<string>('');
   const [selectedTheme, setSelectedTheme] = useState<string>('rivers');
   const [difficulty, setDifficulty] = useState<DifficultyLevel>(loadPreferredDifficulty);
-  const [quickMode, setQuickMode] = useState(false);
+  const [quickMode, setQuickMode] = useState(true);
   // Blank map state
   const [blankMapRange, setBlankMapRange] = useState<BlankMapRange>('ku');
   // Speed run state
