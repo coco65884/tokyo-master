@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -55,6 +55,17 @@ const WARD_CATEGORY_LABELS: Record<string, string> = {
   roads: '道路',
   universities: '大学',
   landmarks: 'ランドマーク',
+};
+
+/** テーマ系カテゴリの絵文字マッピング */
+const CATEGORY_EMOJI: Record<string, string> = {
+  universities: '🎓',
+  landmarks: '🏛️',
+  jiro: '🍜',
+  museums: '🏛️',
+  parks: '🌳',
+  stadiums: '🏟️',
+  high_schools: '🏫',
 };
 
 /**
@@ -1018,54 +1029,101 @@ export default function QuizSession({ config, onComplete }: Props) {
               ));
             })}
 
-          {/* 駅マーカー + 番号ラベル（路線・区クイズ用。ジャンルPOIクイズでは専用マーカーを使用） */}
+          {/* 駅/POIマーカー（路線・区クイズ用。ジャンルPOIクイズでは別セクションで描画） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
-            stationMarkers.map((q, i) => {
+            stationMarkers.map((q) => {
               const qIdx = getQuestionIndex(q);
+              const emoji = CATEGORY_EMOJI[q.category ?? ''];
+              const isThemePoi = !!emoji && q.category !== 'stations';
+
               return (
-                <CircleMarker
-                  key={q.id}
-                  center={[q.lat!, q.lng!]}
-                  radius={5}
-                  pathOptions={{
-                    color: lineColor,
-                    fillColor: '#fff',
-                    fillOpacity: 1,
-                    weight: 2,
-                  }}
-                  eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
-                >
-                  <Tooltip
-                    permanent
-                    direction="right"
-                    offset={[8, 0]}
-                    className="quiz-station-number"
-                  >
-                    {submitted ? q.targetName.kanji : getLabel(i)}
-                  </Tooltip>
-                  {submitted && (
-                    <Popup>
-                      <strong>{q.targetName.kanji}</strong>
-                    </Popup>
+                <React.Fragment key={`marker-${q.id}`}>
+                  {/* メインマーカー */}
+                  {isThemePoi ? (
+                    <Marker
+                      position={[q.lat!, q.lng!]}
+                      icon={L.divIcon({
+                        className: 'quiz-emoji-icon',
+                        html: `<span>${emoji}</span>`,
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12],
+                      })}
+                      eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                    />
+                  ) : (
+                    <CircleMarker
+                      center={[q.lat!, q.lng!]}
+                      radius={5}
+                      pathOptions={{
+                        color: lineColor,
+                        fillColor: '#fff',
+                        fillOpacity: 1,
+                        weight: 2,
+                      }}
+                      eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                    >
+                      {submitted && (
+                        <Popup>
+                          <strong>{q.targetName.kanji}</strong>
+                        </Popup>
+                      )}
+                    </CircleMarker>
                   )}
-                </CircleMarker>
+
+                  {/* extraLocations (複数キャンパス等) */}
+                  {q.extraLocations?.map((loc, j) =>
+                    isThemePoi ? (
+                      <Marker
+                        key={`extra-${q.id}-${j}`}
+                        position={[loc.lat, loc.lng]}
+                        icon={L.divIcon({
+                          className: 'quiz-emoji-icon',
+                          html: `<span>${emoji}</span>`,
+                          iconSize: [24, 24],
+                          iconAnchor: [12, 12],
+                        })}
+                        eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                      />
+                    ) : (
+                      <CircleMarker
+                        key={`extra-${q.id}-${j}`}
+                        center={[loc.lat, loc.lng]}
+                        radius={5}
+                        pathOptions={{
+                          color: lineColor,
+                          fillColor: '#fff',
+                          fillOpacity: 1,
+                          weight: 2,
+                        }}
+                        eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
+                      />
+                    ),
+                  )}
+                </React.Fragment>
               );
             })}
 
-          {/* 番号マーカー（四角ボックス。路線・区クイズ用） */}
+          {/* 番号ラベル（路線・区クイズ用） */}
           {!(config.scopeType === 'theme' && config.scopeId !== 'rivers') &&
-            !submitted &&
             stationMarkers.map((q, i) => {
               const qIdx = getQuestionIndex(q);
               return (
                 <Marker
-                  key={`num-${q.id}`}
+                  key={`label-${q.id}`}
                   position={[q.lat!, q.lng!]}
                   icon={L.divIcon({
                     className: 'quiz-number-icon',
-                    html: `<span>${getLabel(i)}</span>`,
-                    iconSize: [config.scopeType === 'line' && lineAbbr ? 38 : 22, 22],
-                    iconAnchor: [config.scopeType === 'line' && lineAbbr ? 19 : 11, 28],
+                    html: submitted
+                      ? `<span>${q.targetName.kanji}${q.suffix ?? ''}</span>`
+                      : `<span>${getLabel(i)}</span>`,
+                    iconSize: [
+                      submitted ? 80 : config.scopeType === 'line' && lineAbbr ? 38 : 22,
+                      22,
+                    ],
+                    iconAnchor: [
+                      submitted ? 40 : config.scopeType === 'line' && lineAbbr ? 19 : 11,
+                      submitted ? 11 : 28,
+                    ],
                   })}
                   eventHandlers={{ click: () => handleMarkerClick(qIdx) }}
                 />
