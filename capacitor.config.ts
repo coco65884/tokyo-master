@@ -19,6 +19,13 @@ const config: CapacitorConfig = {
       launchShowDuration: 1000,
       backgroundColor: '#1a73e8',
     },
+    LocalNotifications: {
+      smallIcon: 'ic_stat_icon',
+      iconColor: '#1a73e8',
+    },
+    Keyboard: {
+      resize: 'none',
+    },
   },
 };
 

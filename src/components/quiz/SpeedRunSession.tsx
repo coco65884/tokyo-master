@@ -4,6 +4,7 @@ import { matchesNameString } from '@/utils/nameMatch';
 import { generateLineQuiz, getLineInfo } from '@/utils/quizDataLoader';
 import { useQuizStore } from '@/stores/quizStore';
 import type { SpeedRunRecord } from '@/stores/quizStore';
+import { hapticsCorrect, hapticsWrong } from '@/utils/haptics';
 
 interface Props {
   lineKey: string;
@@ -85,6 +86,7 @@ export default function SpeedRunSession({ lineKey, onComplete, onBack }: Props) 
     const isCorrect = matchesNameString(userInput, q.targetName.kanji);
 
     if (isCorrect) {
+      hapticsCorrect();
       const newResults = [...results, { correct: true, answer: userInput }];
       setResults(newResults);
       setUserInput('');
@@ -110,6 +112,7 @@ export default function SpeedRunSession({ lineKey, onComplete, onBack }: Props) 
       }
     } else {
       // Wrong answer: flash red briefly, skip this station
+      hapticsWrong();
       setWrongFlash(true);
       const newResults = [...results, { correct: false, answer: userInput }];
       setResults(newResults);

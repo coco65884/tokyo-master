@@ -35,6 +35,7 @@ import {
 } from '@/utils/dataLoader';
 import riversData from '@/data/rivers.json';
 import { extractFocusArea, clipGeoJSONToFocusArea } from '@/components/map/MapLayers';
+import { hapticsCorrect, hapticsWrong } from '@/utils/haptics';
 
 interface Props {
   config: QuizConfig;
@@ -481,6 +482,13 @@ export default function QuizSession({ config, onComplete }: Props) {
     });
 
     const correctCount = quizAnswers.filter((a) => a.isCorrect).length;
+
+    // Haptic feedback based on overall result
+    if (correctCount === questions.length) {
+      hapticsCorrect();
+    } else {
+      hapticsWrong();
+    }
 
     const result: QuizResult = {
       quizConfigId: `${config.scopeType}-${config.scopeId}`,

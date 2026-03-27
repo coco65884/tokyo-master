@@ -10,6 +10,7 @@ import { getLineInfo, getWardCenter } from '@/utils/quizDataLoader';
 import { loadRailLines, loadWards } from '@/utils/dataLoader';
 import { Link } from 'react-router-dom';
 import type { AchievementDefinition } from '@/types';
+import { hapticsAchievement } from '@/utils/haptics';
 import type { LineIndexEntry } from '@/types';
 import type { WardCenter } from '@/utils/dataLoader';
 import ShareCard from '@/components/achievement/ShareCard';
@@ -45,6 +46,9 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
     const baseId = getAchievementId(result.scopeType, result.scopeId);
     const achievementId = result.difficulty ? `${baseId}:${result.difficulty}` : baseId;
     updateAchievement(achievementId, result.accuracy);
+    if (result.accuracy === 1) {
+      hapticsAchievement();
+    }
   }, [result, updateAchievement]);
 
   // 地図データ読み込み

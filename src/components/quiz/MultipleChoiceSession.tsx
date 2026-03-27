@@ -32,6 +32,7 @@ import {
 } from '@/utils/dataLoader';
 import ChoiceButton from './ChoiceButton';
 import { extractFocusArea, clipGeoJSONToFocusArea } from '@/components/map/MapLayers';
+import { hapticsCorrect, hapticsWrong } from '@/utils/haptics';
 
 interface Props {
   config: QuizConfig;
@@ -198,6 +199,13 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
 
       const isCorrect = choice.isCorrect;
       const correctChoice = currentQuestion.choices?.find((c) => c.isCorrect);
+
+      // Haptic feedback
+      if (isCorrect) {
+        hapticsCorrect();
+      } else {
+        hapticsWrong();
+      }
 
       // Set choice states
       const newStates: Record<string, ChoiceState> = {};

@@ -1,5 +1,8 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import html2canvas from 'html2canvas';
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import type { AchievementDefinition, UserAchievement } from '@/types';
 import type { FeatureCollection } from 'geojson';
 
@@ -126,11 +129,42 @@ export default function ShareCard({
     }
   }, []);
 
+  const diffLabel = { kantan: 'かんたん', futsuu: 'ふつう', muzukashii: 'むずかしい' }[diffTab];
+
+  const shareText = useCallback(() => {
+    const name = definition.title.replace(/マスター$/, '');
+    if (achieved) {
+      return `${name}（${diffLabel}）を達成しました！正答率 ${Math.round(bestAccuracy * 100)}%・${attempts}回目の挑戦\n#TokyoMaster`;
+    }
+    return `${name}（${diffLabel}）に挑戦中！ベスト ${Math.round(bestAccuracy * 100)}%\n#TokyoMaster`;
+  }, [achieved, definition.title, diffLabel, bestAccuracy, attempts]);
+
   const handleDownload = useCallback(async () => {
     const canvas = await generateImage();
     if (!canvas) return;
 
     const filename = `tokyo-master-${definition.id.replace(/[:/]/g, '-')}.png`;
+
+    // ネイティブ: Capacitor Share + Filesystem
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Data = dataUrl.split(',')[1];
+        const saved = await Filesystem.writeFile({
+          path: filename,
+          data: base64Data,
+          directory: Directory.Cache,
+        });
+        await Share.share({
+          title: 'Tokyo Master',
+          text: shareText(),
+          url: saved.uri,
+        });
+        return;
+      } catch {
+        // ユーザーがキャンセルした場合等 — フォールバック
+      }
+    }
 
     // Web Share API が使えるならそちらを使う（iOS で写真に保存可能）
     if (navigator.share && navigator.canShare) {
@@ -153,17 +187,7 @@ export default function ShareCard({
     link.download = filename;
     link.href = canvas.toDataURL('image/png');
     link.click();
-  }, [generateImage, definition.id]);
-
-  const diffLabel = { kantan: 'かんたん', futsuu: 'ふつう', muzukashii: 'むずかしい' }[diffTab];
-
-  const shareText = useCallback(() => {
-    const name = definition.title.replace(/マスター$/, '');
-    if (achieved) {
-      return `${name}（${diffLabel}）を達成しました！正答率 ${Math.round(bestAccuracy * 100)}%・${attempts}回目の挑戦\n#TokyoMaster`;
-    }
-    return `${name}（${diffLabel}）に挑戦中！ベスト ${Math.round(bestAccuracy * 100)}%\n#TokyoMaster`;
-  }, [achieved, definition.title, diffLabel, bestAccuracy, attempts]);
+  }, [generateImage, definition.id, shareText]);
 
   const handleShareX = useCallback(() => {
     const url = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText())}`;

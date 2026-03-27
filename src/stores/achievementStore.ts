@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { UserAchievement } from '@/types';
+import { capacitorStorage } from '@/utils/capacitorStorage';
 
 interface AchievementState {
   achievements: Record<string, UserAchievement>;
@@ -39,6 +40,6 @@ export const useAchievementStore = create<AchievementState>()(
 
       getAchievedCount: () => Object.values(get().achievements).filter((a) => a.achieved).length,
     }),
-    { name: 'tokyo-master-achievements' },
+    { name: 'tokyo-master-achievements', storage: createJSONStorage(() => capacitorStorage) },
   ),
 );
