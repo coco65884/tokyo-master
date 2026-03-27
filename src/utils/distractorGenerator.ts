@@ -1,5 +1,6 @@
 import type { QuizQuestion, QuizChoice } from '@/types';
 import { loadLineIndex } from '@/utils/dataLoader';
+import genrePois from '@/data/genre_pois.json';
 
 /** 全駅プール（遅延ロード・キャッシュ） */
 interface StationPoolEntry {
@@ -99,8 +100,22 @@ async function generateStationDistractors(
   return selected.map((s) => s.name);
 }
 
+/** genre_pois.json からカテゴリ別の名前プールを構築（キャッシュ） */
+const categoryPoolCache = new Map<string, string[]>();
+
+function getCategoryPool(category: string): string[] {
+  if (categoryPoolCache.has(category)) return categoryPoolCache.get(category)!;
+
+  const typedPois = genrePois as Record<string, { pois: Array<{ name: string }> }>;
+  const entry = typedPois[category];
+  const names = entry ? [...new Set(entry.pois.map((p) => p.name))] : [];
+  categoryPoolCache.set(category, names);
+  return names;
+}
+
 /**
- * 同カテゴリの問題プールからディストラクターを生成する（汎用）
+ * 同カテゴリの問題プールからディストラクターを生成する。
+ * 出題リスト内で不足する場合は genre_pois.json の全データからフォールバック。
  */
 function generateSameCategoryDistractors(
   question: QuizQuestion,
@@ -108,11 +123,20 @@ function generateSameCategoryDistractors(
   count: number = 3,
 ): string[] {
   const correctName = question.targetName.kanji;
-  const candidates = allQuestions
+
+  // まず出題リスト内の同カテゴリから探す
+  const fromQuestions = allQuestions
     .filter((q) => q.category === question.category && q.targetName.kanji !== correctName)
     .map((q) => q.targetName.kanji);
-  // 重複除去
-  const unique = [...new Set(candidates)];
+  let unique = [...new Set(fromQuestions)];
+
+  // 不足する場合は genre_pois.json の全データからフォールバック
+  if (unique.length < count && question.category) {
+    const pool = getCategoryPool(question.category);
+    const extras = pool.filter((name) => name !== correctName && !unique.includes(name));
+    unique = [...unique, ...extras];
+  }
+
   return shuffle(unique).slice(0, count);
 }
 

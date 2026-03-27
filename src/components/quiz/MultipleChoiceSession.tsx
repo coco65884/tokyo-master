@@ -22,7 +22,14 @@ import {
   getGenreInfo,
 } from '@/utils/quizDataLoader';
 import { generateChoicesForQuestions } from '@/utils/distractorGenerator';
-import { loadRailLines, loadRivers, loadRoads, loadWards } from '@/utils/dataLoader';
+import {
+  loadRailLines,
+  loadRivers,
+  loadRoads,
+  loadWards,
+  loadWardObjects,
+  loadLineIndex,
+} from '@/utils/dataLoader';
 import ChoiceButton from './ChoiceButton';
 
 interface Props {
@@ -114,10 +121,27 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
           setMapZoom(13);
           setQuizTitle('区内の地理');
         }
-        const [riverGeo, roadGeo] = await Promise.all([loadRivers(), loadRoads()]);
+        const [railGeo, riverGeo, roadGeo, wardObjects, lineIndex] = await Promise.all([
+          loadRailLines(),
+          loadRivers(),
+          loadRoads(),
+          loadWardObjects(),
+          loadLineIndex(),
+        ]);
         if (!cancelled) {
+          setLineGeo(railGeo);
           setRiversGeo(riverGeo);
           setRoadsGeo(roadGeo);
+          // 区内を通る全路線のIDを収集
+          const wardObj = wardObjects[config.scopeId];
+          if (wardObj) {
+            const allIds: string[] = [];
+            for (const lineKey of wardObj.lineKeys) {
+              const line = lineIndex.lines.find((l) => l.key === lineKey);
+              if (line) allIds.push(...line.lineIds);
+            }
+            setLineIds(allIds);
+          }
         }
         qs = await generateChoicesForQuestions(qs);
       } else if (config.scopeType === 'theme') {
@@ -286,7 +310,33 @@ export default function MultipleChoiceSession({ config, onComplete }: Props) {
           )}
 
           {filteredLineGeo && (
-            <GeoJSON data={filteredLineGeo} style={{ color: lineColor, weight: 3, opacity: 0.8 }} />
+            <>
+              <GeoJSON
+                key={`mc-rail-base-${config.scopeId}`}
+                data={filteredLineGeo}
+                style={() => ({
+                  color: config.scopeType === 'line' ? lineColor : '#6b7280',
+                  weight: 4,
+                  opacity: 0.7,
+                  lineCap: 'butt',
+                  lineJoin: 'miter',
+                })}
+                interactive={false}
+              />
+              <GeoJSON
+                key={`mc-rail-dash-${config.scopeId}`}
+                data={filteredLineGeo}
+                style={() => ({
+                  color: '#ffffff',
+                  weight: 2,
+                  opacity: 0.6,
+                  dashArray: '6, 6',
+                  lineCap: 'butt',
+                  lineJoin: 'miter',
+                })}
+                interactive={false}
+              />
+            </>
           )}
 
           {/* Station markers: 出題中 + 回答済みのみ表示 */}

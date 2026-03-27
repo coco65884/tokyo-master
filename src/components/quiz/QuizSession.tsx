@@ -779,36 +779,7 @@ export default function QuizSession({ config, onComplete }: Props) {
           )}
 
           {/* 路線パス */}
-          {config.scopeType === 'ward' && lineGeo ? (
-            <>
-              {/* 区クイズ: 全路線を薄く表示（区外も含む） */}
-              <GeoJSON
-                key={`quiz-rail-bg-base-${config.scopeId}`}
-                data={lineGeo}
-                style={() => ({
-                  color: '#6b7280',
-                  weight: 4,
-                  opacity: 0.12,
-                  lineCap: 'butt',
-                  lineJoin: 'miter',
-                })}
-                interactive={false}
-              />
-              <GeoJSON
-                key={`quiz-rail-bg-dash-${config.scopeId}`}
-                data={lineGeo}
-                style={() => ({
-                  color: '#ffffff',
-                  weight: 2,
-                  opacity: 0.1,
-                  dashArray: '6, 6',
-                  lineCap: 'butt',
-                  lineJoin: 'miter',
-                })}
-                interactive={false}
-              />
-            </>
-          ) : filteredLineGeo ? (
+          {filteredLineGeo ? (
             <>
               {/* 路線クイズ: 選択路線のみ濃く */}
               <GeoJSON
