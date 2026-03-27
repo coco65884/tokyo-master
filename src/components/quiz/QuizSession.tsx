@@ -229,11 +229,17 @@ export default function QuizSession({ config, onComplete }: Props) {
       } else {
         setHighlightedGroup(null);
       }
-      // 入力欄を入力領域の中心にスクロール
+      // 入力欄を入力領域の中心にスクロール（毎回強制）
       requestAnimationFrame(() => {
         const el = inputRefs.current[index];
         if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          const container = el.closest('.quiz-session__questions');
+          if (container) {
+            const elRect = el.getBoundingClientRect();
+            const cRect = container.getBoundingClientRect();
+            const offset = elRect.top - cRect.top - cRect.height / 2 + elRect.height / 2;
+            container.scrollBy({ top: offset, behavior: 'smooth' });
+          }
         }
       });
     },
@@ -357,6 +363,10 @@ export default function QuizSession({ config, onComplete }: Props) {
         setQuestions(qs);
         setAnswers(new Array(qs.length).fill(''));
         setLoading(false);
+        // 初回: 最初の問題にフォーカス
+        requestAnimationFrame(() => {
+          setFocusedQuestionIndex(0);
+        });
       }
     }
 
