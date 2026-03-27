@@ -120,6 +120,8 @@
   justify-content: center;
   background: var(--color-bg);
   border: 2.5px solid var(--color-border);
+  overflow: hidden;
+  position: relative;
   transition:
     background 0.3s,
     border-color 0.3s;
