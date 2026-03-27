@@ -136,15 +136,28 @@ function MapClickHandler({ onMapClick }: { onMapClick: () => void }) {
 function MapPanToFocused({
   focusedIndex,
   questions,
+  focusGeo,
 }: {
   focusedIndex: number | null;
   questions: QuizQuestion[];
+  focusGeo?: FeatureCollection | null;
 }) {
   const map = useMap();
 
   useEffect(() => {
     if (focusedIndex == null) return;
     const q = questions[focusedIndex];
+
+    // 川/道路: GeoJSONのboundsにフィット
+    if (focusGeo && focusGeo.features.length > 0) {
+      const layer = L.geoJSON(focusGeo);
+      const bounds = layer.getBounds();
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14, animate: true });
+      }
+      return;
+    }
+
     if (q?.lat == null || q?.lng == null) return;
 
     // For questions with extraLocations, fit bounds around all locations
@@ -757,7 +770,11 @@ export default function QuizSession({ config, onComplete }: Props) {
           {config.scopeType === 'line' && <LineFitBounds questions={questions} />}
 
           {/* 入力フォーカス時に対応座標へパン */}
-          <MapPanToFocused focusedIndex={focusedQuestionIndex} questions={questions} />
+          <MapPanToFocused
+            focusedIndex={focusedQuestionIndex}
+            questions={questions}
+            focusGeo={focusedRiverGeo ?? focusedRoadGeo}
+          />
 
           {/* 区境界（ヒント） */}
           {wardsGeo && (
