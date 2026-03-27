@@ -11,6 +11,7 @@ import { loadRailLines, loadWards } from '@/utils/dataLoader';
 import { Link } from 'react-router-dom';
 import type { AchievementDefinition } from '@/types';
 import { hapticsAchievement } from '@/utils/haptics';
+import BannerAd from '@/components/ads/BannerAd';
 import type { LineIndexEntry } from '@/types';
 import type { WardCenter } from '@/utils/dataLoader';
 import ShareCard from '@/components/achievement/ShareCard';
@@ -384,6 +385,8 @@ export default function QuizResult({ result, config, onRetry, onBackToSelector }
           ホームへ戻る
         </Link>
       </div>
+
+      <BannerAd />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AchievementCard from '@/components/achievement/AchievementCard';
 import ShareCard from '@/components/achievement/ShareCard';
 import { useAchievementStore } from '@/stores/achievementStore';
+import BannerAd from '@/components/ads/BannerAd';
 import { loadLineIndex } from '@/utils/dataLoader';
 import {
   generateLineAchievements,
@@ -133,6 +134,8 @@ export default function AchievementPage() {
           onClose={() => setSelectedDef(null)}
         />
       )}
+
+      <BannerAd />
     </div>
   );
 }

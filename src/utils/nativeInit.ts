@@ -1,11 +1,13 @@
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Keyboard } from '@capacitor/keyboard';
+import { AdMob } from '@capacitor-community/admob';
 import {
   getNotificationSettings,
   scheduleDailyReminder,
   setupNotificationListeners,
 } from './notifications';
+import { initializeAdMob } from './adManager';
 
 /**
  * ネイティブプラットフォーム固有の初期化処理。
@@ -28,6 +30,16 @@ export async function nativeInit() {
   } catch {
     // ignore
   }
+
+  // ATT (App Tracking Transparency) — 広告初期化前に必須
+  try {
+    await AdMob.requestTrackingAuthorization();
+  } catch {
+    // ignore (Android or user denied)
+  }
+
+  // AdMob 初期化
+  await initializeAdMob();
 
   // 通知リスナーのセットアップ
   await setupNotificationListeners();

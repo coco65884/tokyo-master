@@ -11,6 +11,7 @@ import type { DifficultyLevel } from '@/types';
 import { useQuizStore } from '@/stores/quizStore';
 import type { QuizResult as QuizResultType } from '@/types';
 import type { SpeedRunRecord } from '@/stores/quizStore';
+import { shouldShowInterstitial, showInterstitial } from '@/utils/adManager';
 import '@/styles/QuizPage.css';
 
 type Phase = 'select' | 'active' | 'result' | 'speedrun' | 'blankmap';
@@ -46,7 +47,11 @@ export default function QuizPage() {
     }
   }, [lastResult]);
 
-  const handleBackToSelector = useCallback(() => {
+  const handleBackToSelector = useCallback(async () => {
+    // 3回に1回インタースティシャル広告を表示
+    if (shouldShowInterstitial()) {
+      await showInterstitial();
+    }
     setLastResult(null);
     setPhase('select');
   }, []);
