@@ -166,25 +166,20 @@ export default function ShareCard({
   }, [achieved, definition.title, diffLabel, bestAccuracy, attempts]);
 
   const handleShareX = useCallback(async () => {
-    // 画像付きシェアを試みる（Web Share API）
-    if (navigator.share && navigator.canShare) {
-      try {
-        const canvas = await generateImage();
-        if (canvas) {
-          const blob = await new Promise<Blob>((resolve) =>
-            canvas.toBlob((b) => resolve(b!), 'image/png'),
-          );
-          const file = new File([blob], 'achievement.png', { type: 'image/png' });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ text: shareText(), files: [file] });
-            return;
-          }
-        }
-      } catch {
-        // キャンセル or 非対応 — テキストのみにフォールバック
+    // 画像をクリップボードにコピーしてからX投稿画面を開く
+    try {
+      const canvas = await generateImage();
+      if (canvas) {
+        const blob = await new Promise<Blob>((resolve) =>
+          canvas.toBlob((b) => resolve(b!), 'image/png'),
+        );
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       }
+    } catch {
+      // クリップボードコピー失敗 — そのまま進む
     }
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(shareText())}`;
+    const text = shareText() + '\n（画像を貼り付けてください）';
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   }, [shareText, generateImage]);
 
