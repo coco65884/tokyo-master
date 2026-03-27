@@ -1,6 +1,8 @@
 import type { QuizQuestion, QuizChoice } from '@/types';
 import { loadLineIndex } from '@/utils/dataLoader';
 import genrePois from '@/data/genre_pois.json';
+import riversData from '@/data/rivers.json';
+import roadsData from '@/data/roads.json';
 
 /** 全駅プール（遅延ロード・キャッシュ） */
 interface StationPoolEntry {
@@ -106,11 +108,35 @@ const categoryPoolCache = new Map<string, string[]>();
 function getCategoryPool(category: string): string[] {
   if (categoryPoolCache.has(category)) return categoryPoolCache.get(category)!;
 
-  const typedPois = genrePois as Record<string, { pois: Array<{ name: string }> }>;
-  const entry = typedPois[category];
-  const names = entry ? [...new Set(entry.pois.map((p) => p.name))] : [];
-  categoryPoolCache.set(category, names);
-  return names;
+  let names: string[] = [];
+
+  if (category === 'rivers') {
+    // 川: rivers.json から取得（「川」サフィックスを除去して比較用）
+    const rivers = riversData as Array<{ name: { kanji: string } }>;
+    names = rivers.map((r) => {
+      const k = r.name.kanji;
+      return k.endsWith('川') ? k.slice(0, -1) : k;
+    });
+  } else if (category === 'roads') {
+    // 道路: roads.json から取得（サフィックス除去）
+    const roads = roadsData as Array<{ name: { kanji: string } }>;
+    names = roads.map((r) => {
+      const k = r.name.kanji;
+      for (const suffix of ['通り', '街道', '道路', '道']) {
+        if (k.endsWith(suffix)) return k.slice(0, -suffix.length);
+      }
+      return k;
+    });
+  } else {
+    // genre_pois.json から取得
+    const typedPois = genrePois as Record<string, { pois: Array<{ name: string }> }>;
+    const entry = typedPois[category];
+    names = entry ? entry.pois.map((p) => p.name) : [];
+  }
+
+  const unique = [...new Set(names)];
+  categoryPoolCache.set(category, unique);
+  return unique;
 }
 
 /**
