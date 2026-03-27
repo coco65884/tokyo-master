@@ -451,6 +451,7 @@ export default function QuizSession({ config, onComplete }: Props) {
       quizConfigId: `${config.scopeType}-${config.scopeId}`,
       scopeType: config.scopeType,
       scopeId: config.scopeId,
+      difficulty: config.difficulty,
       totalQuestions: questions.length,
       correctAnswers: correctCount,
       accuracy: questions.length > 0 ? correctCount / questions.length : 0,
