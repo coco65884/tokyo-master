@@ -34,7 +34,7 @@ import {
   loadLineIndex,
 } from '@/utils/dataLoader';
 import riversData from '@/data/rivers.json';
-import { extractFocusArea, clipGeoJSONToFocusArea } from '@/components/map/MapLayers';
+import { extractFocusArea, clipGeoJSONToFocusArea } from '@/utils/geoClip';
 import { hapticsCorrect, hapticsWrong } from '@/utils/haptics';
 
 interface Props {

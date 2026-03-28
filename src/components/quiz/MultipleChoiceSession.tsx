@@ -31,7 +31,7 @@ import {
   loadLineIndex,
 } from '@/utils/dataLoader';
 import ChoiceButton from './ChoiceButton';
-import { extractFocusArea, clipGeoJSONToFocusArea } from '@/components/map/MapLayers';
+import { extractFocusArea, clipGeoJSONToFocusArea } from '@/utils/geoClip';
 import { hapticsCorrect, hapticsWrong } from '@/utils/haptics';
 
 interface Props {
