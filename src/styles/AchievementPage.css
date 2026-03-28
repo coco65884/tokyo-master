@@ -4,6 +4,8 @@
   padding-top: max(1.5rem, calc(1rem + var(--safe-top)));
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+  background: var(--color-bg);
 }
 
 @media (max-width: 768px) {
