@@ -736,10 +736,10 @@
     border-top: 1px solid var(--color-border);
   }
 
-  /* Credit(attribution)をタブバーの上に固定 */
+  /* Credit(attribution)をメニューバーの直上・右端に固定 */
   .map-main .leaflet-control-attribution {
     position: fixed !important;
-    bottom: 50px !important;
+    bottom: calc(50px + var(--ad-banner-height, 0px) + env(safe-area-inset-bottom)) !important;
     right: 0 !important;
     left: auto !important;
     z-index: 999;
