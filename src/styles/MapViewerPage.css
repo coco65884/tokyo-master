@@ -643,7 +643,9 @@
   .mobile-panel {
     display: block;
     position: fixed;
-    bottom: 50px;
+    bottom: calc(
+      50px + var(--ad-banner-height, 0px) + env(safe-area-inset-bottom)
+    ); /* メニューバー(50px) + バナー広告 + safe-area */
     left: 0;
     right: 0;
     max-height: 0;
@@ -671,18 +673,17 @@
     padding-bottom: 0.5rem;
   }
 
-  /* Bottom tab bar */
+  /* Bottom tab bar — バナー広告 + safe-area の直上に配置 */
   .mobile-tab-bar {
     display: flex;
     position: fixed;
-    bottom: 0;
+    bottom: calc(var(--ad-banner-height, 0px) + env(safe-area-inset-bottom));
     left: 0;
     right: 0;
     height: 50px;
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
     z-index: 1000;
-    padding: 0;
     margin: 0;
   }
 
@@ -737,10 +738,10 @@
     border-top: 1px solid var(--color-border);
   }
 
-  /* Credit(attribution)をタブバーの上に固定 */
+  /* Credit(attribution)をメニューバーの直上・右端に固定 */
   .map-main .leaflet-control-attribution {
     position: fixed !important;
-    bottom: 50px !important;
+    bottom: calc(50px + var(--ad-banner-height, 0px) + env(safe-area-inset-bottom)) !important;
     right: 0 !important;
     left: auto !important;
     z-index: 999;

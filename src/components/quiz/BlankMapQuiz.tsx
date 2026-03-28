@@ -8,6 +8,7 @@ import { matchesNameString } from '@/utils/nameMatch';
 import type { DifficultyLevel, QuizChoice } from '@/types';
 import { getDifficultySettings } from '@/utils/difficultySettings';
 import ChoiceButton from './ChoiceButton';
+import { hapticsCorrect, hapticsWrong } from '@/utils/haptics';
 
 interface WardEntry {
   wardId: string;
@@ -264,6 +265,13 @@ export default function BlankMapQuiz({ onBack, range, difficulty, quickMode, onC
       setMcLocked(true);
       const correct = wardList[mcCurrentIndex].wardName;
       const isCorrect = choiceName === correct;
+
+      // Haptic feedback
+      if (isCorrect) {
+        hapticsCorrect();
+      } else {
+        hapticsWrong();
+      }
 
       const newStates: Record<string, string> = {};
       if (isCorrect) {

@@ -7,6 +7,7 @@ import DistanceDisplay from '@/components/map/DistanceDisplay';
 import GenreSelector from '@/components/map/GenreSelector';
 import MobileMapMenu from '@/components/map/MobileMapMenu';
 import { useMapStore } from '@/stores/mapStore';
+import BannerAd from '@/components/ads/BannerAd';
 import '@/styles/MapViewerPage.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -86,6 +87,8 @@ export default function MapViewerPage() {
         )}
         {/* Mobile bottom menu */}
         {isMobile && <MobileMapMenu onSelectWard={handleSelectWard} />}
+        {/* バナー広告（最下部に固定表示） */}
+        {isMobile && <BannerAd />}
       </main>
     </div>
   );

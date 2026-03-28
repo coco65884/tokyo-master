@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import QuizSelector from '@/components/quiz/QuizSelector';
 import QuizSession from '@/components/quiz/QuizSession';
@@ -11,6 +11,7 @@ import type { DifficultyLevel } from '@/types';
 import { useQuizStore } from '@/stores/quizStore';
 import type { QuizResult as QuizResultType } from '@/types';
 import type { SpeedRunRecord } from '@/stores/quizStore';
+import { shouldShowInterstitial, showInterstitial, removeBanner } from '@/utils/adManager';
 import '@/styles/QuizPage.css';
 
 type Phase = 'select' | 'active' | 'result' | 'speedrun' | 'blankmap';
@@ -22,6 +23,13 @@ export default function QuizPage() {
 
   const config = useQuizStore((s) => s.currentConfig);
   const addResult = useQuizStore((s) => s.addResult);
+
+  // クイズ回答中はバナー広告を非表示にする
+  useEffect(() => {
+    if (phase === 'active' || phase === 'speedrun' || phase === 'blankmap') {
+      removeBanner();
+    }
+  }, [phase]);
   const addSpeedRunRecord = useQuizStore((s) => s.addSpeedRunRecord);
 
   const handleStart = useCallback(() => {
@@ -46,7 +54,11 @@ export default function QuizPage() {
     }
   }, [lastResult]);
 
-  const handleBackToSelector = useCallback(() => {
+  const handleBackToSelector = useCallback(async () => {
+    // 3回に1回インタースティシャル広告を表示
+    if (shouldShowInterstitial()) {
+      await showInterstitial();
+    }
     setLastResult(null);
     setPhase('select');
   }, []);

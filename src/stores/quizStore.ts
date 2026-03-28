@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import type { QuizConfig, QuizResult } from '@/types';
+import { capacitorStorage } from '@/utils/capacitorStorage';
 
 export interface SpeedRunRecord {
   lineKey: string;
@@ -60,6 +61,6 @@ export const useQuizStore = create<QuizState>()(
         return records.reduce((best, r) => (r.elapsedMs < best.elapsedMs ? r : best));
       },
     }),
-    { name: 'tokyo-master-quiz' },
+    { name: 'tokyo-master-quiz', storage: createJSONStorage(() => capacitorStorage) },
   ),
 );

@@ -2,6 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { GeoJSON, CircleMarker, Polyline, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { FeatureCollection, Feature } from 'geojson';
+import { extractFocusArea, clipGeoJSONToFocusArea, pointInFocusArea } from '@/utils/geoClip';
+import type { FocusArea } from '@/utils/geoClip';
 import { useMapStore } from '@/stores/mapStore';
 import type { LineIndexEntry } from '@/types';
 import {
@@ -187,15 +189,7 @@ function PrefBorderLayer({ data }: { data: FeatureCollection }) {
 }
 
 // ======= Focus area: polygon + bbox for fast rejection =======
-export interface FocusArea {
-  /** 粗フィルタ用のbbox */
-  minLat: number;
-  maxLat: number;
-  minLng: number;
-  maxLng: number;
-  /** ポリゴンリング（外周+穴）の座標列 [lng, lat][] */
-  rings: number[][][];
-}
+// FocusArea is imported from @/utils/geoClip
 
 // ======= Rail lines + stations =======
 
@@ -454,91 +448,7 @@ function StationMarkers({
   );
 }
 
-// ======= Ray Casting point-in-polygon =======
-
-/** Ray Casting: 点 [lng, lat] がポリゴンリング内にあるか判定 */
-function pointInRing(lng: number, lat: number, ring: number[][]): boolean {
-  let inside = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const xi = ring[i][0],
-      yi = ring[i][1];
-    const xj = ring[j][0],
-      yj = ring[j][1];
-    if (yi > lat !== yj > lat && lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) {
-      inside = !inside;
-    }
-  }
-  return inside;
-}
-
-/** 座標 [lng, lat] がFocusArea（区ポリゴン）内にあるか判定 */
-function pointInFocusArea(c: number[], area: FocusArea): boolean {
-  const lng = c[0],
-    lat = c[1];
-  // 1. bbox粗フィルタ（99%の点はここで除外）
-  if (lat < area.minLat || lat > area.maxLat || lng < area.minLng || lng > area.maxLng) {
-    return false;
-  }
-  // 2. Ray Casting精密判定
-  // 最初のリングが外周、残りが穴
-  if (!pointInRing(lng, lat, area.rings[0])) return false;
-  // 穴の中にいたらfalse
-  for (let i = 1; i < area.rings.length; i++) {
-    if (pointInRing(lng, lat, area.rings[i])) return false;
-  }
-  return true;
-}
-
-/** LineString座標列をポリゴン内の連続セグメントに分割 */
-function clipLineToFocusArea(coords: number[][], area: FocusArea): number[][][] {
-  const segments: number[][][] = [];
-  let current: number[][] = [];
-  for (const c of coords) {
-    if (pointInFocusArea(c, area)) {
-      current.push(c);
-    } else {
-      if (current.length >= 2) segments.push(current);
-      current = [];
-    }
-  }
-  if (current.length >= 2) segments.push(current);
-  return segments;
-}
-
-/** FeatureCollectionをポリゴンでクリッピング */
-export function clipGeoJSONToFocusArea(
-  data: FeatureCollection,
-  area: FocusArea,
-): FeatureCollection {
-  const clippedFeatures: Feature[] = [];
-  for (const feat of data.features) {
-    const geom = feat.geometry;
-    let allCoords: number[][][] = [];
-    if (geom.type === 'LineString') {
-      allCoords = [(geom as GeoJSON.LineString).coordinates as number[][]];
-    } else if (geom.type === 'MultiLineString') {
-      allCoords = (geom as GeoJSON.MultiLineString).coordinates as number[][][];
-    } else {
-      continue;
-    }
-
-    const clippedSegments: number[][][] = [];
-    for (const line of allCoords) {
-      clippedSegments.push(...clipLineToFocusArea(line, area));
-    }
-
-    if (clippedSegments.length === 0) continue;
-
-    clippedFeatures.push({
-      ...feat,
-      geometry:
-        clippedSegments.length === 1
-          ? { type: 'LineString', coordinates: clippedSegments[0] }
-          : { type: 'MultiLineString', coordinates: clippedSegments },
-    });
-  }
-  return { type: 'FeatureCollection', features: clippedFeatures };
-}
+// clipGeoJSONToFocusArea, extractFocusArea は @/utils/geoClip からインポート
 
 // ======= Rivers (2層: 全体薄く + bbox内を濃く) =======
 function RiverLayer({ data, focusArea }: { data: FeatureCollection; focusArea: FocusArea | null }) {
@@ -729,33 +639,7 @@ function DistanceOverlay() {
   );
 }
 
-// ======= Helpers =======
-export function extractFocusArea(wardsGeo: FeatureCollection, wardId: string): FocusArea | null {
-  const feat = wardsGeo.features.find((f) => f.properties?.id === wardId);
-  if (!feat) return null;
-
-  const geom = feat.geometry as GeoJSON.Polygon | GeoJSON.MultiPolygon;
-  // ポリゴンのリングを抽出（MultiPolygonは最初のポリゴンを使用）
-  let rings: number[][][];
-  if (geom.type === 'Polygon') {
-    rings = geom.coordinates as number[][][];
-  } else {
-    // MultiPolygon: 全ポリゴンの外周を結合
-    rings = (geom.coordinates as number[][][][]).map((poly) => poly[0]);
-  }
-
-  if (rings.length === 0 || rings[0].length === 0) return null;
-
-  // bbox計算
-  const allCoords = rings.flat();
-  return {
-    minLat: Math.min(...allCoords.map((c) => c[1])),
-    maxLat: Math.max(...allCoords.map((c) => c[1])),
-    minLng: Math.min(...allCoords.map((c) => c[0])),
-    maxLng: Math.max(...allCoords.map((c) => c[0])),
-    rings,
-  };
-}
+// extractFocusArea は @/utils/geoClip からインポート
 
 // ======= Main =======
 export default function MapLayers() {

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAchievementStore } from '@/stores/achievementStore';
+import BannerAd from '@/components/ads/BannerAd';
 import '@/styles/HomePage.css';
 
 export default function HomePage() {
@@ -35,6 +36,8 @@ export default function HomePage() {
       <Link to="/settings" className="home-settings-link">
         設定
       </Link>
+
+      <BannerAd />
     </div>
   );
 }

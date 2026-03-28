@@ -155,8 +155,9 @@
 }
 
 .difficulty-picker__desc {
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .difficulty-picker__pill--active .difficulty-picker__name {
@@ -1475,8 +1476,9 @@
   .quiz-result__actions {
     gap: 0.3rem;
     flex-shrink: 0;
-    padding-top: 0.3rem;
-    padding-bottom: calc(0.25rem + var(--safe-bottom));
+    padding-top: 0;
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    margin-bottom: var(--ad-banner-height, 0px);
   }
 
   .quiz-result__actions .btn {
@@ -1503,7 +1505,7 @@
 
   .mc-session__question-area {
     padding: 0.5rem 0.75rem;
-    padding-bottom: calc(0.5rem + var(--safe-bottom));
+    padding-bottom: calc(1.5rem + var(--safe-bottom));
     flex-shrink: 0;
   }
 
@@ -1543,6 +1545,7 @@
 
   .mc-session__question-area {
     padding: 0.75rem 1rem;
+    padding-bottom: calc(1.5rem + var(--safe-bottom));
   }
 
   .mc-session__choices {
