@@ -155,8 +155,9 @@
 }
 
 .difficulty-picker__desc {
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .difficulty-picker__pill--active .difficulty-picker__name {
