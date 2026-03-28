@@ -1504,7 +1504,7 @@
 
   .mc-session__question-area {
     padding: 0.5rem 0.75rem;
-    padding-bottom: calc(1rem + var(--safe-bottom));
+    padding-bottom: calc(1.5rem + var(--safe-bottom));
     flex-shrink: 0;
   }
 
