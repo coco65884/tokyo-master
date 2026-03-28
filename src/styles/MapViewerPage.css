@@ -643,7 +643,7 @@
   .mobile-panel {
     display: block;
     position: fixed;
-    bottom: 110px; /* メニューバー(50px) + バナー広告(60px) */
+    bottom: calc(50px + var(--ad-banner-height)); /* メニューバー(50px) + バナー広告 */
     left: 0;
     right: 0;
     max-height: 0;
@@ -671,11 +671,11 @@
     padding-bottom: 0.5rem;
   }
 
-  /* Bottom tab bar — バナー広告(60px)の上に配置 */
+  /* Bottom tab bar — バナー広告の直上に配置 */
   .mobile-tab-bar {
     display: flex;
     position: fixed;
-    bottom: 60px;
+    bottom: var(--ad-banner-height);
     left: 0;
     right: 0;
     height: 50px;
