@@ -101,7 +101,8 @@
     padding-top: calc(1rem + var(--safe-top));
     padding-bottom: calc(1rem + var(--safe-bottom));
     gap: 1.5rem;
-    min-height: 100%;
+    min-height: auto;
+    justify-content: flex-start;
   }
 
   .home-header {
@@ -120,8 +121,6 @@
   .home-nav {
     grid-template-columns: 1fr;
     gap: 0.75rem;
-    flex: 1;
-    align-content: center;
   }
 
   .home-card {
