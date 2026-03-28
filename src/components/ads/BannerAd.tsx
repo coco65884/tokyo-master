@@ -14,12 +14,12 @@ function setHeight(px: number) {
 /**
  * ネイティブバナー広告コンポーネント。
  * バナーの実際の高さを CSS 変数 --ad-banner-height に反映する。
+ * バナー広告の裏にコンテンツが透けないよう、下部に白い遮蔽バーを表示する。
  */
 export default function BannerAd({ margin = 0 }: Props) {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    // マウント直後に初期値を設定（イベント発火前のレイアウトずれ防止）
     setHeight(60);
 
     const handles: Array<Awaited<ReturnType<typeof AdMob.addListener>>> = [];
@@ -33,11 +33,25 @@ export default function BannerAd({ margin = 0 }: Props) {
     return () => {
       removeBanner();
       for (const h of handles) h.remove();
-      // 変数を削除（0px にしない — CSS fallback を機能させるため）
       document.documentElement.style.removeProperty('--ad-banner-height');
     };
   }, [margin]);
 
   if (!Capacitor.isNativePlatform()) return null;
-  return null;
+
+  // バナー広告 + safe area 領域を白で塗りつぶす固定バー
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 'calc(var(--ad-banner-height, 60px) + env(safe-area-inset-bottom))',
+        background: '#ffffff',
+        zIndex: 900,
+        pointerEvents: 'none',
+      }}
+    />
+  );
 }
