@@ -643,7 +643,9 @@
   .mobile-panel {
     display: block;
     position: fixed;
-    bottom: calc(50px + var(--ad-banner-height, 0px) + env(safe-area-inset-bottom)); /* メニューバー(50px) + バナー広告 + safe-area */
+    bottom: calc(
+      50px + var(--ad-banner-height, 0px) + env(safe-area-inset-bottom)
+    ); /* メニューバー(50px) + バナー広告 + safe-area */
     left: 0;
     right: 0;
     max-height: 0;

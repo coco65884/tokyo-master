@@ -131,13 +131,16 @@ export default function ShareCard({
 
   const diffLabel = { kantan: 'かんたん', futsuu: 'ふつう', muzukashii: 'むずかしい' }[diffTab];
 
+  const APP_URL = 'https://tokyo-master.vercel.app';
+
   const shareText = useCallback(() => {
     const name = definition.title.replace(/マスター$/, '');
+    const pct = Math.round(bestAccuracy * 100);
     if (achieved) {
-      return `${name}（${diffLabel}）を達成しました！正答率 ${Math.round(bestAccuracy * 100)}%・${attempts}回目の挑戦\n#TokyoMaster`;
+      return `${definition.icon} ${name}（${diffLabel}）全問正解！\n正答率 ${pct}%・${attempts}回目の挑戦で達成\n\n東京の地理、あなたはどこまで知ってる？\n#TokyoMaster\n${APP_URL}`;
     }
-    return `${name}（${diffLabel}）に挑戦中！ベスト ${Math.round(bestAccuracy * 100)}%\n#TokyoMaster`;
-  }, [achieved, definition.title, diffLabel, bestAccuracy, attempts]);
+    return `${definition.icon} ${name}（${diffLabel}）に挑戦中！\n現在ベスト ${pct}%\n\n東京の地理、あなたはどこまで知ってる？\n#TokyoMaster\n${APP_URL}`;
+  }, [achieved, definition, diffLabel, bestAccuracy, attempts]);
 
   const handleDownload = useCallback(async () => {
     const canvas = await generateImage();
