@@ -7,6 +7,7 @@ import DistanceDisplay from '@/components/map/DistanceDisplay';
 import GenreSelector from '@/components/map/GenreSelector';
 import MobileMapMenu from '@/components/map/MobileMapMenu';
 import { useMapStore } from '@/stores/mapStore';
+import { removeBanner } from '@/utils/adManager';
 import '@/styles/MapViewerPage.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -53,6 +54,8 @@ export default function MapViewerPage() {
   // ページ遷移後に戻ってきたときに前のフォーカスが残らないようクリア
   useEffect(() => {
     setSelectedWard(null);
+    // 地図画面ではバナー広告を非表示にする
+    removeBanner();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectWard = useCallback(
