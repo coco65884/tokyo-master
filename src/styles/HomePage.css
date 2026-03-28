@@ -99,10 +99,9 @@
   .home-page {
     padding: 1.5rem 1rem;
     padding-top: calc(1rem + var(--safe-top));
-    padding-bottom: calc(1rem + var(--safe-bottom) + var(--ad-banner-height, 60px));
+    padding-bottom: calc(1rem + var(--safe-bottom));
     gap: 1.5rem;
     min-height: 100%;
-    justify-content: space-between;
   }
 
   .home-header {

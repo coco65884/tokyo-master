@@ -643,7 +643,7 @@
   .mobile-panel {
     display: block;
     position: fixed;
-    bottom: calc(50px + var(--ad-banner-height, 60px)); /* メニューバー(50px) + バナー広告 */
+    bottom: calc(50px + var(--ad-banner-height, 0px)); /* メニューバー(50px) + バナー広告 */
     left: 0;
     right: 0;
     max-height: 0;
@@ -675,7 +675,7 @@
   .mobile-tab-bar {
     display: flex;
     position: fixed;
-    bottom: var(--ad-banner-height, 60px);
+    bottom: var(--ad-banner-height, 0px);
     left: 0;
     right: 0;
     height: 50px;
