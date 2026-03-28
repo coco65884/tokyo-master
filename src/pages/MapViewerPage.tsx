@@ -7,7 +7,7 @@ import DistanceDisplay from '@/components/map/DistanceDisplay';
 import GenreSelector from '@/components/map/GenreSelector';
 import MobileMapMenu from '@/components/map/MobileMapMenu';
 import { useMapStore } from '@/stores/mapStore';
-import { removeBanner } from '@/utils/adManager';
+import BannerAd from '@/components/ads/BannerAd';
 import '@/styles/MapViewerPage.css';
 
 const MOBILE_BREAKPOINT = 768;
@@ -52,13 +52,8 @@ export default function MapViewerPage() {
   const isMobile = useIsMobile();
 
   // ページ遷移後に戻ってきたときに前のフォーカスが残らないようクリア
-  // 地図画面ではバナー広告を非表示にする
   useEffect(() => {
     setSelectedWard(null);
-    removeBanner();
-    // 遷移直後にBannerAdのアンマウントが遅れるケースに対応
-    const timer = setTimeout(() => removeBanner(), 300);
-    return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectWard = useCallback(
@@ -92,6 +87,8 @@ export default function MapViewerPage() {
         )}
         {/* Mobile bottom menu */}
         {isMobile && <MobileMapMenu onSelectWard={handleSelectWard} />}
+        {/* バナー広告（最下部に固定表示） */}
+        {isMobile && <BannerAd />}
       </main>
     </div>
   );

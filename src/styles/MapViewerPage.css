@@ -643,7 +643,7 @@
   .mobile-panel {
     display: block;
     position: fixed;
-    bottom: 50px;
+    bottom: 110px; /* メニューバー(50px) + バナー広告(60px) */
     left: 0;
     right: 0;
     max-height: 0;
@@ -671,15 +671,14 @@
     padding-bottom: 0.5rem;
   }
 
-  /* Bottom tab bar */
+  /* Bottom tab bar — バナー広告(60px)の上に配置 */
   .mobile-tab-bar {
     display: flex;
     position: fixed;
-    bottom: 0;
+    bottom: 60px;
     left: 0;
     right: 0;
-    height: calc(50px + env(safe-area-inset-bottom));
-    padding-bottom: env(safe-area-inset-bottom);
+    height: 50px;
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
     z-index: 1000;
