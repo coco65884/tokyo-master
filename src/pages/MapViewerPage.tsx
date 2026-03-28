@@ -52,10 +52,13 @@ export default function MapViewerPage() {
   const isMobile = useIsMobile();
 
   // ページ遷移後に戻ってきたときに前のフォーカスが残らないようクリア
+  // 地図画面ではバナー広告を非表示にする
   useEffect(() => {
     setSelectedWard(null);
-    // 地図画面ではバナー広告を非表示にする
     removeBanner();
+    // 遷移直後にBannerAdのアンマウントが遅れるケースに対応
+    const timer = setTimeout(() => removeBanner(), 300);
+    return () => clearTimeout(timer);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSelectWard = useCallback(
