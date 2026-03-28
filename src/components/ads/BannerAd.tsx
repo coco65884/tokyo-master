@@ -8,31 +8,43 @@ interface Props {
   margin?: number;
 }
 
+function setBannerHeight(height: number) {
+  document.documentElement.style.setProperty('--ad-banner-height', `${height}px`);
+}
+
 /**
  * ネイティブバナー広告コンポーネント。
  * マウント時にバナーを表示し、アンマウント時に削除する。
  * バナーの実際の高さを CSS 変数 --ad-banner-height に反映する。
- * Web 環境では何も表示しない。
  */
 export default function BannerAd({ margin = 0 }: Props) {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    let listenerHandle: Awaited<ReturnType<typeof AdMob.addListener>> | null = null;
+    const handles: Array<Awaited<ReturnType<typeof AdMob.addListener>>> = [];
 
-    // バナーサイズ変更イベントで実際の高さを CSS 変数に反映
+    // SizeChanged で実際の高さを取得
     AdMob.addListener(BannerAdPluginEvents.SizeChanged, (size) => {
-      document.documentElement.style.setProperty('--ad-banner-height', `${size.height}px`);
-    }).then((handle) => {
-      listenerHandle = handle;
-    });
+      setBannerHeight(size.height);
+    }).then((h) => handles.push(h));
+
+    // Loaded のフォールバック: SizeChanged が来ない場合に備える
+    AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+      // SizeChanged で設定済みでなければデフォルト値を使う
+      const current = getComputedStyle(document.documentElement)
+        .getPropertyValue('--ad-banner-height')
+        .trim();
+      if (current === '0px' || current === '') {
+        setBannerHeight(60);
+      }
+    }).then((h) => handles.push(h));
 
     showBanner(margin);
 
     return () => {
       removeBanner();
-      listenerHandle?.remove();
-      document.documentElement.style.setProperty('--ad-banner-height', '0px');
+      for (const h of handles) h.remove();
+      setBannerHeight(0);
     };
   }, [margin]);
 
